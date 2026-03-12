@@ -4,6 +4,7 @@
 **Par:** porcion-013
 **Tipo:** FRONT
 **Prerequisitos:** Ninguno
+**Estado:** 🔄 En progreso
 
 ## Descripción
 
