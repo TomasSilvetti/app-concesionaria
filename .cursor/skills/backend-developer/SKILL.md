@@ -159,23 +159,37 @@ Antes de crear cualquier función, servicio o helper, explorar si ya existe algo
 
 ### Paso 7 — Migraciones de base de datos
 
-Si la porción requiere crear o modificar tablas, columnas o índices en la base de datos, **no aplicar la migración automáticamente**. Primero explicarla y pedir confirmación.
+Si la porción requiere crear o modificar tablas, columnas o índices en la base de datos, **primero verificar el estado actual del esquema** y luego explicar lo que se va a hacer antes de aplicar cualquier cambio.
 
-Presentar al desarrollador:
+**Verificación previa del esquema:**
 
-> **🗄️ Esta porción requiere una migración de base de datos.**
+1. Leer los modelos/migraciones existentes del proyecto (Prisma → `schema.prisma`, TypeORM → `entities/`, Django → `models.py`, etc.)
+2. Para cada tabla/campo que necesita la porción, determinar:
+   - ✅ **Ya existe con los campos correctos** → no se necesita migración, continuar al paso siguiente
+   - ⚠️ **Existe pero le faltan campos** → migración de ALTER TABLE
+   - ❌ **No existe** → migración de CREATE TABLE
+
+Si **no se necesita migración** (todo ya existe), mencionarlo brevemente y continuar:
+
+> *"✅ La tabla `usuarios` ya existe con todos los campos necesarios. No se requiere migración."*
+
+Si **sí se necesita migración**, presentar al desarrollador el análisis y pedir confirmación antes de aplicar nada:
+
+> **🗄️ Esta porción requiere cambios en la base de datos.**
 >
-> **Qué se necesita:** {descripción en lenguaje simple de qué cambio estructural requiere la BD}
+> **Estado actual:** {describir qué existe hoy — tabla inexistente, o tabla existente con campos faltantes}
 >
-> **Por qué:** {explicar en una oración por qué la lógica implementada necesita este cambio — qué fallaría sin él}
+> **Qué se necesita:** {descripción en lenguaje simple del cambio estructural necesario}
 >
-> **Cómo se haría:** se creará el archivo de migración `migrations/{timestamp}_nombre_migracion.ts` que {describe qué hace: crea la tabla X con los campos Y, agrega la columna Z a la tabla W, etc.}
+> **Por qué:** {explicar en una oración qué fallaría sin este cambio}
+>
+> **Cómo se haría:** se creará el archivo de migración `migrations/{timestamp}_nombre_migracion` que {describe exactamente qué hace: crea la tabla X con los campos Y y tipos Z, agrega la columna W a la tabla V, etc.}
 >
 > ¿Confirmás que aplique la migración?
 
 Esperar confirmación explícita antes de crear el archivo de migración y ejecutarlo.
 
-Una vez confirmado, crear la migración siguiendo el sistema del proyecto (Prisma, TypeORM, Alembic, Flyway, etc.) y ejecutarla. Confirmar al desarrollador que se aplicó correctamente.
+Una vez confirmado, crear la migración siguiendo el sistema del proyecto y ejecutarla. Confirmar al desarrollador que se aplicó correctamente.
 
 ---
 
@@ -201,11 +215,23 @@ Si aplica, presentar los datos propuestos antes de insertarlos:
 
 Esperar confirmación antes de insertar cualquier dato.
 
-Una vez confirmado, insertar los datos usando el sistema del proyecto (seeder, script, ORM directo) y confirmar al desarrollador con los datos exactos que puede usar para probar:
+Una vez confirmado, insertar los datos usando el sistema del proyecto (seeder, script, ORM directo) y pedirle al desarrollador que verifique visualmente que el registro quedó en la BD:
 
-> ✅ Datos insertados. Podés probar el flujo con:
+> ✅ Datos insertados. Para confirmar que quedaron correctamente, verificá el registro directamente en la base de datos:
+>
+> **Tabla:** `{nombre_tabla}`
+> **Cómo verlo:** abrí tu cliente de BD ({TablePlus, DBeaver, pgAdmin, MySQL Workbench, Prisma Studio, etc.} según el proyecto) y buscá el registro con:
+> ```
+> {campo identificador, ej: email}: {valor}
+> ```
+>
+> Una vez que confirmes que el registro está ahí, podés probar el flujo con estos datos:
 > - **{campo}:** `{valor}`
 > - **{campo}:** `{valor}`
+>
+> ¿Ves el registro en la BD?
+
+Esperar confirmación del desarrollador de que el dato es visible antes de continuar.
 
 ---
 

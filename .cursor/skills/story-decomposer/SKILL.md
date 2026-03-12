@@ -94,6 +94,20 @@ Lee el archivo `.md` de la historia de usuario. Identifica:
 - Qué componentes requieren **par Front + Back** y cuáles son de un solo lado
 - El **orden lógico de implementación**: generalmente primero Front (estructura visual), luego Back (lógica funcional), pero puede variar si hay dependencias
 - Las **dependencias entre porciones**: detectar si alguna porción requiere infraestructura base que todavía no existe (ej: sistema de autenticación, configuración de base de datos, servicios compartidos). Estas porciones de infraestructura deben ir primero, antes de los pares Front + Back regulares, y todas las porciones que dependen de ellas deben declararlas explícitamente en su campo `Prerequisitos`
+- Las **necesidades de base de datos**: si la HU implica persistencia de datos, analizar el proyecto para determinar el estado actual del esquema
+
+**Análisis de base de datos — cómo hacerlo:**
+
+1. Detectar qué ORM o sistema de migraciones usa el proyecto (Prisma → `schema.prisma`, TypeORM → `entities/`, Django → `models.py`, Eloquent → `migrations/`, etc.)
+2. Leer los modelos/migraciones existentes para conocer qué tablas y campos ya existen
+3. Determinar para cada entidad que necesita la HU:
+   - ✅ **Ya existe** con todos los campos necesarios → no requiere porción de migración
+   - ⚠️ **Existe parcialmente** → requiere porción de migración para agregar campos
+   - ❌ **No existe** → requiere porción de migración para crear la tabla completa
+
+Si se detecta trabajo de BD, crear una porción BACK específica para la migración **antes** de cualquier otra porción BACK que dependa de esos datos, y marcarla como prerequisito de las que la necesiten.
+
+Si el proyecto no tiene estructura de BD todavía, crear una porción BACK de "setup inicial de base de datos" como primera porción.
 
 ### Paso 2 — Proponer el plan de porciones al usuario
 

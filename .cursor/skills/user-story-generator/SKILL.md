@@ -56,6 +56,10 @@ La historia debe contener SIEMPRE estos campos:
 1. {paso 1}
 2. {paso 2}
 ...
+
+## Notas técnicas
+
+⚠️ **Base de datos:** {si la historia implica guardar, leer, modificar o eliminar datos persistentes, mencionarlo aquí en lenguaje simple. Ejemplo: "Esta historia probablemente requiere almacenar registros de X en la base de datos. El equipo deberá verificar si la estructura necesaria ya existe o si hay que crearla." Si la historia es puramente visual/navegacional y no implica persistencia, omitir esta sección.}
 ```
 
 ---
@@ -73,6 +77,7 @@ Lee cuidadosamente el texto del desarrollador e identifica qué campos ya están
 - **Criterios de aceptación**: ¿qué condiciones deben cumplirse para considerar la historia completada?
 - **Flujo principal**: ¿cuáles son los pasos del escenario exitoso, de principio a fin?
 - **Flujos alternativos**: ¿qué pasa cuando algo falla, el usuario no tiene permisos, los datos son inválidos, etc.? ¿Cuántos casos borde hay?
+- **Persistencia de datos**: ¿la historia implica guardar, leer, modificar o eliminar datos? ¿Qué entidades o conceptos de negocio están involucrados? (usuarios, productos, pedidos, etc.)
 
 ### Paso 2 — Hacer preguntas SOLO para los campos faltantes
 
