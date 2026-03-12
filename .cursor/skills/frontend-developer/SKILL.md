@@ -78,9 +78,9 @@ Esperar respuesta antes de continuar.
 
 ---
 
-### Paso 4 — Presentar resumen y pedir confirmación
+### Paso 4 — Presentar resumen y pedir referencia visual
 
-Con toda la información recolectada, presentar un resumen claro antes de escribir código:
+Con toda la información recolectada, presentar un resumen y pedir la referencia visual en una sola pausa:
 
 > **📋 Listo para arrancar. Esto es lo que voy a hacer:**
 >
@@ -92,31 +92,19 @@ Con toda la información recolectada, presentar un resumen claro antes de escrib
 >
 > **Framework/estilos:** React + Tailwind *(o lo que corresponda)*
 >
-> ¿Arrancamos?
-
-Esperar confirmación explícita ("sí", "dale", "ok", "adelante", etc.) antes de continuar.
-
----
-
-### Paso 5 — Solicitar referencia visual
-
-Antes de escribir código, pedir al desarrollador una referencia de cómo debe verse el componente:
-
-> **🎨 ¿Cómo debe verse este componente?**
+> **🎨 ¿Cómo debe verse?** Antes de arrancar, compartí una referencia visual:
+> - Una **imagen o screenshot** (mockup, Figma, boceto, referencia de otro producto)
+> - Una **descripción** de cómo debe verse (disposición, colores, estilo general)
 >
-> Antes de arrancar, compartí una referencia visual para asegurarme de que el resultado sea exactamente lo que tenés en mente. Puede ser:
-> - Una **imagen o screenshot** (mockup, diseño en Figma, boceto a mano, referencia de otro producto)
-> - Una **descripción** de cómo debe verse (disposición de elementos, colores, estilo general)
->
-> Si no tenés una referencia específica, podés decirme "a tu criterio" y lo diseño siguiendo el sistema de estilos del proyecto.
+> Si no tenés referencia, decime "a tu criterio" y lo diseño siguiendo el sistema de estilos del proyecto.
 
 **Comportamiento según la respuesta:**
 
-- **Imagen**: analizarla y describir brevemente cómo se va a traducir al código antes de arrancar. Ejemplo: *"Entendido, veo un formulario centrado con dos campos apilados, botón primario azul y link de recuperación debajo."*
-- **Descripción textual**: confirmar el entendimiento parafraseando lo que se espera antes de arrancar.
-- **"A tu criterio"**: diseñar siguiendo las convenciones de estilo del proyecto (colores, tipografía, espaciado existentes), mencionando brevemente las decisiones de diseño tomadas.
+- **Imagen**: analizarla y confirmar brevemente cómo se va a traducir al código. Ejemplo: *"Entendido, veo un formulario centrado con dos campos apilados, botón primario azul y link de recuperación debajo."*
+- **Descripción textual**: parafrasear el entendimiento para confirmar antes de arrancar.
+- **"A tu criterio"**: diseñar siguiendo las convenciones del proyecto, mencionando brevemente las decisiones de diseño tomadas.
 
-Una vez procesada la referencia, marcar la porción como en progreso en el `.md`:
+Una vez recibida la referencia, marcar la porción como en progreso en el `.md`:
 
 ```markdown
 **Estado:** 🔄 En progreso
@@ -126,7 +114,7 @@ Esto asegura que si la sesión se interrumpe, la porción no queda sin estado y 
 
 ---
 
-### Paso 6 — Desarrollar el componente
+### Paso 5 — Desarrollar el componente
 
 Una vez confirmado, implementar el componente siguiendo estrictamente las convenciones del proyecto.
 
@@ -173,7 +161,7 @@ Por defecto, todo componente debe ser responsive (adaptarse a mobile, tablet y d
 
 ---
 
-### Paso 7 — Indicar cómo revisar
+### Paso 6 — Indicar cómo revisar
 
 Una vez creado el componente, dar las instrucciones de revisión:
 
@@ -192,7 +180,7 @@ Una vez creado el componente, dar las instrucciones de revisión:
 
 ---
 
-### Paso 8 — Ciclo de revisión y ajustes
+### Paso 7 — Ciclo de revisión y ajustes
 
 Entrar en un loop de revisión hasta que el desarrollador confirme que el componente está perfecto.
 
@@ -211,7 +199,7 @@ Si el desarrollador pide algo que contradice los criterios de aceptación de la 
 
 ---
 
-### Paso 9 — Marcar la porción como completada
+### Paso 8 — Marcar la porción como completada
 
 Una vez que el desarrollador confirma que el componente está listo, actualizar el archivo `.md` de la porción agregando el campo `Estado` en el encabezado y la fecha de completado:
 
