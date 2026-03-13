@@ -50,6 +50,9 @@ Implementar rate limiting en los endpoints críticos:
 
 **Prioridad:** 🔴 Alta — Implementar antes de producción
 
+**Afecta también a:**
+- `/api/operations` (HU-2, porcion-002) — endpoint protegido por autenticación
+
 ---
 
 ## 📊 Observabilidad
@@ -127,6 +130,12 @@ Implementar una librería de logging profesional con niveles estructurados.
 - LogRocket (para sesiones de usuario)
 
 **Prioridad:** 🟡 Media — Implementar antes de producción, pero no bloquea desarrollo
+
+**Endpoints que actualmente usan console.error:**
+- `/api/auth/[...nextauth]` (HU-3)
+- `/api/users` (HU-3)
+- `/api/clients` (HU-3)
+- `/api/operations` (HU-2, porcion-002)
 
 ---
 
