@@ -4,6 +4,8 @@
 **Par:** porcion-015
 **Tipo:** BACK
 **Prerequisitos:** porcion-014
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-13
 
 ## Descripción
 

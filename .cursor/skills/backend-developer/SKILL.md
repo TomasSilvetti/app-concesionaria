@@ -86,7 +86,7 @@ Esperar respuesta antes de continuar.
 
 ### Paso 4 — Explicar lo que se va a hacer
 
-Antes de escribir código, presentar tres bloques explicativos en lenguaje simple. No usar jerga técnica innecesaria.
+Antes de escribir código, presentar dos bloques explicativos en lenguaje simple. No usar jerga técnica innecesaria.
 
 **Bloque 1 — Qué se va a crear:**
 
@@ -108,13 +108,6 @@ Un recorrido paso a paso de cómo viajan los datos, nombrando los archivos concr
 > 5. Si el usuario existe, compara la contraseña con el hash guardado
 > 6. Si todo está bien, genera un JWT y lo devuelve al frontend
 > 7. Si algo falla, devuelve un error 401 con mensaje descriptivo
-
-**Bloque 3 — Metáfora:**
-
-El mismo flujo explicado con una analogía de la vida real, sin ningún término técnico:
-
-> **Para entenderlo fácil:**
-> Imaginá que el formulario de login es una persona que llega a la puerta de un edificio. Le entrega su nombre y una llave al portero (el endpoint). El portero busca en el registro del edificio si esa persona vive ahí (base de datos). Si la encuentra, compara la llave que trajo con la que figura en el registro. Si coincide, le da un pase de acceso para entrar libremente (el token). Si no coincide, o si la persona no figura en el registro, el portero le dice que no puede entrar y por qué.
 
 ---
 
