@@ -74,6 +74,13 @@ model Operation {
   modelo            String
   anio              Int
   patente           String
+  version           String?
+  color             String?
+  kilometros        Int?
+  notasMecanicas    String?
+  notasGenerales    String?
+  precioRevista     Float?
+  precioOferta      Float?
   precioVentaTotal  Float
   ingresosBrutos    Float
   comision          Float
@@ -153,7 +160,6 @@ model Stock {
   version           String?
   color             String?
   kilometros        Int?
-  tipoIngreso       String
   notasMecanicas    String?
   notasGenerales    String?
   precioRevista     Float?

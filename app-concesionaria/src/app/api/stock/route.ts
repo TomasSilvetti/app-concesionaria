@@ -13,8 +13,6 @@ const ALLOWED_ORDER_BY_FIELDS = [
   "precioOferta",
 ] as const;
 
-const ALLOWED_TIPOS_INGRESO = ["compra", "intercambio", "consignacion"];
-
 type OrderByField = typeof ALLOWED_ORDER_BY_FIELDS[number];
 type Order = "asc" | "desc";
 
@@ -27,17 +25,12 @@ interface StockFilters {
   precioMax?: string;
   anio?: string;
   kilometrosMax?: string;
-  tipoIngreso?: string;
 }
 
 function buildWhereClause(clienteId: string, filters: StockFilters) {
   const where: any = {
     clienteId: clienteId,
   };
-
-  if (filters.tipoIngreso) {
-    where.tipoIngreso = filters.tipoIngreso;
-  }
 
   if (filters.precioMin || filters.precioMax) {
     where.OR = [
@@ -150,7 +143,6 @@ export async function GET(req: NextRequest) {
       precioMax: searchParams.get("precioMax") || undefined,
       anio: searchParams.get("anio") || undefined,
       kilometrosMax: searchParams.get("kilometrosMax") || undefined,
-      tipoIngreso: searchParams.get("tipoIngreso") || undefined,
     };
 
     if (orderBy && !ALLOWED_ORDER_BY_FIELDS.includes(orderBy)) {
@@ -203,15 +195,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (filters.tipoIngreso && !ALLOWED_TIPOS_INGRESO.includes(filters.tipoIngreso)) {
-      return NextResponse.json(
-        { 
-          message: `tipoIngreso inválido. Tipos permitidos: ${ALLOWED_TIPOS_INGRESO.join(", ")}` 
-        },
-        { status: 400 }
-      );
-    }
-
     const where = buildWhereClause(clienteId, filters);
     const orderByClause = buildOrderByClause(orderBy, order);
 
@@ -243,7 +226,6 @@ export async function GET(req: NextRequest) {
       kilometros: stock.kilometros,
       precioRevista: stock.precioRevista,
       precioOferta: stock.precioOferta,
-      tipoIngreso: stock.tipoIngreso,
       operacionId: stock.operacionId,
     }));
 
@@ -288,11 +270,11 @@ export async function POST(req: NextRequest) {
     const version = formData.get("version") as string;
     const color = formData.get("color") as string;
     const kilometrosStr = formData.get("kilometros") as string;
-    const tipoIngreso = formData.get("tipoIngreso") as string;
     const precioRevistaStr = formData.get("precioRevista") as string;
     const precioOfertaStr = formData.get("precioOferta") as string | null;
     const notasMecanicas = formData.get("notasMecanicas") as string | null;
     const notasGenerales = formData.get("notasGenerales") as string | null;
+    const patente = formData.get("patente") as string | null;
 
     const errors: string[] = [];
 
@@ -303,7 +285,6 @@ export async function POST(req: NextRequest) {
     if (!version) errors.push("version es requerida");
     if (!color) errors.push("color es requerido");
     if (!kilometrosStr) errors.push("kilometros es requerido");
-    if (!tipoIngreso) errors.push("tipoIngreso es requerido");
     if (!precioRevistaStr) errors.push("precioRevista es requerido");
 
     if (errors.length > 0) {
@@ -346,16 +327,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ALLOWED_TIPOS_INGRESO = ["compra", "parte_de_pago", "consignacion"];
-    if (!ALLOWED_TIPOS_INGRESO.includes(tipoIngreso)) {
-      return NextResponse.json(
-        { 
-          message: `tipoIngreso inválido. Tipos permitidos: ${ALLOWED_TIPOS_INGRESO.join(", ")}` 
-        },
-        { status: 400 }
-      );
-    }
-
     const stockId = randomUUID();
     const now = new Date();
 
@@ -368,10 +339,10 @@ export async function POST(req: NextRequest) {
         modelo,
         anio,
         categoriaId,
+        patente: patente || null,
         version,
         color,
         kilometros,
-        tipoIngreso,
         notasMecanicas: notasMecanicas || null,
         notasGenerales: notasGenerales || null,
         precioRevista,

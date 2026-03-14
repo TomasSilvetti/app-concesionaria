@@ -175,37 +175,41 @@ async function main() {
 
   console.log("✅ Categorías de vehículos creadas");
 
-  const tipoCompraVenta = await prisma.operationType.upsert({
-    where: { 
-      clienteId_nombre: { 
-        clienteId: cliente.id, 
-        nombre: "Compra-Venta" 
-      } 
-    },
-    update: {},
-    create: {
-      id: randomUUID(),
-      clienteId: cliente.id,
-      nombre: "Compra-Venta",
-    },
+  console.log("🔄 Actualizando tipos de operación para todos los clientes...");
+  
+  const todosLosClientes = await prisma.client.findMany({
+    select: { id: true, nombre: true }
   });
 
-  const tipoStock = await prisma.operationType.upsert({
-    where: { 
-      clienteId_nombre: { 
-        clienteId: cliente.id, 
-        nombre: "Stock" 
-      } 
-    },
-    update: {},
-    create: {
-      id: randomUUID(),
-      clienteId: cliente.id,
-      nombre: "Stock",
-    },
-  });
+  const tiposOperacion = [
+    "Venta desde stock",
+    "Venta con toma de usado",
+    "Venta 0km",
+    "A conseguir"
+  ];
 
-  console.log("✅ Tipos de operación creados");
+  for (const clienteActual of todosLosClientes) {
+    console.log(`\n   Cliente: ${clienteActual.nombre}`);
+    
+    await prisma.operationType.deleteMany({
+      where: { clienteId: clienteActual.id }
+    });
+    
+    console.log(`   → Tipos antiguos eliminados`);
+
+    for (const nombreTipo of tiposOperacion) {
+      await prisma.operationType.create({
+        data: {
+          id: randomUUID(),
+          clienteId: clienteActual.id,
+          nombre: nombreTipo,
+        },
+      });
+      console.log(`   → Tipo creado: "${nombreTipo}"`);
+    }
+  }
+
+  console.log("\n✅ Tipos de operación actualizados para todos los clientes");
 
   console.log("\n🎉 Seed completado exitosamente!");
   console.log("\n📋 Credenciales de prueba:");

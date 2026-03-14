@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import "material-symbols/outlined.css";
+import {
+  VehicleFieldsForm,
+  VehicleFieldsData,
+  VehicleFieldsHandlers,
+  PhotoFile,
+} from "../stock/VehicleFieldsForm";
 
 interface VehicleBrand {
   id: string;
@@ -41,16 +47,27 @@ export function CreateOperationForm({
   onSuccess,
   onCancel,
 }: CreateOperationFormProps) {
-  // Form fields
+  // Operation-specific fields
   const [tipoOperacionId, setTipoOperacionId] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
-  const [patente, setPatente] = useState("");
+  const [precioVentaTotal, setPrecioVentaTotal] = useState("");
+  const [ingresosBrutos, setIngresosBrutos] = useState("");
+  const [comision, setComision] = useState("");
+
+  // Vehicle fields (using VehicleFieldsForm component)
   const [marcaId, setMarcaId] = useState("");
   const [modelo, setModelo] = useState("");
   const [anio, setAnio] = useState("");
+  const [patente, setPatente] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
-  const [precioVentaTotal, setPrecioVentaTotal] = useState("");
-  const [ingresosBrutos, setIngresosBrutos] = useState("");
+  const [version, setVersion] = useState("");
+  const [color, setColor] = useState("");
+  const [kilometros, setKilometros] = useState("");
+  const [notasMecanicas, setNotasMecanicas] = useState("");
+  const [notasGenerales, setNotasGenerales] = useState("");
+  const [precioRevista, setPrecioRevista] = useState("");
+  const [photos, setPhotos] = useState<PhotoFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Trade-in vehicles state
   const [tradeInVehicles, setTradeInVehicles] = useState<TradeInVehicle[]>([]);
@@ -225,9 +242,21 @@ export function CreateOperationForm({
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
+    // Operation fields validation
     if (!tipoOperacionId) errors.tipoOperacionId = "Seleccioná un tipo de operación";
     if (!fechaInicio) errors.fechaInicio = "La fecha de inicio es requerida";
-    if (!patente.trim()) errors.patente = "La patente es requerida";
+    if (!precioVentaTotal) {
+      errors.precioVentaTotal = "El precio de venta es requerido";
+    } else if (parseFloat(precioVentaTotal) <= 0) {
+      errors.precioVentaTotal = "El precio debe ser mayor a 0";
+    }
+    if (!ingresosBrutos) {
+      errors.ingresosBrutos = "El ingreso bruto es requerido";
+    } else if (parseFloat(ingresosBrutos) <= 0) {
+      errors.ingresosBrutos = "El ingreso debe ser mayor a 0";
+    }
+
+    // Vehicle fields validation (from VehicleFieldsForm)
     if (!marcaId) errors.marcaId = "Seleccioná una marca";
     if (!modelo.trim()) errors.modelo = "El modelo es requerido";
     if (!anio) {
@@ -239,15 +268,17 @@ export function CreateOperationForm({
       }
     }
     if (!categoriaId) errors.categoriaId = "Seleccioná una categoría";
-    if (!precioVentaTotal) {
-      errors.precioVentaTotal = "El precio de venta es requerido";
-    } else if (parseFloat(precioVentaTotal) <= 0) {
-      errors.precioVentaTotal = "El precio debe ser mayor a 0";
+    if (!version.trim()) errors.version = "La versión es requerida";
+    if (!color.trim()) errors.color = "El color es requerido";
+    if (!kilometros) {
+      errors.kilometros = "Los kilómetros son requeridos";
+    } else if (parseInt(kilometros) < 0) {
+      errors.kilometros = "Los kilómetros deben ser mayores o iguales a 0";
     }
-    if (!ingresosBrutos) {
-      errors.ingresosBrutos = "El ingreso bruto es requerido";
-    } else if (parseFloat(ingresosBrutos) <= 0) {
-      errors.ingresosBrutos = "El ingreso debe ser mayor a 0";
+    if (!precioRevista) {
+      errors.precioRevista = "El precio revista es requerido";
+    } else if (parseFloat(precioRevista) <= 0) {
+      errors.precioRevista = "El precio debe ser mayor a 0";
     }
 
     setFieldErrors(errors);
@@ -269,6 +300,8 @@ export function CreateOperationForm({
       const baseUrl =
         typeof window !== "undefined" ? window.location.origin : "";
       
+      const precioVentaTotalNum = parseFloat(precioVentaTotal);
+      
       const payload: any = {
         tipoOperacionId,
         fechaInicio,
@@ -277,8 +310,16 @@ export function CreateOperationForm({
         modelo: modelo.trim(),
         anio: parseInt(anio),
         categoriaId,
-        precioVentaTotal: parseFloat(precioVentaTotal),
+        version: version.trim() || undefined,
+        color: color.trim() || undefined,
+        kilometros: kilometros ? parseInt(kilometros) : undefined,
+        notasMecanicas: notasMecanicas.trim() || undefined,
+        notasGenerales: notasGenerales.trim() || undefined,
+        precioRevista: parseFloat(precioRevista),
+        precioOferta: precioVentaTotalNum,
+        precioVentaTotal: precioVentaTotalNum,
         ingresosBrutos: parseFloat(ingresosBrutos),
+        comision: comision ? parseFloat(comision) : undefined,
       };
 
       // Add trade-in vehicles if any
@@ -307,16 +348,25 @@ export function CreateOperationForm({
 
       if (res.status === 201) {
         setSuccessMessage("Operación creada exitosamente");
-        // Reset form
+        // Reset operation fields
         setTipoOperacionId("");
         setFechaInicio("");
-        setPatente("");
+        setPrecioVentaTotal("");
+        setIngresosBrutos("");
+        setComision("");
+        // Reset vehicle fields
         setMarcaId("");
         setModelo("");
         setAnio("");
+        setPatente("");
         setCategoriaId("");
-        setPrecioVentaTotal("");
-        setIngresosBrutos("");
+        setVersion("");
+        setColor("");
+        setKilometros("");
+        setNotasMecanicas("");
+        setNotasGenerales("");
+        setPrecioRevista("");
+        setPhotos([]);
         setFieldErrors({});
         setTradeInVehicles([]);
         resetTradeInForm();
@@ -349,18 +399,55 @@ export function CreateOperationForm({
   const isFormValid =
     tipoOperacionId &&
     fechaInicio &&
-    patente.trim() &&
     marcaId &&
     modelo.trim() &&
     anio &&
     categoriaId &&
+    version.trim() &&
+    color.trim() &&
+    kilometros &&
+    precioRevista &&
     precioVentaTotal &&
     ingresosBrutos &&
     Object.keys(fieldErrors).length === 0;
 
-  const comisionEstimada = ingresosBrutos && precioVentaTotal
-    ? (((parseFloat(ingresosBrutos) - 0) / parseFloat(precioVentaTotal)) * 100).toFixed(2)
-    : "0.00";
+  const vehicleFieldsData: VehicleFieldsData = {
+    marcaId,
+    modelo,
+    anio,
+    patente,
+    categoriaId,
+    version,
+    color,
+    kilometros,
+    notasMecanicas,
+    notasGenerales,
+    precioRevista,
+    precioOferta: "",
+    photos,
+    precioVentaTotal,
+    ingresosBrutos,
+    comision,
+  };
+
+  const vehicleFieldsHandlers: VehicleFieldsHandlers = {
+    setMarcaId,
+    setModelo,
+    setAnio,
+    setPatente,
+    setCategoriaId,
+    setVersion,
+    setColor,
+    setKilometros,
+    setNotasMecanicas,
+    setNotasGenerales,
+    setPrecioRevista,
+    setPrecioOferta: () => {},
+    setPhotos,
+    setPrecioVentaTotal,
+    setIngresosBrutos,
+    setComision,
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -377,25 +464,25 @@ export function CreateOperationForm({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Información del Vehículo */}
-        <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
-            <span className="material-symbols-outlined text-2xl text-blue-600">
-              directions_car
-            </span>
-            <h2 className="text-lg font-semibold text-zinc-900">
-              Información del Vehículo
-            </h2>
-          </div>
+      {/* Tipo de Operación y Fecha */}
+      <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
+          <span className="material-symbols-outlined text-2xl text-blue-600">
+            category
+          </span>
+          <h2 className="text-lg font-semibold text-zinc-900">
+            Datos de la Operación
+          </h2>
+        </div>
 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Tipo de Operación */}
           <div className="flex flex-col gap-2">
             <label
               htmlFor="tipoOperacion"
               className="text-sm font-medium text-zinc-700"
             >
-              Tipo de Operación
+              Tipo de Operación <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
@@ -415,7 +502,7 @@ export function CreateOperationForm({
                 } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
                 disabled={isSubmitting || typesLoading}
               >
-                <option value="">Seleccionar tipo...</option>
+                <option value="">Seleccionar tipo de operación...</option>
                 {operationTypes.map((type) => (
                   <option key={type.id} value={type.id}>
                     {type.nombre}
@@ -433,340 +520,58 @@ export function CreateOperationForm({
             )}
           </div>
 
-          {/* Fecha de Inicio y Patente */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="fechaInicio"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Fecha de Inicio
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  calendar_today
-                </span>
-                <input
-                  id="fechaInicio"
-                  type="date"
-                  value={fechaInicio}
-                  onChange={(e) => {
-                    setFechaInicio(e.target.value);
-                    handleInputChange("fechaInicio");
-                  }}
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.fechaInicio
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.fechaInicio && (
-                <span className="text-xs text-red-600">
-                  {fieldErrors.fechaInicio}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="patente"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Patente / Placa
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  badge
-                </span>
-                <input
-                  id="patente"
-                  type="text"
-                  value={patente}
-                  onChange={(e) => {
-                    setPatente(e.target.value);
-                    handleInputChange("patente");
-                  }}
-                  placeholder="ABC-123"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.patente
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.patente && (
-                <span className="text-xs text-red-600">{fieldErrors.patente}</span>
-              )}
-            </div>
-          </div>
-
-          {/* Marca */}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
-              Marca
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                branding_watermark
-              </span>
-              <select
-                id="marca"
-                value={marcaId}
-                onChange={(e) => {
-                  setMarcaId(e.target.value);
-                  handleInputChange("marcaId");
-                }}
-                className={`h-12 w-full appearance-none rounded-lg border ${
-                  fieldErrors.marcaId
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={isSubmitting || brandsLoading}
-              >
-                <option value="">Selecciona una marca</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.nombre}
-                  </option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                expand_more
-              </span>
-            </div>
-            {fieldErrors.marcaId && (
-              <span className="text-xs text-red-600">{fieldErrors.marcaId}</span>
-            )}
-          </div>
-
-          {/* Modelo y Año */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="modelo"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Modelo
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  directions_car
-                </span>
-                <input
-                  id="modelo"
-                  type="text"
-                  value={modelo}
-                  onChange={(e) => {
-                    setModelo(e.target.value);
-                    handleInputChange("modelo");
-                  }}
-                  placeholder="Ej: Corolla Cross"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.modelo
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.modelo && (
-                <span className="text-xs text-red-600">{fieldErrors.modelo}</span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="anio" className="text-sm font-medium text-zinc-700">
-                Año
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  event
-                </span>
-                <input
-                  id="anio"
-                  type="number"
-                  value={anio}
-                  onChange={(e) => {
-                    setAnio(e.target.value);
-                    handleInputChange("anio");
-                  }}
-                  placeholder="2024"
-                  min="1900"
-                  max="2100"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.anio
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.anio && (
-                <span className="text-xs text-red-600">{fieldErrors.anio}</span>
-              )}
-            </div>
-          </div>
-
-          {/* Categoría */}
+          {/* Fecha de Inicio */}
           <div className="flex flex-col gap-2">
             <label
-              htmlFor="categoria"
+              htmlFor="fechaInicio"
               className="text-sm font-medium text-zinc-700"
             >
-              Categoría
+              Fecha de Inicio <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                label
-              </span>
-              <select
-                id="categoria"
-                value={categoriaId}
-                onChange={(e) => {
-                  setCategoriaId(e.target.value);
-                  handleInputChange("categoriaId");
-                }}
-                className={`h-12 w-full appearance-none rounded-lg border ${
-                  fieldErrors.categoriaId
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={isSubmitting || categoriesLoading}
-              >
-                <option value="">Seleccionar categoría</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.nombre}
-                  </option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                expand_more
-              </span>
-            </div>
-            {fieldErrors.categoriaId && (
-              <span className="text-xs text-red-600">
-                {fieldErrors.categoriaId}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Condiciones Comerciales */}
-        <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
-            <span className="material-symbols-outlined text-2xl text-blue-600">
-              payments
-            </span>
-            <h2 className="text-lg font-semibold text-zinc-900">
-              Condiciones Comerciales
-            </h2>
-          </div>
-
-          {/* Precio Venta Total */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="precioVentaTotal"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Precio Venta Total
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                attach_money
+                calendar_today
               </span>
               <input
-                id="precioVentaTotal"
-                type="number"
-                step="0.01"
-                value={precioVentaTotal}
+                id="fechaInicio"
+                type="date"
+                value={fechaInicio}
                 onChange={(e) => {
-                  setPrecioVentaTotal(e.target.value);
-                  handleInputChange("precioVentaTotal");
+                  setFechaInicio(e.target.value);
+                  handleInputChange("fechaInicio");
                 }}
-                placeholder="0.00"
                 className={`h-12 w-full rounded-lg border ${
-                  fieldErrors.precioVentaTotal
+                  fieldErrors.fechaInicio
                     ? "border-red-300 bg-red-50"
                     : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                } pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
                 disabled={isSubmitting}
               />
             </div>
-            {fieldErrors.precioVentaTotal && (
+            {fieldErrors.fechaInicio && (
               <span className="text-xs text-red-600">
-                {fieldErrors.precioVentaTotal}
+                {fieldErrors.fechaInicio}
               </span>
             )}
-          </div>
-
-          {/* Ingreso Bruto */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="ingresosBrutos"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Ingreso Bruto
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                monetization_on
-              </span>
-              <input
-                id="ingresosBrutos"
-                type="number"
-                step="0.01"
-                value={ingresosBrutos}
-                onChange={(e) => {
-                  setIngresosBrutos(e.target.value);
-                  handleInputChange("ingresosBrutos");
-                }}
-                placeholder="0.00"
-                className={`h-12 w-full rounded-lg border ${
-                  fieldErrors.ingresosBrutos
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={isSubmitting}
-              />
-            </div>
-            {fieldErrors.ingresosBrutos && (
-              <span className="text-xs text-red-600">
-                {fieldErrors.ingresosBrutos}
-              </span>
-            )}
-          </div>
-
-          {/* Comisión Estimada (calculada) */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="comisionEstimada"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Comisión Estimada
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                calculate
-              </span>
-              <input
-                id="comisionEstimada"
-                type="text"
-                value={`${comisionEstimada}%`}
-                readOnly
-                className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700 transition-colors focus:outline-none"
-                disabled
-              />
-            </div>
-            <p className="text-xs text-zinc-500">
-              Se calcula automáticamente según ingreso bruto / precio venta
-            </p>
           </div>
         </div>
       </div>
+
+      {/* Información del Vehículo - usando VehicleFieldsForm */}
+      <VehicleFieldsForm
+        data={vehicleFieldsData}
+        handlers={vehicleFieldsHandlers}
+        brands={brands}
+        categories={categories}
+        brandsLoading={brandsLoading}
+        categoriesLoading={categoriesLoading}
+        fieldErrors={fieldErrors}
+        onFieldChange={handleInputChange}
+        disabled={isSubmitting}
+        isDragging={isDragging}
+        onDragStateChange={setIsDragging}
+        showOperationFields={true}
+      />
 
       {/* Botón para añadir auto en parte de pago - Siempre visible */}
       <div className="flex flex-col gap-4">
@@ -1312,7 +1117,7 @@ export function CreateOperationForm({
           ) : (
             <>
               <span className="material-symbols-outlined text-xl">save</span>
-              <span>Crear Operación</span>
+              <span>Guardar Operación</span>
             </>
           )}
         </button>

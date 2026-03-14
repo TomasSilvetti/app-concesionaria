@@ -14,6 +14,13 @@ const ALLOWED_SORT_FIELDS = [
   "ingresosNetos",
 ] as const;
 
+const VALID_OPERATION_TYPES = [
+  "Venta desde stock",
+  "Venta con toma de usado",
+  "Venta 0km",
+  "A conseguir",
+] as const;
+
 type SortField = typeof ALLOWED_SORT_FIELDS[number];
 type SortOrder = "asc" | "desc";
 
@@ -323,6 +330,13 @@ export async function POST(req: NextRequest) {
     if (!tipoOperacion) {
       return NextResponse.json(
         { message: "tipoOperacionId no existe o no pertenece al cliente" },
+        { status: 400 }
+      );
+    }
+
+    if (!VALID_OPERATION_TYPES.includes(tipoOperacion.nombre as any)) {
+      return NextResponse.json(
+        { message: "Tipo de operación inválido" },
         { status: 400 }
       );
     }

@@ -15,7 +15,6 @@ interface StockVehicle {
   kilometros: number | null;
   precioRevista: number | null;
   precioOferta: number | null;
-  tipoIngreso: string;
   operacionId: string | null;
 }
 
@@ -26,7 +25,6 @@ interface StockFilters {
   precioMax?: number;
   anio?: number;
   kilometrosMax?: number;
-  tipoIngreso?: string;
 }
 
 interface StockTableProps {
@@ -61,7 +59,6 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
       if (filters.precioMax !== undefined) params.append("precioMax", filters.precioMax.toString());
       if (filters.anio !== undefined) params.append("anio", filters.anio.toString());
       if (filters.kilometrosMax !== undefined) params.append("kilometrosMax", filters.kilometrosMax.toString());
-      if (filters.tipoIngreso) params.append("tipoIngreso", filters.tipoIngreso);
 
       const url = `${baseUrl}/api/stock?${params.toString()}`;
 
