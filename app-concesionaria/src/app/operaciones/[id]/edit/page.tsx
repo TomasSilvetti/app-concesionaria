@@ -23,19 +23,15 @@ interface Expense {
   monto: number;
 }
 
-interface VehicleBrand {
-  id: string;
-  nombre: string;
-}
-
-interface VehicleCategory {
-  id: string;
-  nombre: string;
-}
-
 interface OperationType {
   id: string;
   nombre: string;
+}
+
+interface VehiclePhoto {
+  id: string;
+  nombreArchivo: string;
+  orden: number;
 }
 
 interface OperationDetail {
@@ -45,6 +41,14 @@ interface OperationDetail {
   modelo: string;
   anio: number;
   patente: string;
+  version: string | null;
+  color: string | null;
+  kilometros: number | null;
+  notasMecanicas: string | null;
+  notasGenerales: string | null;
+  precioRevista: number | null;
+  precioOferta: number | null;
+  fotos: VehiclePhoto[];
   precioVentaTotal: number;
   ingresosBrutos: number;
   gastosAsociados: number;
@@ -72,17 +76,12 @@ export default function OperacionEditPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form fields
+  // Form fields (solo campos editables de la operación)
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaVenta, setFechaVenta] = useState("");
-  const [modelo, setModelo] = useState("");
-  const [anio, setAnio] = useState("");
-  const [patente, setPatente] = useState("");
   const [precioVentaTotal, setPrecioVentaTotal] = useState("");
   const [ingresosBrutos, setIngresosBrutos] = useState("");
   const [estado, setEstado] = useState<"abierta" | "cerrada" | "cancelada">("abierta");
-  const [marcaId, setMarcaId] = useState("");
-  const [categoriaId, setCategoriaId] = useState("");
   const [tipoOperacionId, setTipoOperacionId] = useState("");
 
   // Calculated fields
@@ -94,8 +93,6 @@ export default function OperacionEditPage() {
   const [originalValues, setOriginalValues] = useState<any>(null);
 
   // Data for selectors
-  const [brands, setBrands] = useState<VehicleBrand[]>([]);
-  const [categories, setCategories] = useState<VehicleCategory[]>([]);
   const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
 
   // Validation errors
@@ -114,17 +111,12 @@ export default function OperacionEditPage() {
           const data = await res.json();
           setOperation(data);
           
-          // Initialize form fields
+          // Initialize form fields (solo campos editables)
           setFechaInicio(data.fechaInicio ? data.fechaInicio.split('T')[0] : "");
           setFechaVenta(data.fechaVenta ? data.fechaVenta.split('T')[0] : "");
-          setModelo(data.modelo || "");
-          setAnio(data.anio?.toString() || "");
-          setPatente(data.patente || "");
           setPrecioVentaTotal(data.precioVentaTotal?.toString() || "");
           setIngresosBrutos(data.ingresosBrutos?.toString() || "");
           setEstado(data.estado || "abierta");
-          setMarcaId(data.marcaId || "");
-          setCategoriaId(data.categoriaId || "");
           setTipoOperacionId(data.tipoOperacionId || "");
           setGastosAsociados(data.gastosAsociados || 0);
           
@@ -140,14 +132,9 @@ export default function OperacionEditPage() {
           setOriginalValues({
             fechaInicio: data.fechaInicio ? data.fechaInicio.split('T')[0] : "",
             fechaVenta: data.fechaVenta ? data.fechaVenta.split('T')[0] : "",
-            modelo: data.modelo || "",
-            anio: data.anio?.toString() || "",
-            patente: data.patente || "",
             precioVentaTotal: data.precioVentaTotal?.toString() || "",
             ingresosBrutos: data.ingresosBrutos?.toString() || "",
             estado: data.estado || "abierta",
-            marcaId: data.marcaId || "",
-            categoriaId: data.categoriaId || "",
             tipoOperacionId: data.tipoOperacionId || "",
           });
         } else if (res.status === 404) {
@@ -168,36 +155,8 @@ export default function OperacionEditPage() {
   }, [id]);
 
   useEffect(() => {
-    fetchBrands();
-    fetchCategories();
     fetchOperationTypes();
   }, []);
-
-  const fetchBrands = async () => {
-    try {
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(`${baseUrl}/api/vehicle-brands`);
-      if (res.ok) {
-        const data = await res.json();
-        setBrands(data.brands ?? []);
-      }
-    } catch {
-      setBrands([]);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(`${baseUrl}/api/vehicle-categories`);
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data.categories ?? []);
-      }
-    } catch {
-      setCategories([]);
-    }
-  };
 
   const fetchOperationTypes = async () => {
     try {
@@ -292,21 +251,8 @@ export default function OperacionEditPage() {
       }
     }
 
-    if (!modelo.trim()) {
-      errors.modelo = "El modelo es requerido";
-    }
-
-    if (!anio) {
-      errors.anio = "El año es requerido";
-    } else {
-      const anioNum = parseInt(anio);
-      if (isNaN(anioNum) || anioNum < 1900 || anioNum > 2100) {
-        errors.anio = "El año debe estar entre 1900 y 2100";
-      }
-    }
-
-    if (!patente.trim()) {
-      errors.patente = "La patente es requerida";
+    if (!tipoOperacionId) {
+      errors.tipoOperacionId = "Seleccioná un tipo de operación";
     }
 
     if (!precioVentaTotal) {
@@ -319,18 +265,6 @@ export default function OperacionEditPage() {
       errors.ingresosBrutos = "El ingreso bruto es requerido";
     } else if (parseFloat(ingresosBrutos) <= 0) {
       errors.ingresosBrutos = "El ingreso debe ser mayor a 0";
-    }
-
-    if (!marcaId) {
-      errors.marcaId = "Seleccioná una marca";
-    }
-
-    if (!categoriaId) {
-      errors.categoriaId = "Seleccioná una categoría";
-    }
-
-    if (!tipoOperacionId) {
-      errors.tipoOperacionId = "Seleccioná un tipo de operación";
     }
 
     setFieldErrors(errors);
@@ -348,15 +282,6 @@ export default function OperacionEditPage() {
     if (fechaVenta !== originalValues.fechaVenta) {
       modified.fechaVenta = fechaVenta || null;
     }
-    if (modelo !== originalValues.modelo) {
-      modified.modelo = modelo;
-    }
-    if (anio !== originalValues.anio) {
-      modified.anio = parseInt(anio);
-    }
-    if (patente !== originalValues.patente) {
-      modified.patente = patente;
-    }
     if (precioVentaTotal !== originalValues.precioVentaTotal) {
       modified.precioVentaTotal = parseFloat(precioVentaTotal);
     }
@@ -365,12 +290,6 @@ export default function OperacionEditPage() {
     }
     if (estado !== originalValues.estado) {
       modified.estado = estado;
-    }
-    if (marcaId !== originalValues.marcaId) {
-      modified.marcaId = marcaId;
-    }
-    if (categoriaId !== originalValues.categoriaId) {
-      modified.categoriaId = categoriaId;
     }
     if (tipoOperacionId !== originalValues.tipoOperacionId) {
       modified.tipoOperacionId = tipoOperacionId;
@@ -562,190 +481,98 @@ export default function OperacionEditPage() {
 
         {/* Contenido principal en grid */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Sección: Datos del vehículo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          {/* Sección: Datos del vehículo (solo lectura) */}
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm lg:col-span-2">
             <div className="mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-blue-600">
+              <span className="material-symbols-outlined text-2xl text-zinc-600">
                 directions_car
               </span>
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Datos del Vehículo
-              </h2>
-            </div>
-            <div className="space-y-4">
-              {/* Marca */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
-                  Marca
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    branding_watermark
-                  </span>
-                  <select
-                    id="marca"
-                    value={marcaId}
-                    onChange={(e) => {
-                      setMarcaId(e.target.value);
-                      handleInputChange("marcaId");
-                    }}
-                    className={`h-12 w-full appearance-none rounded-lg border ${
-                      fieldErrors.marcaId
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
-                  >
-                    <option value="">Seleccionar marca...</option>
-                    {brands.map((brand) => (
-                      <option key={brand.id} value={brand.id}>
-                        {brand.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    expand_more
-                  </span>
-                </div>
-                {fieldErrors.marcaId && (
-                  <span className="text-xs text-red-600">{fieldErrors.marcaId}</span>
-                )}
-              </div>
-
-              {/* Modelo */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="modelo" className="text-sm font-medium text-zinc-700">
-                  Modelo
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    directions_car
-                  </span>
-                  <input
-                    id="modelo"
-                    type="text"
-                    value={modelo}
-                    onChange={(e) => {
-                      setModelo(e.target.value);
-                      handleInputChange("modelo");
-                    }}
-                    placeholder="Ej: Corolla Cross"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.modelo
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
-                  />
-                </div>
-                {fieldErrors.modelo && (
-                  <span className="text-xs text-red-600">{fieldErrors.modelo}</span>
-                )}
-              </div>
-
-              {/* Año */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="anio" className="text-sm font-medium text-zinc-700">
-                  Año
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    event
-                  </span>
-                  <input
-                    id="anio"
-                    type="number"
-                    value={anio}
-                    onChange={(e) => {
-                      setAnio(e.target.value);
-                      handleInputChange("anio");
-                    }}
-                    placeholder="2024"
-                    min="1900"
-                    max="2100"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.anio
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
-                  />
-                </div>
-                {fieldErrors.anio && (
-                  <span className="text-xs text-red-600">{fieldErrors.anio}</span>
-                )}
-              </div>
-
-              {/* Patente */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="patente" className="text-sm font-medium text-zinc-700">
-                  Patente
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    badge
-                  </span>
-                  <input
-                    id="patente"
-                    type="text"
-                    value={patente}
-                    onChange={(e) => {
-                      setPatente(e.target.value);
-                      handleInputChange("patente");
-                    }}
-                    placeholder="ABC-123"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.patente
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
-                  />
-                </div>
-                {fieldErrors.patente && (
-                  <span className="text-xs text-red-600">{fieldErrors.patente}</span>
-                )}
-              </div>
-
-              {/* Categoría */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="categoria" className="text-sm font-medium text-zinc-700">
-                  Categoría
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    label
-                  </span>
-                  <select
-                    id="categoria"
-                    value={categoriaId}
-                    onChange={(e) => {
-                      setCategoriaId(e.target.value);
-                      handleInputChange("categoriaId");
-                    }}
-                    className={`h-12 w-full appearance-none rounded-lg border ${
-                      fieldErrors.categoriaId
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
-                  >
-                    <option value="">Seleccionar categoría...</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    expand_more
-                  </span>
-                </div>
-                {fieldErrors.categoriaId && (
-                  <span className="text-xs text-red-600">{fieldErrors.categoriaId}</span>
-                )}
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-zinc-900">
+                  Datos del Vehículo
+                </h2>
+                <p className="text-xs text-zinc-500">
+                  Los datos del vehículo no son editables desde la operación
+                </p>
               </div>
             </div>
+            
+            {/* Fotos del vehículo */}
+            {operation && operation.fotos && operation.fotos.length > 0 && (
+              <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {operation.fotos.map((foto) => (
+                  <div
+                    key={foto.id}
+                    className="relative aspect-video overflow-hidden rounded-lg border border-zinc-300 bg-white"
+                  >
+                    <img
+                      src={`/api/photos/${foto.id}`}
+                      alt={`Foto del vehículo - ${foto.nombreArchivo}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Marca</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation?.marcaNombre}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Modelo</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation?.modelo}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Año</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation?.anio}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Patente</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation?.patente || "—"}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Categoría</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation?.categoriaNombre}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Versión</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation?.version || "—"}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Color</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation?.color || "—"}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Kilómetros</dt>
+                <dd className="text-sm font-medium text-zinc-900">
+                  {operation?.kilometros !== null && operation?.kilometros !== undefined 
+                    ? `${operation.kilometros.toLocaleString("es-AR")} km` 
+                    : "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Precio Revista</dt>
+                <dd className="text-sm font-medium text-zinc-900">{formatCurrency(operation?.precioRevista || null)}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-200 pb-2">
+                <dt className="text-sm text-zinc-600">Precio Oferta</dt>
+                <dd className="text-sm font-semibold text-green-600">{formatCurrency(operation?.precioOferta || null)}</dd>
+              </div>
+              {operation?.notasMecanicas && (
+                <div className="flex flex-col gap-1 border-b border-zinc-200 pb-2 sm:col-span-2">
+                  <dt className="text-sm text-zinc-600">Notas Mecánicas</dt>
+                  <dd className="text-sm text-zinc-900">{operation.notasMecanicas}</dd>
+                </div>
+              )}
+              {operation?.notasGenerales && (
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <dt className="text-sm text-zinc-600">Notas Generales</dt>
+                  <dd className="text-sm text-zinc-900">{operation.notasGenerales}</dd>
+                </div>
+              )}
+            </dl>
           </div>
 
           {/* Sección: Fechas */}

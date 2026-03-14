@@ -35,7 +35,6 @@ export interface VehicleFieldsData {
   photos: PhotoFile[];
   precioVentaTotal?: string;
   ingresosBrutos?: string;
-  comision?: string;
 }
 
 export interface VehicleFieldsHandlers {
@@ -54,7 +53,6 @@ export interface VehicleFieldsHandlers {
   setPhotos: React.Dispatch<React.SetStateAction<PhotoFile[]>>;
   setPrecioVentaTotal?: (value: string) => void;
   setIngresosBrutos?: (value: string) => void;
-  setComision?: (value: string) => void;
 }
 
 interface VehicleFieldsFormProps {
@@ -654,43 +652,6 @@ export function VehicleFieldsForm({
                 {fieldErrors.ingresosBrutos && (
                   <span className="text-xs text-red-600">
                     {fieldErrors.ingresosBrutos}
-                  </span>
-                )}
-              </div>
-
-              {/* Comisión */}
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="comision"
-                  className="text-sm font-medium text-zinc-700"
-                >
-                  Comisión
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    percent
-                  </span>
-                  <input
-                    id="comision"
-                    type="number"
-                    step="0.01"
-                    value={data.comision || ""}
-                    onChange={(e) => {
-                      handlers.setComision?.(e.target.value);
-                      handleInputChange("comision");
-                    }}
-                    placeholder="0.00"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.comision
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={disabled}
-                  />
-                </div>
-                {fieldErrors.comision && (
-                  <span className="text-xs text-red-600">
-                    {fieldErrors.comision}
                   </span>
                 )}
               </div>

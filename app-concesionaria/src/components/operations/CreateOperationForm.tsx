@@ -52,7 +52,6 @@ export function CreateOperationForm({
   const [fechaInicio, setFechaInicio] = useState("");
   const [precioVentaTotal, setPrecioVentaTotal] = useState("");
   const [ingresosBrutos, setIngresosBrutos] = useState("");
-  const [comision, setComision] = useState("");
 
   // Vehicle fields (using VehicleFieldsForm component)
   const [marcaId, setMarcaId] = useState("");
@@ -66,6 +65,7 @@ export function CreateOperationForm({
   const [notasMecanicas, setNotasMecanicas] = useState("");
   const [notasGenerales, setNotasGenerales] = useState("");
   const [precioRevista, setPrecioRevista] = useState("");
+  const [precioOferta, setPrecioOferta] = useState("");
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -300,48 +300,42 @@ export function CreateOperationForm({
       const baseUrl =
         typeof window !== "undefined" ? window.location.origin : "";
       
-      const precioVentaTotalNum = parseFloat(precioVentaTotal);
+      const formData = new FormData();
       
-      const payload: any = {
-        tipoOperacionId,
-        fechaInicio,
-        patente: patente.trim(),
-        marcaId,
-        modelo: modelo.trim(),
-        anio: parseInt(anio),
-        categoriaId,
-        version: version.trim() || undefined,
-        color: color.trim() || undefined,
-        kilometros: kilometros ? parseInt(kilometros) : undefined,
-        notasMecanicas: notasMecanicas.trim() || undefined,
-        notasGenerales: notasGenerales.trim() || undefined,
-        precioRevista: parseFloat(precioRevista),
-        precioOferta: precioVentaTotalNum,
-        precioVentaTotal: precioVentaTotalNum,
-        ingresosBrutos: parseFloat(ingresosBrutos),
-        comision: comision ? parseFloat(comision) : undefined,
-      };
-
-      // Add trade-in vehicles if any
-      if (tradeInVehicles.length > 0) {
-        payload.vehiculosIntercambio = tradeInVehicles.map((v) => ({
-          marcaId: v.marcaId,
-          modelo: v.modelo,
-          anio: parseInt(v.anio),
-          patente: v.patente,
-          version: v.version || undefined,
-          color: v.color || undefined,
-          kilometros: v.kilometros ? parseInt(v.kilometros) : undefined,
-          precioNegociado: parseFloat(v.precioNegociado),
-          notasMecanicas: v.notasMecanicas || undefined,
-          notasGenerales: v.notasGenerales || undefined,
-        }));
+      formData.append("marcaId", marcaId);
+      formData.append("modelo", modelo.trim());
+      formData.append("anio", anio);
+      formData.append("categoriaId", categoriaId);
+      formData.append("version", version.trim());
+      formData.append("color", color.trim());
+      formData.append("kilometros", kilometros);
+      formData.append("precioRevista", precioRevista);
+      
+      if (patente.trim()) {
+        formData.append("patente", patente.trim());
       }
+      if (precioOferta) {
+        formData.append("precioOferta", precioOferta);
+      }
+      if (notasMecanicas.trim()) {
+        formData.append("notasMecanicas", notasMecanicas.trim());
+      }
+      if (notasGenerales.trim()) {
+        formData.append("notasGenerales", notasGenerales.trim());
+      }
+
+      formData.append("tipoOperacionId", tipoOperacionId);
+      formData.append("fechaInicio", fechaInicio);
+      formData.append("precioVentaTotal", precioVentaTotal);
+      formData.append("ingresosBrutos", ingresosBrutos);
+
+      photos.forEach((photo) => {
+        formData.append("fotos", photo.file);
+      });
 
       const res = await fetch(`${baseUrl}/api/operations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       const data = await res.json().catch(() => ({}));
@@ -353,7 +347,6 @@ export function CreateOperationForm({
         setFechaInicio("");
         setPrecioVentaTotal("");
         setIngresosBrutos("");
-        setComision("");
         // Reset vehicle fields
         setMarcaId("");
         setModelo("");
@@ -366,6 +359,7 @@ export function CreateOperationForm({
         setNotasMecanicas("");
         setNotasGenerales("");
         setPrecioRevista("");
+        setPrecioOferta("");
         setPhotos([]);
         setFieldErrors({});
         setTradeInVehicles([]);
@@ -396,6 +390,28 @@ export function CreateOperationForm({
     if (error) setError(null);
   };
 
+  const handleAutofill = () => {
+    if (operationTypes.length > 0) setTipoOperacionId(operationTypes[0].id);
+    const today = new Date().toISOString().split('T')[0];
+    setFechaInicio(today);
+    setPrecioVentaTotal("24000");
+    setIngresosBrutos("22000");
+    
+    if (brands.length > 0) setMarcaId(brands[0].id);
+    setModelo("Corolla");
+    setAnio("2023");
+    setPatente("ABC123");
+    if (categories.length > 0) setCategoriaId(categories[0].id);
+    setVersion("XEi");
+    setColor("Blanco");
+    setKilometros("15000");
+    setNotasMecanicas("Motor en excelente estado, service al día");
+    setNotasGenerales("Único dueño, garage");
+    setPrecioRevista("25000");
+    setPrecioOferta("23000");
+    setFieldErrors({});
+  };
+
   const isFormValid =
     tipoOperacionId &&
     fechaInicio &&
@@ -423,11 +439,10 @@ export function CreateOperationForm({
     notasMecanicas,
     notasGenerales,
     precioRevista,
-    precioOferta: "",
+    precioOferta,
     photos,
     precioVentaTotal,
     ingresosBrutos,
-    comision,
   };
 
   const vehicleFieldsHandlers: VehicleFieldsHandlers = {
@@ -442,15 +457,25 @@ export function CreateOperationForm({
     setNotasMecanicas,
     setNotasGenerales,
     setPrecioRevista,
-    setPrecioOferta: () => {},
+    setPrecioOferta,
     setPhotos,
     setPrecioVentaTotal,
     setIngresosBrutos,
-    setComision,
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {/* Botón de autocompletado - TEMPORAL PARA TESTING */}
+      <button
+        type="button"
+        onClick={handleAutofill}
+        className="flex h-10 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 text-xs font-semibold text-purple-700 transition-all hover:border-purple-400 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        disabled={isSubmitting}
+      >
+        <span className="material-symbols-outlined text-lg">auto_fix_high</span>
+        <span>AUTOCOMPLETAR (temporal para testing)</span>
+      </button>
+
       {/* Mensajes globales */}
       {successMessage && (
         <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">

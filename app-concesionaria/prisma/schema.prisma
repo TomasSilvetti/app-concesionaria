@@ -71,16 +71,7 @@ model Operation {
   clienteId         String
   fechaInicio       DateTime
   fechaVenta        DateTime?
-  modelo            String
-  anio              Int
-  patente           String
-  version           String?
-  color             String?
-  kilometros        Int?
-  notasMecanicas    String?
-  notasGenerales    String?
-  precioRevista     Float?
-  precioOferta      Float?
+  vehiculoVendidoId String
   precioVentaTotal  Float
   ingresosBrutos    Float
   comision          Float
@@ -98,8 +89,9 @@ model Operation {
   Client            Client              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
   OperationType     OperationType       @relation(fields: [tipoOperacionId], references: [id])
+  VehiculoVendido   Vehicle             @relation("VehiculosVendidos", fields: [vehiculoVendidoId], references: [id], onDelete: Cascade)
   OperationExchange OperationExchange[]
-  Stock             Stock[]
+  Vehicle           Vehicle[]
 
   @@unique([clienteId, idOperacion])
   @@index([categoriaId])
@@ -107,6 +99,7 @@ model Operation {
   @@index([estado])
   @@index([marcaId])
   @@index([tipoOperacionId])
+  @@index([vehiculoVendidoId])
 }
 
 model OperationExchange {
@@ -117,7 +110,7 @@ model OperationExchange {
   creadoEn        DateTime  @default(now())
   actualizadoEn   DateTime
   Operation       Operation @relation(fields: [operacionId], references: [id], onDelete: Cascade)
-  Stock           Stock     @relation(fields: [stockId], references: [id])
+  Vehicle         Vehicle   @relation(fields: [stockId], references: [id])
 
   @@unique([operacionId, stockId])
   @@index([operacionId])
@@ -148,36 +141,6 @@ model Origin {
   @@index([clienteId])
 }
 
-model Stock {
-  id                String              @id
-  operacionId       String?
-  clienteId         String
-  marcaId           String
-  modelo            String
-  anio              Int
-  categoriaId       String
-  patente           String?
-  version           String?
-  color             String?
-  kilometros        Int?
-  notasMecanicas    String?
-  notasGenerales    String?
-  precioRevista     Float?
-  precioOferta      Float?
-  creadoEn          DateTime            @default(now())
-  actualizadoEn     DateTime
-  OperationExchange OperationExchange[]
-  Operation         Operation?          @relation(fields: [operacionId], references: [id], onDelete: Cascade)
-  VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
-  VehicleCategory   VehicleCategory     @relation(fields: [categoriaId], references: [id])
-  VehiclePhoto      VehiclePhoto[]
-
-  @@index([clienteId])
-  @@index([operacionId])
-  @@index([marcaId])
-  @@index([categoriaId])
-}
-
 model User {
   id            String   @id
   username      String   @unique
@@ -196,6 +159,38 @@ model User {
   @@index([username])
 }
 
+model Vehicle {
+  id                String              @id
+  operacionId       String?
+  clienteId         String
+  marcaId           String
+  modelo            String
+  anio              Int
+  categoriaId       String
+  patente           String?
+  version           String?
+  color             String?
+  kilometros        Int?
+  notasMecanicas    String?
+  notasGenerales    String?
+  precioRevista     Float?
+  precioOferta      Float?
+  estado            String              @default("disponible")
+  creadoEn          DateTime            @default(now())
+  actualizadoEn     DateTime
+  OperationExchange OperationExchange[]
+  VehicleCategory   VehicleCategory     @relation(fields: [categoriaId], references: [id])
+  VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
+  Operation         Operation?          @relation(fields: [operacionId], references: [id], onDelete: Cascade)
+  VehiclePhoto      VehiclePhoto[]
+  OperacionesVenta  Operation[]         @relation("VehiculosVendidos")
+
+  @@index([categoriaId])
+  @@index([clienteId])
+  @@index([marcaId])
+  @@index([operacionId])
+}
+
 model VehicleBrand {
   id            String      @id
   clienteId     String
@@ -203,7 +198,7 @@ model VehicleBrand {
   creadoEn      DateTime    @default(now())
   actualizadoEn DateTime
   Operation     Operation[]
-  Stock         Stock[]
+  Vehicle       Vehicle[]
   Client        Client      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@unique([clienteId, nombre])
@@ -216,7 +211,7 @@ model VehicleCategory {
   nombre    String
   creadoEn  DateTime    @default(now())
   Operation Operation[]
-  Stock     Stock[]
+  Vehicle   Vehicle[]
   Client    Client      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@unique([clienteId, nombre])
@@ -231,7 +226,7 @@ model VehiclePhoto {
   datos         Bytes
   orden         Int      @default(0)
   creadoEn      DateTime @default(now())
-  Stock         Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  Vehicle       Vehicle  @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@index([stockId])
 }

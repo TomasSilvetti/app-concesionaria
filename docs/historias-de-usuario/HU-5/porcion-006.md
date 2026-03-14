@@ -4,21 +4,24 @@
 **Par:** porcion-007
 **Tipo:** FRONT
 **Prerequisitos:** porcion-002, porcion-009
-**Estado:** 🔄 En progreso
+**Estado:** ✅ Completada
+**Completada el:** 14/03/2026
 
 ## Descripción
 
-Crear el formulario completo de registro de operaciones que incluya todos los campos del vehículo (reutilizando el componente `VehicleFieldsForm` de porcion-002) más los campos específicos de la operación: tipo de operación, fecha de inicio, precio de venta total, ingresos brutos, comisión y estado. El formulario debe usar exactamente el mismo componente que usa el módulo de stock para garantizar que ambos capturen los mismos datos del vehículo.
+Crear el formulario completo de registro de operaciones que incluya todos los campos del vehículo (reutilizando el componente `VehicleFieldsForm` de porcion-002) más los campos específicos de la operación: tipo de operación, fecha de inicio, precio de venta total, ingresos brutos, comisión calculada (solo lectura) y estado. El formulario debe usar exactamente el mismo componente que usa el módulo de stock para garantizar que ambos capturen los mismos datos del vehículo.
 
 ## Ejemplo de uso
 
-El vendedor hace clic en "Nueva operación", ve un formulario con dos secciones: una con todos los datos del vehículo (usando el componente `VehicleFieldsForm` que incluye marca, modelo, año, patente, categoría, versión, color, kilómetros, notas mecánicas, notas generales, precio revista, precio oferta y fotos) y otra con los datos específicos de la operación (tipo, fecha de inicio, precio de venta total, ingresos brutos, comisión). Completa ambas secciones y guarda la operación.
+El vendedor hace clic en "Nueva operación", ve un formulario con dos secciones: una con todos los datos del vehículo (usando el componente `VehicleFieldsForm` que incluye marca, modelo, año, patente, categoría, versión, color, kilómetros, notas mecánicas, notas generales, precio revista, precio oferta y fotos) y otra con los datos específicos de la operación (tipo, fecha de inicio, precio de venta total, ingresos brutos, comisión calculada). A medida que ingresa el precio de venta e ingresos brutos, el campo de comisión calculada se actualiza automáticamente mostrando el porcentaje. Completa ambas secciones y guarda la operación.
 
 ## Criterios de aceptación
 
 - [ ] El formulario incluye el componente `VehicleFieldsForm` (porcion-002) con todos sus campos: marca, modelo, año, patente, categoría, versión, color, kilómetros, notas mecánicas, notas generales, precio revista, precio oferta y fotos
 - [ ] El formulario incluye el selector de tipo de operación (porcion-004)
-- [ ] El formulario incluye los campos específicos de operación: fecha de inicio, precio de venta total, ingresos brutos, comisión
+- [ ] El formulario incluye los campos específicos de operación: fecha de inicio, precio de venta total, ingresos brutos
+- [ ] El formulario muestra la comisión calculada automáticamente (solo lectura) cuando hay precio de venta e ingresos brutos
+- [ ] La comisión calculada se muestra como porcentaje con 2 decimales
 - [ ] Todos los campos obligatorios están marcados con asterisco rojo (tanto los del vehículo como los de la operación)
 - [ ] El botón "Guardar Operación" está deshabilitado si faltan campos obligatorios del vehículo o de la operación
 - [ ] El formulario muestra mensajes de error específicos para cada campo inválido
@@ -32,6 +35,8 @@ El vendedor hace clic en "Nueva operación", ve un formulario con dos secciones:
 ### Pruebas unitarias
 
 - [ ] El formulario renderiza correctamente todos los campos de vehículo y operación
+- [ ] El campo de comisión calculada se actualiza automáticamente cuando cambian precio de venta o ingresos brutos
+- [ ] El campo de comisión calculada es de solo lectura y no editable
 - [ ] El botón "Guardar Operación" se deshabilita cuando faltan campos obligatorios
 - [ ] El botón "Guardar Operación" se habilita cuando todos los campos obligatorios están completos
 - [ ] Los mensajes de error se muestran cuando los campos tienen valores inválidos

@@ -23,6 +23,12 @@ interface Expense {
   monto: number;
 }
 
+interface VehiclePhoto {
+  id: string;
+  nombreArchivo: string;
+  orden: number;
+}
+
 interface OperationDetail {
   idOperacion: string;
   fechaInicio: string;
@@ -30,6 +36,14 @@ interface OperationDetail {
   modelo: string;
   anio: number;
   patente: string;
+  version: string | null;
+  color: string | null;
+  kilometros: number | null;
+  notasMecanicas: string | null;
+  notasGenerales: string | null;
+  precioRevista: number | null;
+  precioOferta: number | null;
+  fotos: VehiclePhoto[];
   precioVentaTotal: number;
   ingresosBrutos: number;
   gastosAsociados: number;
@@ -237,9 +251,9 @@ export default function OperacionDetailPage() {
         </div>
 
         {/* Contenido principal en grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Sección: Datos del vehículo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 directions_car
@@ -248,7 +262,26 @@ export default function OperacionDetailPage() {
                 Datos del Vehículo
               </h2>
             </div>
-            <dl className="space-y-3">
+            
+            {/* Fotos del vehículo */}
+            {operation.fotos && operation.fotos.length > 0 && (
+              <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {operation.fotos.map((foto) => (
+                  <div
+                    key={foto.id}
+                    className="relative aspect-video overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
+                  >
+                    <img
+                      src={`/api/photos/${foto.id}`}
+                      alt={`Foto del vehículo - ${foto.nombreArchivo}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex justify-between border-b border-zinc-100 pb-2">
                 <dt className="text-sm text-zinc-500">Marca</dt>
                 <dd className="text-sm font-medium text-zinc-900">{operation.marcaNombre}</dd>
@@ -263,12 +296,46 @@ export default function OperacionDetailPage() {
               </div>
               <div className="flex justify-between border-b border-zinc-100 pb-2">
                 <dt className="text-sm text-zinc-500">Patente</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation.patente}</dd>
+                <dd className="text-sm font-medium text-zinc-900">{operation.patente || "—"}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between border-b border-zinc-100 pb-2">
                 <dt className="text-sm text-zinc-500">Categoría</dt>
                 <dd className="text-sm font-medium text-zinc-900">{operation.categoriaNombre}</dd>
               </div>
+              <div className="flex justify-between border-b border-zinc-100 pb-2">
+                <dt className="text-sm text-zinc-500">Versión</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation.version || "—"}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-100 pb-2">
+                <dt className="text-sm text-zinc-500">Color</dt>
+                <dd className="text-sm font-medium text-zinc-900">{operation.color || "—"}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-100 pb-2">
+                <dt className="text-sm text-zinc-500">Kilómetros</dt>
+                <dd className="text-sm font-medium text-zinc-900">
+                  {operation.kilometros !== null ? `${operation.kilometros.toLocaleString("es-AR")} km` : "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-100 pb-2">
+                <dt className="text-sm text-zinc-500">Precio Revista</dt>
+                <dd className="text-sm font-medium text-zinc-900">{formatCurrency(operation.precioRevista)}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-100 pb-2">
+                <dt className="text-sm text-zinc-500">Precio Oferta</dt>
+                <dd className="text-sm font-semibold text-green-600">{formatCurrency(operation.precioOferta)}</dd>
+              </div>
+              {operation.notasMecanicas && (
+                <div className="flex flex-col gap-1 border-b border-zinc-100 pb-2 sm:col-span-2">
+                  <dt className="text-sm text-zinc-500">Notas Mecánicas</dt>
+                  <dd className="text-sm text-zinc-900">{operation.notasMecanicas}</dd>
+                </div>
+              )}
+              {operation.notasGenerales && (
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <dt className="text-sm text-zinc-500">Notas Generales</dt>
+                  <dd className="text-sm text-zinc-900">{operation.notasGenerales}</dd>
+                </div>
+              )}
             </dl>
           </div>
 
@@ -303,7 +370,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Información financiera */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 payments
@@ -357,7 +424,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Estado y tipo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 info
@@ -394,7 +461,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Vehículos de intercambio */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 swap_horiz
@@ -464,7 +531,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Gastos asociados */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 receipt_long

@@ -3,11 +3,12 @@
 **Historia de usuario:** HU-5: Mejoras en el módulo de operaciones
 **Par:** porcion-011
 **Tipo:** FRONT
-**Prerequisitos:** porcion-002
+**Prerequisitos:** porcion-002, HU-6 (refactorización del modelo de vehículos)
+**Estado:** ⏸️ Pausada (esperando HU-6)
 
 ## Descripción
 
-Crear un formulario secundario que aparezca cuando el tipo de operación es "Venta con toma de usado", permitiendo al vendedor cargar los datos completos del vehículo usado que se toma como parte de pago. Este formulario debe reutilizar el componente `VehicleFieldsForm` para mantener consistencia con el resto del sistema.
+Crear un formulario secundario que aparezca cuando el tipo de operación es "Venta con toma de usado", permitiendo al vendedor cargar los datos completos del vehículo usado que se toma como parte de pago. Este formulario debe reutilizar el componente `VehicleFieldsForm` para mantener consistencia con el resto del sistema. El vehículo usado se guardará en la tabla `Vehicle` con `estado = "disponible"` para que aparezca en el stock.
 
 ## Ejemplo de uso
 

@@ -3,7 +3,8 @@
 **Historia de usuario:** HU-5: Mejoras en el módulo de operaciones
 **Par:** —
 **Tipo:** FRONT+BACK
-**Prerequisitos:** porcion-005, porcion-007, porcion-010, porcion-011
+**Prerequisitos:** porcion-005, porcion-007, porcion-010, porcion-011, HU-6 (refactorización del modelo de vehículos)
+**Estado:** ⏸️ Pausada (esperando HU-6)
 
 ## Descripción
 

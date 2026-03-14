@@ -258,6 +258,22 @@ export function CreateVehicleForm({
     setPhotos,
   };
 
+  const handleAutofill = () => {
+    if (brands.length > 0) setMarcaId(brands[0].id);
+    setModelo("Corolla");
+    setAnio("2023");
+    setPatente("ABC123");
+    if (categories.length > 0) setCategoriaId(categories[0].id);
+    setVersion("XEi");
+    setColor("Blanco");
+    setKilometros("15000");
+    setNotasMecanicas("Motor en excelente estado, service al día");
+    setNotasGenerales("Único dueño, garage");
+    setPrecioRevista("25000");
+    setPrecioOferta("23000");
+    setFieldErrors({});
+  };
+
   const isFormValid =
     marcaId &&
     modelo.trim() &&
@@ -271,6 +287,17 @@ export function CreateVehicleForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {/* Botón de autocompletado - TEMPORAL PARA TESTING */}
+      <button
+        type="button"
+        onClick={handleAutofill}
+        className="flex h-10 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 text-xs font-semibold text-purple-700 transition-all hover:border-purple-400 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        disabled={isSubmitting}
+      >
+        <span className="material-symbols-outlined text-lg">auto_fix_high</span>
+        <span>AUTOCOMPLETAR (temporal para testing)</span>
+      </button>
+
       {successMessage && (
         <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
           {successMessage}

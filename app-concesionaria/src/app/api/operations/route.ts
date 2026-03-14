@@ -116,6 +116,18 @@ export async function GET(req: NextRequest) {
           nombre: sortOrder,
         },
       };
+    } else if (orderByField === "modelo") {
+      orderBy = {
+        VehiculoVendido: {
+          modelo: sortOrder,
+        },
+      };
+    } else if (orderByField === "anio") {
+      orderBy = {
+        VehiculoVendido: {
+          anio: sortOrder,
+        },
+      };
     } else {
       orderBy = {
         [orderByField]: sortOrder,
@@ -178,6 +190,17 @@ export async function GET(req: NextRequest) {
             nombre: true,
           },
         },
+        VehiculoVendido: {
+          include: {
+            VehicleBrand: true,
+            VehicleCategory: true,
+            VehiclePhoto: {
+              orderBy: {
+                orden: 'asc',
+              },
+            },
+          },
+        },
       },
       orderBy,
       take: limit + 1,
@@ -193,9 +216,9 @@ export async function GET(req: NextRequest) {
       idOperacion: op.idOperacion,
       fechaInicio: op.fechaInicio,
       fechaVenta: op.fechaVenta,
-      modelo: op.modelo,
-      anio: op.anio,
-      patente: op.patente,
+      modelo: op.VehiculoVendido.modelo,
+      anio: op.VehiculoVendido.anio,
+      patente: op.VehiculoVendido.patente,
       precioVentaTotal: op.precioVentaTotal,
       ingresosNetos: op.ingresosNetos,
       estado: op.estado,
@@ -238,31 +261,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const {
-      fechaInicio,
-      modelo,
-      anio,
-      patente,
-      precioVentaTotal,
-      ingresosBrutos,
-      marcaId,
-      categoriaId,
-      tipoOperacionId,
-      vehiculosIntercambio,
-    } = body;
+    const formData = await req.formData();
+    
+    const marcaId = formData.get("marcaId") as string;
+    const modelo = formData.get("modelo") as string;
+    const anioStr = formData.get("anio") as string;
+    const categoriaId = formData.get("categoriaId") as string;
+    const version = formData.get("version") as string;
+    const color = formData.get("color") as string;
+    const kilometrosStr = formData.get("kilometros") as string;
+    const precioRevistaStr = formData.get("precioRevista") as string;
+    const precioOfertaStr = formData.get("precioOferta") as string | null;
+    const notasMecanicas = formData.get("notasMecanicas") as string | null;
+    const notasGenerales = formData.get("notasGenerales") as string | null;
+    const patente = formData.get("patente") as string | null;
+    
+    const tipoOperacionId = formData.get("tipoOperacionId") as string;
+    const fechaInicioStr = formData.get("fechaInicio") as string;
+    const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
+    const ingresosBrutosStr = formData.get("ingresosBrutos") as string;
 
     const errors: string[] = [];
 
-    if (!fechaInicio) errors.push("fechaInicio es requerido");
-    if (!modelo) errors.push("modelo es requerido");
-    if (anio === undefined || anio === null) errors.push("anio es requerido");
-    if (!patente) errors.push("patente es requerido");
-    if (precioVentaTotal === undefined || precioVentaTotal === null) errors.push("precioVentaTotal es requerido");
-    if (ingresosBrutos === undefined || ingresosBrutos === null) errors.push("ingresosBrutos es requerido");
     if (!marcaId) errors.push("marcaId es requerido");
+    if (!modelo) errors.push("modelo es requerido");
+    if (!anioStr) errors.push("anio es requerido");
     if (!categoriaId) errors.push("categoriaId es requerido");
+    if (!version) errors.push("version es requerida");
+    if (!color) errors.push("color es requerido");
+    if (!kilometrosStr) errors.push("kilometros es requerido");
+    if (!precioRevistaStr) errors.push("precioRevista es requerido");
+    
     if (!tipoOperacionId) errors.push("tipoOperacionId es requerido");
+    if (!fechaInicioStr) errors.push("fechaInicio es requerido");
+    if (!precioVentaTotalStr) errors.push("precioVentaTotal es requerido");
+    if (!ingresosBrutosStr) errors.push("ingresosBrutos es requerido");
 
     if (errors.length > 0) {
       return NextResponse.json(
@@ -271,7 +304,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const parsedFechaInicio = new Date(fechaInicio);
+    const anio = parseInt(anioStr, 10);
+    const kilometros = parseInt(kilometrosStr, 10);
+    const precioRevista = parseFloat(precioRevistaStr);
+    const precioOferta = precioOfertaStr ? parseFloat(precioOfertaStr) : null;
+    const precioVentaTotal = parseFloat(precioVentaTotalStr);
+    const ingresosBrutos = parseFloat(ingresosBrutosStr);
+
+    const parsedFechaInicio = new Date(fechaInicioStr);
     if (isNaN(parsedFechaInicio.getTime())) {
       return NextResponse.json(
         { message: "fechaInicio debe ser una fecha válida" },
@@ -280,21 +320,42 @@ export async function POST(req: NextRequest) {
     }
 
     const currentYear = new Date().getFullYear();
-    if (typeof anio !== "number" || anio < 1900 || anio > currentYear + 1) {
+    if (isNaN(anio) || anio < 1900 || anio > currentYear + 1) {
       return NextResponse.json(
         { message: `anio debe ser un número entre 1900 y ${currentYear + 1}` },
         { status: 400 }
       );
     }
 
-    if (typeof precioVentaTotal !== "number" || precioVentaTotal <= 0) {
+    if (isNaN(kilometros) || kilometros < 0) {
+      return NextResponse.json(
+        { message: "kilometros debe ser un número positivo o cero" },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(precioRevista) || precioRevista <= 0) {
+      return NextResponse.json(
+        { message: "precioRevista debe ser un número positivo" },
+        { status: 400 }
+      );
+    }
+
+    if (precioOferta !== null && (isNaN(precioOferta) || precioOferta <= 0)) {
+      return NextResponse.json(
+        { message: "precioOferta debe ser un número positivo" },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(precioVentaTotal) || precioVentaTotal <= 0) {
       return NextResponse.json(
         { message: "precioVentaTotal debe ser un número positivo" },
         { status: 400 }
       );
     }
 
-    if (typeof ingresosBrutos !== "number" || ingresosBrutos <= 0) {
+    if (isNaN(ingresosBrutos) || ingresosBrutos <= 0) {
       return NextResponse.json(
         { message: "ingresosBrutos debe ser un número positivo" },
         { status: 400 }
@@ -341,59 +402,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (vehiculosIntercambio && Array.isArray(vehiculosIntercambio)) {
-      for (let i = 0; i < vehiculosIntercambio.length; i++) {
-        const vehiculo = vehiculosIntercambio[i];
-        const vehiculoErrors: string[] = [];
-
-        if (!vehiculo.marcaId) vehiculoErrors.push(`marcaId es requerido`);
-        if (!vehiculo.modelo) vehiculoErrors.push(`modelo es requerido`);
-        if (vehiculo.anio === undefined || vehiculo.anio === null) vehiculoErrors.push(`anio es requerido`);
-        if (!vehiculo.patente) vehiculoErrors.push(`patente es requerido`);
-        if (vehiculo.precioNegociado === undefined || vehiculo.precioNegociado === null) vehiculoErrors.push(`precioNegociado es requerido`);
-
-        if (vehiculoErrors.length > 0) {
-          return NextResponse.json(
-            { 
-              message: `Errores de validación en vehículo de intercambio ${i + 1}`, 
-              errors: vehiculoErrors 
-            },
-            { status: 400 }
-          );
-        }
-
-        if (typeof vehiculo.anio !== "number" || vehiculo.anio < 1900 || vehiculo.anio > currentYear + 1) {
-          return NextResponse.json(
-            { message: `anio del vehículo de intercambio ${i + 1} debe ser un número entre 1900 y ${currentYear + 1}` },
-            { status: 400 }
-          );
-        }
-
-        if (typeof vehiculo.precioNegociado !== "number" || vehiculo.precioNegociado < 0) {
-          return NextResponse.json(
-            { message: `precioNegociado del vehículo de intercambio ${i + 1} debe ser un número positivo o cero` },
-            { status: 400 }
-          );
-        }
-
-        const marcaVehiculo = await prisma.vehicleBrand.findFirst({
-          where: { id: vehiculo.marcaId, clienteId },
-        });
-
-        if (!marcaVehiculo) {
-          return NextResponse.json(
-            { message: `marcaId del vehículo de intercambio ${i + 1} no existe o no pertenece al cliente` },
-            { status: 400 }
-          );
-        }
-      }
-    }
-
     const lastOperation = await prisma.operation.findFirst({
       where: { 
         clienteId,
         idOperacion: {
           startsWith: `OP-${currentYear}-`,
+          not: {
+            contains: "-INT-",
+          },
         },
       },
       orderBy: { idOperacion: "desc" },
@@ -408,201 +424,134 @@ export async function POST(req: NextRequest) {
       nextIdOperacion = `OP-${currentYear}-${nextNumber.toString().padStart(3, "0")}`;
     }
 
+    const comision = precioVentaTotal - ingresosBrutos;
     const gastosAsociados = 0;
-    const ingresosNetos = ingresosBrutos - gastosAsociados;
-    const comision = precioVentaTotal > 0 ? (ingresosNetos / precioVentaTotal) * 100 : 0;
+    const ingresosNetos = ingresosBrutos - comision - gastosAsociados;
 
-    if (vehiculosIntercambio && Array.isArray(vehiculosIntercambio) && vehiculosIntercambio.length > 0) {
-      const result = await prisma.$transaction(async (tx) => {
-        const newOperation = await tx.operation.create({
-          data: {
-            id: randomUUID(),
-            idOperacion: nextIdOperacion,
-            clienteId,
-            fechaInicio: parsedFechaInicio,
-            modelo,
-            anio,
-            patente,
-            precioVentaTotal,
-            ingresosBrutos,
-            gastosAsociados,
-            ingresosNetos,
-            comision,
-            estado: "abierta",
-            marcaId,
-            categoriaId,
-            tipoOperacionId,
-            actualizadoEn: new Date(),
-          },
-        });
+    const operationId = randomUUID();
+    const vehicleId = randomUUID();
+    const now = new Date();
 
-        let vehiculoCounter = 1;
-        for (const vehiculo of vehiculosIntercambio) {
-          const vehiculoIdOperacion = `${nextIdOperacion}-INT-${vehiculoCounter.toString().padStart(2, '0')}`;
-          
-          const vehiculoOperation = await tx.operation.create({
-            data: {
-              id: randomUUID(),
-              idOperacion: vehiculoIdOperacion,
-              clienteId,
-              fechaInicio: parsedFechaInicio,
-              modelo: vehiculo.modelo,
-              anio: vehiculo.anio,
-              patente: vehiculo.patente,
-              precioVentaTotal: vehiculo.precioNegociado,
-              ingresosBrutos: 0,
-              gastosAsociados: 0,
-              ingresosNetos: 0,
-              comision: 0,
-              estado: "abierta",
-              marcaId: vehiculo.marcaId,
-              categoriaId,
-              tipoOperacionId,
-              actualizadoEn: new Date(),
-            },
-          });
-          
-          const vehiculoStock = await tx.stock.create({
-            data: {
-              id: randomUUID(),
-              operacionId: vehiculoOperation.id,
-              clienteId,
-              marcaId: vehiculo.marcaId,
-              modelo: vehiculo.modelo,
-              anio: vehiculo.anio,
-              categoriaId: vehiculo.categoriaId || categoriaId,
-              patente: vehiculo.patente,
-              tipoIngreso: "intercambio",
-              version: vehiculo.version || null,
-              color: vehiculo.color || null,
-              kilometros: vehiculo.kilometros || null,
-              notasMecanicas: vehiculo.notasMecanicas || null,
-              notasGenerales: vehiculo.notasGenerales || null,
-              precioOferta: vehiculo.precioNegociado,
-              precioRevista: null,
-              actualizadoEn: new Date(),
-            },
-          });
+    const fotos = formData.getAll("fotos") as File[];
+    
+    if (fotos.length > 0) {
+      const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-          await tx.operationExchange.create({
-            data: {
-              id: randomUUID(),
-              operacionId: newOperation.id,
-              stockId: vehiculoStock.id,
-              precioNegociado: vehiculo.precioNegociado,
-              actualizadoEn: new Date(),
-            },
-          });
-
-          vehiculoCounter++;
+      for (const foto of fotos) {
+        if (!ALLOWED_MIME_TYPES.includes(foto.type)) {
+          return NextResponse.json(
+            { message: `Tipo de archivo no permitido: ${foto.type}. Solo se permiten imágenes JPEG, PNG y WebP` },
+            { status: 400 }
+          );
         }
 
-        return await tx.operation.findUnique({
-          where: { id: newOperation.id },
-          include: {
-            VehicleBrand: {
-              select: {
-                nombre: true,
-              },
-            },
-            VehicleCategory: {
-              select: {
-                nombre: true,
-              },
-            },
-            OperationType: {
-              select: {
-                nombre: true,
-              },
-            },
-            OperationExchange: {
-              include: {
-                Stock: {
-                  include: {
-                    Operation: {
-                      include: {
-                        VehicleBrand: {
-                          select: {
-                            nombre: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        });
-      });
-
-      return NextResponse.json(
-        {
-          operation: {
-            id: result!.id,
-            idOperacion: result!.idOperacion,
-            fechaInicio: result!.fechaInicio,
-            modelo: result!.modelo,
-            anio: result!.anio,
-            patente: result!.patente,
-            precioVentaTotal: result!.precioVentaTotal,
-            ingresosBrutos: result!.ingresosBrutos,
-            gastosAsociados: result!.gastosAsociados,
-            ingresosNetos: result!.ingresosNetos,
-            comision: result!.comision,
-            estado: result!.estado,
-            marcaNombre: result!.VehicleBrand.nombre,
-            categoriaNombre: result!.VehicleCategory.nombre,
-            tipoOperacionNombre: result!.OperationType.nombre,
-            vehiculosIntercambiados: result!.OperationExchange.map(exchange => ({
-              id: exchange.id,
-              stockId: exchange.stockId,
-              precioNegociado: exchange.precioNegociado,
-              stock: exchange.Stock,
-            })),
-          },
-        },
-        { status: 201 }
-      );
+        if (foto.size > MAX_FILE_SIZE) {
+          return NextResponse.json(
+            { message: `El archivo ${foto.name} excede el tamaño máximo permitido de 10MB` },
+            { status: 400 }
+          );
+        }
+      }
     }
 
-    const newOperation = await prisma.operation.create({
-      data: {
-        id: randomUUID(),
-        idOperacion: nextIdOperacion,
-        clienteId,
-        fechaInicio: parsedFechaInicio,
-        modelo,
-        anio,
-        patente,
-        precioVentaTotal,
-        ingresosBrutos,
-        gastosAsociados,
-        ingresosNetos,
-        comision,
-        estado: "abierta",
-        marcaId,
-        categoriaId,
-        tipoOperacionId,
-        actualizadoEn: new Date(),
-      },
-      include: {
-        VehicleBrand: {
-          select: {
-            nombre: true,
+    const newOperation = await prisma.$transaction(async (tx) => {
+      const newVehicle = await tx.vehicle.create({
+        data: {
+          id: vehicleId,
+          clienteId,
+          marcaId,
+          modelo,
+          anio,
+          categoriaId,
+          patente: patente || null,
+          version,
+          color,
+          kilometros,
+          notasMecanicas: notasMecanicas || null,
+          notasGenerales: notasGenerales || null,
+          precioRevista,
+          precioOferta,
+          estado: "en_proceso",
+          actualizadoEn: now,
+        },
+      });
+
+      if (fotos.length > 0) {
+        const photosData = await Promise.all(
+          fotos.map(async (foto, index) => {
+            const buffer = await foto.arrayBuffer();
+            const bytes = Buffer.from(buffer);
+
+            return {
+              id: randomUUID(),
+              stockId: vehicleId,
+              nombreArchivo: foto.name,
+              mimeType: foto.type,
+              datos: bytes,
+              orden: index,
+              creadoEn: now,
+            };
+          })
+        );
+
+        await tx.vehiclePhoto.createMany({
+          data: photosData,
+        });
+      }
+
+      const operation = await tx.operation.create({
+        data: {
+          id: operationId,
+          idOperacion: nextIdOperacion,
+          clienteId,
+          fechaInicio: parsedFechaInicio,
+          vehiculoVendidoId: vehicleId,
+          precioVentaTotal,
+          ingresosBrutos,
+          gastosAsociados,
+          ingresosNetos,
+          comision,
+          estado: "abierta",
+          marcaId,
+          categoriaId,
+          tipoOperacionId,
+          actualizadoEn: now,
+        },
+        include: {
+          VehicleBrand: {
+            select: {
+              nombre: true,
+            },
+          },
+          VehicleCategory: {
+            select: {
+              nombre: true,
+            },
+          },
+          OperationType: {
+            select: {
+              nombre: true,
+            },
+          },
+          VehiculoVendido: {
+            select: {
+              modelo: true,
+              anio: true,
+              patente: true,
+              version: true,
+              color: true,
+              kilometros: true,
+              notasMecanicas: true,
+              notasGenerales: true,
+              precioRevista: true,
+              precioOferta: true,
+            },
           },
         },
-        VehicleCategory: {
-          select: {
-            nombre: true,
-          },
-        },
-        OperationType: {
-          select: {
-            nombre: true,
-          },
-        },
-      },
+      });
+
+      return operation;
     });
 
     return NextResponse.json(
@@ -611,9 +560,16 @@ export async function POST(req: NextRequest) {
           id: newOperation.id,
           idOperacion: newOperation.idOperacion,
           fechaInicio: newOperation.fechaInicio,
-          modelo: newOperation.modelo,
-          anio: newOperation.anio,
-          patente: newOperation.patente,
+          modelo: newOperation.VehiculoVendido.modelo,
+          anio: newOperation.VehiculoVendido.anio,
+          patente: newOperation.VehiculoVendido.patente,
+          version: newOperation.VehiculoVendido.version,
+          color: newOperation.VehiculoVendido.color,
+          kilometros: newOperation.VehiculoVendido.kilometros,
+          notasMecanicas: newOperation.VehiculoVendido.notasMecanicas,
+          notasGenerales: newOperation.VehiculoVendido.notasGenerales,
+          precioRevista: newOperation.VehiculoVendido.precioRevista,
+          precioOferta: newOperation.VehiculoVendido.precioOferta,
           precioVentaTotal: newOperation.precioVentaTotal,
           ingresosBrutos: newOperation.ingresosBrutos,
           gastosAsociados: newOperation.gastosAsociados,

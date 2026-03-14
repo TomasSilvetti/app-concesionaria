@@ -30,6 +30,7 @@ interface StockFilters {
 function buildWhereClause(clienteId: string, filters: StockFilters) {
   const where: any = {
     clienteId: clienteId,
+    estado: "disponible",
   };
 
   if (filters.precioMin || filters.precioMax) {
@@ -198,7 +199,7 @@ export async function GET(req: NextRequest) {
     const where = buildWhereClause(clienteId, filters);
     const orderByClause = buildOrderByClause(orderBy, order);
 
-    const stockVehicles = await prisma.stock.findMany({
+    const stockVehicles = await prisma.vehicle.findMany({
       where,
       include: {
         VehicleBrand: {
@@ -215,18 +216,19 @@ export async function GET(req: NextRequest) {
       orderBy: orderByClause,
     });
 
-    const vehiclesFormatted = stockVehicles.map((stock) => ({
-      id: stock.id,
-      marca: stock.VehicleBrand?.nombre || "Sin marca",
-      modelo: stock.modelo || "Sin modelo",
-      anio: stock.anio,
-      categoria: stock.VehicleCategory?.nombre || "Sin categoría",
-      version: stock.version,
-      color: stock.color,
-      kilometros: stock.kilometros,
-      precioRevista: stock.precioRevista,
-      precioOferta: stock.precioOferta,
-      operacionId: stock.operacionId,
+    const vehiclesFormatted = stockVehicles.map((vehicle) => ({
+      id: vehicle.id,
+      marca: vehicle.VehicleBrand?.nombre || "Sin marca",
+      modelo: vehicle.modelo || "Sin modelo",
+      anio: vehicle.anio,
+      categoria: vehicle.VehicleCategory?.nombre || "Sin categoría",
+      version: vehicle.version,
+      color: vehicle.color,
+      kilometros: vehicle.kilometros,
+      precioRevista: vehicle.precioRevista,
+      precioOferta: vehicle.precioOferta,
+      operacionId: vehicle.operacionId,
+      estado: vehicle.estado,
     }));
 
     return NextResponse.json({ 
@@ -327,12 +329,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const stockId = randomUUID();
+    const vehicleId = randomUUID();
     const now = new Date();
 
-    const stock = await prisma.stock.create({
+    const vehicle = await prisma.vehicle.create({
       data: {
-        id: stockId,
+        id: vehicleId,
         operacionId: null,
         clienteId,
         marcaId,
@@ -347,6 +349,7 @@ export async function POST(req: NextRequest) {
         notasGenerales: notasGenerales || null,
         precioRevista,
         precioOferta,
+        estado: "disponible",
         creadoEn: now,
         actualizadoEn: now,
       },
@@ -362,7 +365,7 @@ export async function POST(req: NextRequest) {
 
           return {
             id: randomUUID(),
-            stockId: stock.id,
+            stockId: vehicle.id,
             nombreArchivo: foto.name,
             mimeType: foto.type,
             datos: bytes,
@@ -377,8 +380,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const vehicleCreated = await prisma.stock.findUnique({
-      where: { id: stock.id },
+    const vehicleCreated = await prisma.vehicle.findUnique({
+      where: { id: vehicle.id },
       include: {
         VehicleBrand: {
           select: {
