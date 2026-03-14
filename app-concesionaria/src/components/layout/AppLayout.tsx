@@ -83,117 +83,26 @@ export function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-50">
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-white transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:relative md:translate-x-0
-        `}
-      >
-        {/* Sidebar Header */}
-        <div className="flex h-16 items-center gap-3 border-b border-zinc-200 px-4">
-          <button
-            onClick={toggle}
-            className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors"
-            aria-label="Toggle menu"
-          >
-            <span className="material-symbols-outlined text-zinc-700">menu</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-              <span className="material-symbols-outlined text-white text-xl">
-                directions_car
-              </span>
-            </div>
-            <span className="text-xl font-bold text-zinc-900">NorDem</span>
-          </div>
-        </div>
-
-        {/* Sidebar Menu */}
-        <nav className="flex-1 overflow-y-auto p-4">
-          <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            Main Menu
-          </div>
-          <ul className="space-y-1">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.path;
-              return (
-                <li key={item.path}>
-                  <button
-                    onClick={() => handleNavigation(item.path)}
-                    className={`
-                      flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
-                      ${
-                        isActive
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-zinc-700 hover:bg-zinc-100"
-                      }
-                    `}
-                  >
-                    <span className="material-symbols-outlined text-xl">
-                      {item.icon}
-                    </span>
-                    {item.label}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* Sidebar Footer - User Info */}
-        <div className="border-t border-zinc-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200">
-              <span className="material-symbols-outlined text-zinc-600">
-                person
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-zinc-900 truncate">
-                {session?.user?.name || "Admin User"}
-              </p>
-              <p className="text-xs text-zinc-500 truncate">
-                {session?.user?.role === "ADMIN" ? "Manager" : session?.user?.role || "User"}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors"
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión"
-            >
-              <span className="material-symbols-outlined text-zinc-600 text-xl">
-                logout
-              </span>
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile Overlay */}
-      {isMobile && isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={close}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Navbar */}
-        <header className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-6">
+    <div className="flex h-screen flex-col overflow-hidden bg-zinc-50">
+      {/* Navbar */}
+      <header className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-6 flex-shrink-0 z-50">
           <div className="flex items-center gap-4">
             <button
               onClick={toggle}
-              className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors"
               aria-label="Toggle menu"
             >
               <span className="material-symbols-outlined text-zinc-700">menu</span>
             </button>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+                <span className="material-symbols-outlined text-white text-xl">
+                  directions_car
+                </span>
+              </div>
+              <span className="text-xl font-bold text-zinc-900">NorDem</span>
+            </div>
             
             <div className="relative flex-1 max-w-md">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xl">
@@ -289,6 +198,87 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
           </div>
         </header>
+
+      {/* Content Area with Sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside
+          className={`
+            fixed inset-y-0 left-0 top-16 z-40 flex flex-col border-r border-zinc-200 bg-white transition-all duration-300 ease-in-out overflow-hidden
+            ${isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full"}
+            md:relative md:top-0 md:translate-x-0
+          `}
+        >
+          {/* Sidebar Menu */}
+          <nav className="flex-1 overflow-y-auto p-4 w-64">
+            <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Main Menu
+            </div>
+            <ul className="space-y-1">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.path;
+                return (
+                  <li key={item.path}>
+                    <button
+                      onClick={() => handleNavigation(item.path)}
+                      className={`
+                        flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
+                        ${
+                          isActive
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-zinc-700 hover:bg-zinc-100"
+                        }
+                      `}
+                    >
+                      <span className="material-symbols-outlined text-xl">
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+
+          {/* Sidebar Footer - User Info */}
+          <div className="border-t border-zinc-200 p-4 flex-shrink-0 w-64">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200">
+                <span className="material-symbols-outlined text-zinc-600">
+                  person
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-zinc-900 truncate">
+                  {session?.user?.name || "Admin User"}
+                </p>
+                <p className="text-xs text-zinc-500 truncate">
+                  {session?.user?.role === "ADMIN" ? "Manager" : session?.user?.role || "User"}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors"
+                aria-label="Cerrar sesión"
+                title="Cerrar sesión"
+              >
+                <span className="material-symbols-outlined text-zinc-600 text-xl">
+                  logout
+                </span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Mobile Overlay */}
+        {isMobile && isOpen && (
+          <div
+            className="fixed inset-0 top-16 z-30 bg-black/50 md:hidden"
+            onClick={close}
+            aria-hidden="true"
+          />
+        )}
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6">
