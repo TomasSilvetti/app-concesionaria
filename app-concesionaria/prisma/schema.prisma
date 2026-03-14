@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../docs/erd.svg"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String    @id
+  clienteId String
+  nombre    String
+  creadoEn  DateTime  @default(now())
+  Client    Client    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  Expense   Expense[]
+
+  @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model Client {
+  id              String            @id
+  nombre          String
+  activo          Boolean           @default(true)
+  modulos         Json
+  creadoEn        DateTime          @default(now())
+  actualizadoEn   DateTime
+  Category        Category[]
+  Expense         Expense[]
+  Operation       Operation[]
+  OperationType   OperationType[]
+  Origin          Origin[]
+  User            User[]
+  VehicleBrand    VehicleBrand[]
+  VehicleCategory VehicleCategory[]
+}
+
+model Expense {
+  id            String     @id
+  clienteId     String
+  operacionId   String?
+  fecha         DateTime
+  descripcion   String
+  categoriaId   String
+  tipo          String
+  monto         Float
+  estado        String
+  origenId      String
+  creadoEn      DateTime   @default(now())
+  actualizadoEn DateTime
+  Category      Category   @relation(fields: [categoriaId], references: [id])
+  Client        Client     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  Operation     Operation? @relation(fields: [operacionId], references: [id])
+  Origin        Origin     @relation(fields: [origenId], references: [id])
+
+  @@index([categoriaId])
+  @@index([clienteId])
+  @@index([operacionId])
+  @@index([origenId])
+}
+
+model Operation {
+  id                String              @id
+  idOperacion       String
+  clienteId         String
+  fechaInicio       DateTime
+  fechaVenta        DateTime?
+  modelo            String
+  anio              Int
+  patente           String
+  precioVentaTotal  Float
+  ingresosBrutos    Float
+  comision          Float
+  gastosAsociados   Float               @default(0)
+  ingresosNetos     Float
+  estado            String              @default("open")
+  creadoEn          DateTime            @default(now())
+  actualizadoEn     DateTime
+  marcaId           String
+  categoriaId       String
+  tipoOperacionId   String
+  diasVenta         Int?
+  Expense           Expense[]
+  VehicleCategory   VehicleCategory     @relation(fields: [categoriaId], references: [id])
+  Client            Client              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
+  OperationType     OperationType       @relation(fields: [tipoOperacionId], references: [id])
+  OperationExchange OperationExchange[]
+  Stock             Stock[]
+
+  @@unique([clienteId, idOperacion])
+  @@index([categoriaId])
+  @@index([clienteId])
+  @@index([estado])
+  @@index([marcaId])
+  @@index([tipoOperacionId])
+}
+
+model OperationExchange {
+  id              String    @id
+  operacionId     String
+  stockId         String
+  precioNegociado Float?
+  creadoEn        DateTime  @default(now())
+  actualizadoEn   DateTime
+  Operation       Operation @relation(fields: [operacionId], references: [id], onDelete: Cascade)
+  Stock           Stock     @relation(fields: [stockId], references: [id])
+
+  @@unique([operacionId, stockId])
+  @@index([operacionId])
+  @@index([stockId])
+}
+
+model OperationType {
+  id        String      @id
+  clienteId String
+  nombre    String
+  creadoEn  DateTime    @default(now())
+  Operation Operation[]
+  Client    Client      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model Origin {
+  id        String    @id
+  clienteId String
+  nombre    String
+  creadoEn  DateTime  @default(now())
+  Expense   Expense[]
+  Client    Client    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model Stock {
+  id                String              @id
+  operacionId       String?
+  clienteId         String
+  marcaId           String
+  modelo            String
+  anio              Int
+  categoriaId       String
+  patente           String?
+  version           String?
+  color             String?
+  kilometros        Int?
+  tipoIngreso       String
+  notasMecanicas    String?
+  notasGenerales    String?
+  precioRevista     Float?
+  precioOferta      Float?
+  creadoEn          DateTime            @default(now())
+  actualizadoEn     DateTime
+  OperationExchange OperationExchange[]
+  Operation         Operation?          @relation(fields: [operacionId], references: [id], onDelete: Cascade)
+  VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
+  VehicleCategory   VehicleCategory     @relation(fields: [categoriaId], references: [id])
+  VehiclePhoto      VehiclePhoto[]
+
+  @@index([clienteId])
+  @@index([operacionId])
+  @@index([marcaId])
+  @@index([categoriaId])
+}
+
+model User {
+  id            String   @id
+  username      String   @unique
+  email         String?
+  nombre        String
+  password      String
+  rol           String   @default("usuario")
+  clienteId     String?
+  permisos      Json?
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime
+  Client        Client?  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
+  @@index([username])
+}
+
+model VehicleBrand {
+  id            String      @id
+  clienteId     String
+  nombre        String
+  creadoEn      DateTime    @default(now())
+  actualizadoEn DateTime
+  Operation     Operation[]
+  Stock         Stock[]
+  Client        Client      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model VehicleCategory {
+  id        String      @id
+  clienteId String
+  nombre    String
+  creadoEn  DateTime    @default(now())
+  Operation Operation[]
+  Stock     Stock[]
+  Client    Client      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model VehiclePhoto {
+  id            String   @id
+  stockId       String
+  nombreArchivo String
+  mimeType      String
+  datos         Bytes
+  orden         Int      @default(0)
+  creadoEn      DateTime @default(now())
+  Stock         Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([stockId])
+}
