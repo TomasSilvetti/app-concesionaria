@@ -109,7 +109,7 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
 
   const handleEdit = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    router.push(`/stock/${id}/edit`);
+    router.push(`/stock/${id}/editar`);
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {

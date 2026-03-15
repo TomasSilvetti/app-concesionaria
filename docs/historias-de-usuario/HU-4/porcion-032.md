@@ -9,6 +9,8 @@
 
 Implementar la funcionalidad de exportación de catálogo PDF. Los usuarios pueden seleccionar múltiples vehículos mediante checkboxes en la tabla y hacer clic en "Exportar catálogo" para generar un PDF con fotos, marca, modelo, versión, color, kilómetros, precio revista y precio oferta de cada vehículo seleccionado.
 
+⚠️ **Diseño de datos actual:** El modelo es `Vehicle`. El campo `marca` no es un string directo en el modelo, sino que viene de la relación `VehicleBrand.nombre`. Los datos de los vehículos disponibles en `StockTable` ya incluyen `marca` (string resuelto) y `modelo` en la respuesta del GET `/api/stock`. Las fotos **no se incluyen** en el listado del GET `/api/stock` (para no saturar). Para incluir fotos en el PDF, cada foto debe cargarse individualmente via GET `/api/photos/[id]` (endpoint de fotos ya existente) o se puede optar por generar el PDF sin fotos si no están disponibles en el contexto del listado.
+
 ## Ejemplo de uso
 
 El usuario selecciona 5 vehículos usando los checkboxes junto a cada fila. Hace clic en "Exportar catálogo". El sistema genera un PDF con una página por vehículo mostrando sus fotos y datos principales, y descarga automáticamente el archivo "catalogo-stock-2026-03-14.pdf" en el navegador.

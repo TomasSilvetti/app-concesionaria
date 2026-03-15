@@ -4,23 +4,27 @@
 **Par:** porcion-027
 **Tipo:** FRONT
 **Prerequisitos:** porcion-024
+**Estado:** completada
 
 ## Descripción
 
-Crear el formulario de edición de vehículo que se pre-carga con los datos actuales del vehículo seleccionado. El usuario puede modificar cualquier campo y guardar los cambios. El formulario debe validar campos obligatorios igual que en la creación.
+Crear el componente `EditVehicleForm` para editar un vehículo del stock. Se pre-carga con los datos actuales obtenidos via GET `/api/stock/[id]` y al guardar hace PUT a `/api/stock/[id]`. Debe reutilizar el componente `VehicleFieldsForm` (ya existente) para los campos, igual que `CreateVehicleForm`.
+
+⚠️ **Diseño de datos actual:** El modelo es `Vehicle` (antes llamado Stock). Los campos obligatorios son: `marcaId`, `modelo`, `anio`, `categoriaId`, `version`, `color`, `kilometros`, `precioRevista`. El campo `tipoIngreso` fue eliminado del modelo y **no debe incluirse**. Los campos opcionales son: `patente`, `notasMecanicas`, `notasGenerales`, `precioOferta`, fotos.
 
 ## Ejemplo de uso
 
-El usuario hace clic en "Editar" en un vehículo de la tabla. Se abre el formulario con todos los campos pre-cargados con los valores actuales. El usuario cambia el precio oferta de "14000" a "13500" y hace clic en "Guardar cambios". El sistema actualiza el vehículo y muestra una notificación de éxito.
+El usuario hace clic en "Editar" en un vehículo de la tabla. Se abre el formulario en `/stock/[id]/editar` con todos los campos pre-cargados con los valores actuales. El usuario cambia el precio oferta de "14000" a "13500" y hace clic en "Guardar cambios". El sistema actualiza el vehículo y muestra una notificación de éxito.
 
 ## Criterios de aceptación
 
-- [ ] El formulario se muestra en una ruta `/stock/[id]/editar` o en un modal
-- [ ] Al cargar, todos los campos se pre-llenan con los datos actuales del vehículo
-- [ ] El usuario puede modificar cualquier campo
-- [ ] Los campos obligatorios siguen siendo obligatorios
+- [ ] El componente `EditVehicleForm` se renderiza en la ruta `/stock/[id]/editar` (la página ya existe en `src/app/stock/[id]/editar/page.tsx`)
+- [ ] Al cargar, hace GET a `/api/stock/[id]` y pre-llena todos los campos con los datos actuales del vehículo
+- [ ] Incluye los mismos campos que `CreateVehicleForm`: marca (select), modelo, año, categoría (select), patente, versión, color, kilómetros, notas mecánicas, notas generales, precio revista, precio oferta, fotos
+- [ ] **No incluye** campo de tipo de ingreso (eliminado del modelo)
+- [ ] Los campos obligatorios son: marcaId, modelo, anio, categoriaId, version, color, kilometros, precioRevista
 - [ ] El botón "Guardar cambios" está deshabilitado si hay errores de validación
-- [ ] Hay un botón "Cancelar" que cierra el formulario sin guardar
+- [ ] Hay un botón "Cancelar" que vuelve al listado sin guardar
 - [ ] Mientras se envía el formulario, se muestra un indicador de carga
 - [ ] El componente es responsive y se visualiza correctamente en mobile, tablet y desktop
 
