@@ -596,6 +596,7 @@ export async function POST(req: NextRequest) {
           data: {
             id: usedVehicleId,
             clienteId,
+            operacionId: operationId,
             marcaId: vehiculoUsado.marcaId,
             modelo: vehiculoUsado.modelo,
             anio: usedVehicleAnio,

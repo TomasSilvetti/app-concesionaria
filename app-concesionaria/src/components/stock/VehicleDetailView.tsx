@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import "material-symbols/outlined.css";
 
 interface VehiclePhoto {
@@ -344,9 +345,15 @@ export function VehicleDetailView({ vehicleId }: VehicleDetailViewProps) {
                 <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
                   ID de Operación
                 </p>
-                <p className="mt-1 font-mono text-sm font-medium text-zinc-900">
-                  {vehicle.operacion.idOperacion}
-                </p>
+                <div className="mt-1">
+                  <Link
+                    href={`/operaciones/${vehicle.operacion.idOperacion}`}
+                    className="inline-flex items-center gap-1 font-mono text-sm font-medium text-blue-600 underline-offset-2 hover:underline"
+                  >
+                    {vehicle.operacion.idOperacion}
+                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  </Link>
+                </div>
               </div>
               {vehicle.operacion.vehiculoVendido && (
                 <div>

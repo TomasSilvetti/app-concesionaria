@@ -686,17 +686,40 @@ export function CreateOperationForm({
                     Agregar vehículo en parte de pago
                   </h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowTradeInForm(false);
-                    resetTradeInForm();
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-                  disabled={isSubmitting}
-                >
-                  <span className="material-symbols-outlined text-xl">close</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTradeInMarcaId(brands[0]?.id ?? "");
+                      setTradeInModelo("Corolla");
+                      setTradeInAnio("2021");
+                      setTradeInPatente("ABC-123");
+                      setTradeInVersion("XLE");
+                      setTradeInColor("Blanco");
+                      setTradeInKilometros("45000");
+                      setTradeInPrecioRevista("18000000");
+                      setTradeInPrecioNegociado("15000000");
+                      setTradeInNotasMecanicas("Buen estado general");
+                    }}
+                    title="Autocompletar datos de prueba"
+                    className="flex h-8 items-center gap-1 rounded-lg border border-dashed border-zinc-300 px-2 text-xs text-zinc-400 transition-colors hover:border-zinc-400 hover:text-zinc-600 focus:outline-none"
+                    disabled={isSubmitting}
+                  >
+                    <span className="material-symbols-outlined text-base">auto_fix_high</span>
+                    Test
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTradeInForm(false);
+                      resetTradeInForm();
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                    disabled={isSubmitting}
+                  >
+                    <span className="material-symbols-outlined text-xl">close</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
