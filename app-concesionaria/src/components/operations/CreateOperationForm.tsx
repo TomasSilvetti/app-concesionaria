@@ -24,6 +24,22 @@ interface OperationType {
   nombre: string;
 }
 
+interface StockVehicle {
+  id: string;
+  marca: string;
+  modelo: string;
+  anio: number | null;
+  patente: string | null;
+  categoriaId: string | null;
+  version: string | null;
+  color: string | null;
+  km: number | null;
+  notasMecanicas: string | null;
+  notasGenerales: string | null;
+  precioRevista: number | null;
+  precioOferta: number | null;
+}
+
 interface TradeInVehicle {
   id: string;
   marcaId: string;
@@ -69,6 +85,13 @@ export function CreateOperationForm({
   const [precioOferta, setPrecioOferta] = useState("");
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Stock modal state
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockVehicles, setStockVehicles] = useState<StockVehicle[]>([]);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [selectedStockVehicleId, setSelectedStockVehicleId] = useState<string | null>(null);
+  const [stockAutofillId, setStockAutofillId] = useState<string | null>(null);
 
   // Trade-in vehicles state
   const [tradeInVehicles, setTradeInVehicles] = useState<TradeInVehicle[]>([]);
@@ -260,6 +283,61 @@ export function CreateOperationForm({
     setShowTradeInForm(true);
   };
 
+  const fetchStockDisponibles = async () => {
+    setStockLoading(true);
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(`${baseUrl}/api/stock/disponibles`);
+      if (res.ok) {
+        const data = await res.json();
+        setStockVehicles(data.vehicles ?? []);
+      } else {
+        setStockVehicles([]);
+      }
+    } catch {
+      setStockVehicles([]);
+    } finally {
+      setStockLoading(false);
+    }
+  };
+
+  const handleOpenStockModal = () => {
+    setSelectedStockVehicleId(null);
+    setShowStockModal(true);
+    fetchStockDisponibles();
+  };
+
+  const handleConfirmStockSelection = () => {
+    const vehicle = stockVehicles.find((v) => v.id === selectedStockVehicleId);
+    if (!vehicle) return;
+
+    const brand = brands.find(
+      (b) => b.nombre.toLowerCase() === vehicle.marca.toLowerCase()
+    );
+    if (brand) setMarcaId(brand.id);
+
+    setModelo(vehicle.modelo);
+    if (vehicle.anio != null) setAnio(String(vehicle.anio));
+    setPatente(vehicle.patente ?? "");
+    if (vehicle.categoriaId) setCategoriaId(vehicle.categoriaId);
+    setVersion(vehicle.version ?? "");
+    setColor(vehicle.color ?? "");
+    setKilometros(vehicle.km != null ? String(vehicle.km) : "");
+    setNotasMecanicas(vehicle.notasMecanicas ?? "");
+    setNotasGenerales(vehicle.notasGenerales ?? "");
+    setPrecioRevista(vehicle.precioRevista != null ? String(vehicle.precioRevista) : "");
+    setPrecioOferta(vehicle.precioOferta != null ? String(vehicle.precioOferta) : "");
+    setPrecioVentaTotal(vehicle.precioRevista != null ? String(vehicle.precioRevista) : "");
+
+    ["marcaId", "modelo", "anio", "categoriaId", "color", "kilometros", "precioRevista", "precioVentaTotal"].forEach((f) =>
+      handleInputChange(f)
+    );
+
+    setStockAutofillId(vehicle.id);
+    setShowStockModal(false);
+    setSelectedStockVehicleId(null);
+  };
+
   const handleTradeInInputChange = (field: string) => {
     if (tradeInFieldErrors[field]) {
       setTradeInFieldErrors((prev) => {
@@ -370,6 +448,11 @@ export function CreateOperationForm({
       formData.append("precioVentaTotal", precioVentaTotal);
       formData.append("ingresosBrutos", ingresosBrutos);
 
+      const tipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
+      if (stockAutofillId && tipoNombre === "Venta desde stock") {
+        formData.append("stockVehicleId", stockAutofillId);
+      }
+
       if (tradeInVehicles.length > 0) {
         formData.append("vehiculoUsado", JSON.stringify(tradeInVehicles[0]));
       }
@@ -459,6 +542,7 @@ export function CreateOperationForm({
 
   const selectedTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
   const needsTradeIn = selectedTipoNombre === "Venta con toma de usado";
+  const isVentaDesdeStock = selectedTipoNombre === "Venta desde stock";
 
   const isFormValid =
     tipoOperacionId &&
@@ -566,9 +650,25 @@ export function CreateOperationForm({
                 id="tipoOperacion"
                 value={tipoOperacionId}
                 onChange={(e) => {
+                  const prevTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
+                  const newTipoNombre = operationTypes.find((t) => t.id === e.target.value)?.nombre;
                   setTipoOperacionId(e.target.value);
                   handleInputChange("tipoOperacionId");
                   handleInputChange("vehiculoUsado");
+                  if (
+                    prevTipoNombre === "Venta desde stock" &&
+                    newTipoNombre !== "Venta desde stock" &&
+                    stockAutofillId
+                  ) {
+                    setMarcaId("");
+                    setModelo("");
+                    setPatente("");
+                    setColor("");
+                    setKilometros("");
+                    setPrecioRevista("");
+                    setPrecioOferta("");
+                    setStockAutofillId(null);
+                  }
                 }}
                 className={`h-12 w-full appearance-none rounded-lg border ${
                   fieldErrors.tipoOperacionId
@@ -631,6 +731,21 @@ export function CreateOperationForm({
           </div>
         </div>
       </div>
+
+      {/* Botón Buscar en stock - solo visible para "Venta desde stock" */}
+      {isVentaDesdeStock && (
+        <button
+          type="button"
+          onClick={handleOpenStockModal}
+          className="flex h-12 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-indigo-300 bg-indigo-50 text-sm font-semibold text-indigo-700 transition-all hover:border-indigo-400 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={isSubmitting}
+        >
+          <span className="material-symbols-outlined text-xl">search</span>
+          <span>
+            {stockAutofillId ? "Cambiar vehículo del stock" : "Buscar en stock"}
+          </span>
+        </button>
+      )}
 
       {/* Información del Vehículo - usando VehicleFieldsForm */}
       <VehicleFieldsForm
@@ -1255,6 +1370,143 @@ export function CreateOperationForm({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Buscar en stock */}
+      {showStockModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Buscar vehículo en stock"
+        >
+          <div className="flex w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-indigo-600">
+                  search
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">
+                  Buscar vehículo en stock
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowStockModal(false);
+                  setSelectedStockVehicleId(null);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                aria-label="Cerrar modal"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+              {stockLoading ? (
+                <div className="flex items-center justify-center gap-3 py-12 text-zinc-500">
+                  <span className="material-symbols-outlined animate-spin text-2xl">
+                    progress_activity
+                  </span>
+                  <span className="text-sm">Cargando vehículos disponibles...</span>
+                </div>
+              ) : stockVehicles.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-400">
+                  <span className="material-symbols-outlined text-4xl">
+                    directions_car
+                  </span>
+                  <p className="text-sm">No hay vehículos disponibles en stock.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {stockVehicles.map((vehicle) => (
+                    <button
+                      key={vehicle.id}
+                      type="button"
+                      onClick={() => setSelectedStockVehicleId(vehicle.id)}
+                      className={`w-full rounded-lg border-2 p-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        selectedStockVehicleId === vehicle.id
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                              selectedStockVehicleId === vehicle.id
+                                ? "bg-indigo-100"
+                                : "bg-zinc-100"
+                            }`}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-xl ${
+                                selectedStockVehicleId === vehicle.id
+                                  ? "text-indigo-600"
+                                  : "text-zinc-500"
+                              }`}
+                            >
+                              {selectedStockVehicleId === vehicle.id
+                                ? "check_circle"
+                                : "directions_car"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-zinc-900">
+                              {vehicle.marca} {vehicle.modelo}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                              {vehicle.patente && (
+                                <span className="mr-2">Patente: {vehicle.patente}</span>
+                              )}
+                              {vehicle.color && <span>{vehicle.color}</span>}
+                              {vehicle.km != null && (
+                                <span className="ml-2">
+                                  · {vehicle.km.toLocaleString()} km
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        {vehicle.precioRevista != null && (
+                          <p className="shrink-0 text-sm font-medium text-zinc-700">
+                            ${vehicle.precioRevista.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowStockModal(false);
+                  setSelectedStockVehicleId(null);
+                }}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmStockSelection}
+                disabled={!selectedStockVehicleId}
+                className="flex h-10 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-indigo-600"
+              >
+                <span className="material-symbols-outlined text-base">check</span>
+                Seleccionar
+              </button>
+            </div>
           </div>
         </div>
       )}

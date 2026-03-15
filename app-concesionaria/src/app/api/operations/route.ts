@@ -281,6 +281,7 @@ export async function POST(req: NextRequest) {
     const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
     const ingresosBrutosStr = formData.get("ingresosBrutos") as string;
     const vehiculoUsadoStr = formData.get("vehiculoUsado") as string | null;
+    const stockVehicleId = formData.get("stockVehicleId") as string | null;
 
     const errors: string[] = [];
 
@@ -403,6 +404,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (stockVehicleId) {
+      const stockVehicle = await prisma.vehicle.findFirst({
+        where: { id: stockVehicleId, clienteId, estado: "disponible", operacionId: null },
+      });
+      if (!stockVehicle) {
+        return NextResponse.json(
+          { message: "El vehículo de stock no existe, no está disponible o no pertenece al cliente" },
+          { status: 400 }
+        );
+      }
+    }
+
     if (tipoOperacion.nombre === "Venta con toma de usado" && !vehiculoUsadoStr) {
       return NextResponse.json(
         { message: "Debés añadir el vehículo usado antes de guardar esta operación" },
@@ -484,48 +497,61 @@ export async function POST(req: NextRequest) {
     }
 
     const newOperation = await prisma.$transaction(async (tx) => {
-      const newVehicle = await tx.vehicle.create({
-        data: {
-          id: vehicleId,
-          clienteId,
-          marcaId,
-          modelo,
-          anio,
-          categoriaId,
-          patente: patente || null,
-          version,
-          color,
-          kilometros,
-          notasMecanicas: notasMecanicas || null,
-          notasGenerales: notasGenerales || null,
-          precioRevista,
-          precioOferta,
-          estado: "en_proceso",
-          actualizadoEn: now,
-        },
-      });
+      let resolvedVehicleId: string;
 
-      if (fotos.length > 0) {
-        const photosData = await Promise.all(
-          fotos.map(async (foto, index) => {
-            const buffer = await foto.arrayBuffer();
-            const bytes = Buffer.from(buffer);
-
-            return {
-              id: randomUUID(),
-              stockId: vehicleId,
-              nombreArchivo: foto.name,
-              mimeType: foto.type,
-              datos: bytes,
-              orden: index,
-              creadoEn: now,
-            };
-          })
-        );
-
-        await tx.vehiclePhoto.createMany({
-          data: photosData,
+      if (stockVehicleId) {
+        // Use existing stock vehicle — update its estado to en_proceso
+        await tx.vehicle.update({
+          where: { id: stockVehicleId },
+          data: { estado: "en_proceso", actualizadoEn: now },
         });
+        resolvedVehicleId = stockVehicleId;
+      } else {
+        // Create a new vehicle for this operation
+        await tx.vehicle.create({
+          data: {
+            id: vehicleId,
+            clienteId,
+            marcaId,
+            modelo,
+            anio,
+            categoriaId,
+            patente: patente || null,
+            version,
+            color,
+            kilometros,
+            notasMecanicas: notasMecanicas || null,
+            notasGenerales: notasGenerales || null,
+            precioRevista,
+            precioOferta,
+            estado: "en_proceso",
+            actualizadoEn: now,
+          },
+        });
+        resolvedVehicleId = vehicleId;
+
+        if (fotos.length > 0) {
+          const photosData = await Promise.all(
+            fotos.map(async (foto, index) => {
+              const buffer = await foto.arrayBuffer();
+              const bytes = Buffer.from(buffer);
+
+              return {
+                id: randomUUID(),
+                stockId: vehicleId,
+                nombreArchivo: foto.name,
+                mimeType: foto.type,
+                datos: bytes,
+                orden: index,
+                creadoEn: now,
+              };
+            })
+          );
+
+          await tx.vehiclePhoto.createMany({
+            data: photosData,
+          });
+        }
       }
 
       const operation = await tx.operation.create({
@@ -534,7 +560,7 @@ export async function POST(req: NextRequest) {
           idOperacion: nextIdOperacion,
           clienteId,
           fechaInicio: parsedFechaInicio,
-          vehiculoVendidoId: vehicleId,
+          vehiculoVendidoId: resolvedVehicleId,
           precioVentaTotal,
           ingresosBrutos,
           gastosAsociados,
