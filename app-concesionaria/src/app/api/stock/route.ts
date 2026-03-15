@@ -212,6 +212,11 @@ export async function GET(req: NextRequest) {
             nombre: true,
           },
         },
+        Operation: {
+          select: {
+            idOperacion: true,
+          },
+        },
       },
       orderBy: orderByClause,
     });
@@ -228,6 +233,7 @@ export async function GET(req: NextRequest) {
       precioRevista: vehicle.precioRevista,
       precioOferta: vehicle.precioOferta,
       operacionId: vehicle.operacionId,
+      idOperacion: vehicle.Operation?.idOperacion ?? null,
       estado: vehicle.estado,
     }));
 

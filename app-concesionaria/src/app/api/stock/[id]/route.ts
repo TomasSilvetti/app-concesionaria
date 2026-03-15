@@ -92,6 +92,72 @@ export async function GET(
   }
 }
 
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+
+    const clienteId = session.user.clienteId;
+
+    if (!clienteId) {
+      return NextResponse.json(
+        { message: "Usuario sin cliente asociado" },
+        { status: 403 }
+      );
+    }
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id },
+      include: {
+        Operation: {
+          select: { idOperacion: true },
+        },
+      },
+    });
+
+    if (!vehicle) {
+      return NextResponse.json(
+        { message: "Vehículo no encontrado" },
+        { status: 404 }
+      );
+    }
+
+    if (vehicle.clienteId !== clienteId) {
+      return NextResponse.json({ message: "Acceso denegado" }, { status: 403 });
+    }
+
+    if (vehicle.operacionId !== null) {
+      const idOperacion = vehicle.Operation?.idOperacion ?? vehicle.operacionId;
+      return NextResponse.json(
+        {
+          message: `Este vehículo está asociado a la operación ${idOperacion}. Primero debes desvincularlo desde la edición de la operación`,
+        },
+        { status: 400 }
+      );
+    }
+
+    await prisma.vehicle.delete({ where: { id } });
+
+    return NextResponse.json(
+      { message: "Vehículo eliminado exitosamente" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error al eliminar vehículo:", error);
+    return NextResponse.json(
+      { message: "Error al eliminar vehículo" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
