@@ -232,6 +232,11 @@ export function CreateOperationForm({
     setTradeInVehicles((prev) => [...prev, newVehicle]);
     resetTradeInForm();
     setShowTradeInForm(false);
+    setFieldErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.vehiculoUsado;
+      return newErrors;
+    });
   };
 
   const handleRemoveTradeInVehicle = (id: string) => {
@@ -307,6 +312,16 @@ export function CreateOperationForm({
       errors.precioRevista = "El precio debe ser mayor a 0";
     }
 
+    // Validación de vehículo usado para "Venta con toma de usado"
+    const selectedTipo = operationTypes.find((t) => t.id === tipoOperacionId);
+    if (
+      selectedTipo?.nombre === "Venta con toma de usado" &&
+      tradeInVehicles.length === 0
+    ) {
+      errors.vehiculoUsado =
+        "Debés añadir el vehículo usado antes de guardar esta operación";
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -354,6 +369,10 @@ export function CreateOperationForm({
       formData.append("fechaInicio", fechaInicio);
       formData.append("precioVentaTotal", precioVentaTotal);
       formData.append("ingresosBrutos", ingresosBrutos);
+
+      if (tradeInVehicles.length > 0) {
+        formData.append("vehiculoUsado", JSON.stringify(tradeInVehicles[0]));
+      }
 
       photos.forEach((photo) => {
         formData.append("fotos", photo.file);
@@ -438,6 +457,9 @@ export function CreateOperationForm({
     setFieldErrors({});
   };
 
+  const selectedTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
+  const needsTradeIn = selectedTipoNombre === "Venta con toma de usado";
+
   const isFormValid =
     tipoOperacionId &&
     fechaInicio &&
@@ -451,6 +473,7 @@ export function CreateOperationForm({
     precioRevista &&
     precioVentaTotal &&
     ingresosBrutos &&
+    (!needsTradeIn || tradeInVehicles.length > 0) &&
     Object.keys(fieldErrors).length === 0;
 
   const vehicleFieldsData: VehicleFieldsData = {
@@ -545,6 +568,7 @@ export function CreateOperationForm({
                 onChange={(e) => {
                   setTipoOperacionId(e.target.value);
                   handleInputChange("tipoOperacionId");
+                  handleInputChange("vehiculoUsado");
                 }}
                 className={`h-12 w-full appearance-none rounded-lg border ${
                   fieldErrors.tipoOperacionId
@@ -625,16 +649,26 @@ export function CreateOperationForm({
       />
 
       {/* Botón para añadir auto en parte de pago - Siempre visible */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={() => setShowTradeInForm(true)}
-          className="flex h-12 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 text-sm font-semibold text-blue-700 transition-all hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          className={`flex h-12 items-center justify-center gap-2 rounded-lg border-2 border-dashed text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
+            fieldErrors.vehiculoUsado
+              ? "border-red-300 bg-red-50 text-red-700 hover:border-red-400 hover:bg-red-100 focus:ring-red-500"
+              : "border-blue-300 bg-blue-50 text-blue-700 hover:border-blue-400 hover:bg-blue-100 focus:ring-blue-500"
+          }`}
           disabled={isSubmitting}
         >
           <span className="material-symbols-outlined text-xl">add_circle</span>
           <span>Añadir auto en parte de pago</span>
         </button>
+        {fieldErrors.vehiculoUsado && (
+          <div className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">
+            <span className="material-symbols-outlined text-base">error</span>
+            <span>{fieldErrors.vehiculoUsado}</span>
+          </div>
+        )}
       </div>
 
       {/* Formulario de Vehículos en Parte de Pago */}

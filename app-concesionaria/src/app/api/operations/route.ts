@@ -280,6 +280,7 @@ export async function POST(req: NextRequest) {
     const fechaInicioStr = formData.get("fechaInicio") as string;
     const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
     const ingresosBrutosStr = formData.get("ingresosBrutos") as string;
+    const vehiculoUsadoStr = formData.get("vehiculoUsado") as string | null;
 
     const errors: string[] = [];
 
@@ -402,6 +403,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (tipoOperacion.nombre === "Venta con toma de usado" && !vehiculoUsadoStr) {
+      return NextResponse.json(
+        { message: "Debés añadir el vehículo usado antes de guardar esta operación" },
+        { status: 400 }
+      );
+    }
+
+    let vehiculoUsado: Record<string, string> | null = null;
+
+    if (vehiculoUsadoStr) {
+      try {
+        vehiculoUsado = JSON.parse(vehiculoUsadoStr);
+      } catch {
+        return NextResponse.json(
+          { message: "El formato del vehículo usado es inválido" },
+          { status: 400 }
+        );
+      }
+
+      if (!vehiculoUsado?.marcaId || !vehiculoUsado?.modelo || !vehiculoUsado?.anio) {
+        return NextResponse.json(
+          { message: "El vehículo usado debe tener marcaId, modelo y anio" },
+          { status: 400 }
+        );
+      }
+    }
+
     const lastOperation = await prisma.operation.findFirst({
       where: { 
         clienteId,
@@ -424,9 +452,9 @@ export async function POST(req: NextRequest) {
       nextIdOperacion = `OP-${currentYear}-${nextNumber.toString().padStart(3, "0")}`;
     }
 
-    const comision = precioVentaTotal - ingresosBrutos;
     const gastosAsociados = 0;
-    const ingresosNetos = ingresosBrutos - comision - gastosAsociados;
+    const ingresosNetos = ingresosBrutos - gastosAsociados;
+    const comision = precioVentaTotal > 0 ? (ingresosNetos / precioVentaTotal) * 100 : 0;
 
     const operationId = randomUUID();
     const vehicleId = randomUUID();
@@ -550,6 +578,50 @@ export async function POST(req: NextRequest) {
           },
         },
       });
+
+      if (vehiculoUsado) {
+        const usedVehicleId = randomUUID();
+        const usedVehicleAnio = parseInt(vehiculoUsado.anio, 10);
+        const usedVehicleKilometros = vehiculoUsado.kilometros
+          ? parseInt(vehiculoUsado.kilometros, 10)
+          : null;
+        const usedVehiclePrecioRevista = vehiculoUsado.precioRevista
+          ? parseFloat(vehiculoUsado.precioRevista)
+          : null;
+        const usedVehiclePrecioNegociado = vehiculoUsado.precioNegociado
+          ? parseFloat(vehiculoUsado.precioNegociado)
+          : null;
+
+        await tx.vehicle.create({
+          data: {
+            id: usedVehicleId,
+            clienteId,
+            marcaId: vehiculoUsado.marcaId,
+            modelo: vehiculoUsado.modelo,
+            anio: usedVehicleAnio,
+            categoriaId: vehiculoUsado.categoriaId || categoriaId,
+            patente: vehiculoUsado.patente || null,
+            version: vehiculoUsado.version || null,
+            color: vehiculoUsado.color || null,
+            kilometros: usedVehicleKilometros,
+            notasMecanicas: vehiculoUsado.notasMecanicas || null,
+            notasGenerales: vehiculoUsado.notasGenerales || null,
+            precioRevista: usedVehiclePrecioRevista,
+            estado: "disponible",
+            actualizadoEn: now,
+          },
+        });
+
+        await tx.operationExchange.create({
+          data: {
+            id: randomUUID(),
+            operacionId: operationId,
+            stockId: usedVehicleId,
+            precioNegociado: usedVehiclePrecioNegociado,
+            actualizadoEn: now,
+          },
+        });
+      }
 
       return operation;
     });
