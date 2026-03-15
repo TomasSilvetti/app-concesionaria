@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import "material-symbols/outlined.css";
+import {
+  VehicleFieldsForm,
+  VehicleFieldsData,
+  VehicleFieldsHandlers,
+  PhotoFile,
+} from "../stock/VehicleFieldsForm";
 
 interface VehicleBrand {
   id: string;
@@ -18,6 +24,22 @@ interface OperationType {
   nombre: string;
 }
 
+interface StockVehicle {
+  id: string;
+  marca: string;
+  modelo: string;
+  anio: number | null;
+  patente: string | null;
+  categoriaId: string | null;
+  version: string | null;
+  color: string | null;
+  km: number | null;
+  notasMecanicas: string | null;
+  notasGenerales: string | null;
+  precioRevista: number | null;
+  precioOferta: number | null;
+}
+
 interface TradeInVehicle {
   id: string;
   marcaId: string;
@@ -27,6 +49,7 @@ interface TradeInVehicle {
   version: string;
   color: string;
   kilometros: string;
+  precioRevista: string;
   precioNegociado: string;
   notasMecanicas: string;
   notasGenerales: string;
@@ -41,16 +64,34 @@ export function CreateOperationForm({
   onSuccess,
   onCancel,
 }: CreateOperationFormProps) {
-  // Form fields
+  // Operation-specific fields
   const [tipoOperacionId, setTipoOperacionId] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
-  const [patente, setPatente] = useState("");
+  const [precioVentaTotal, setPrecioVentaTotal] = useState("");
+  const [ingresosBrutos, setIngresosBrutos] = useState("");
+
+  // Vehicle fields (using VehicleFieldsForm component)
   const [marcaId, setMarcaId] = useState("");
   const [modelo, setModelo] = useState("");
   const [anio, setAnio] = useState("");
+  const [patente, setPatente] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
-  const [precioVentaTotal, setPrecioVentaTotal] = useState("");
-  const [ingresosBrutos, setIngresosBrutos] = useState("");
+  const [version, setVersion] = useState("");
+  const [color, setColor] = useState("");
+  const [kilometros, setKilometros] = useState("");
+  const [notasMecanicas, setNotasMecanicas] = useState("");
+  const [notasGenerales, setNotasGenerales] = useState("");
+  const [precioRevista, setPrecioRevista] = useState("");
+  const [precioOferta, setPrecioOferta] = useState("");
+  const [photos, setPhotos] = useState<PhotoFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Stock modal state
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockVehicles, setStockVehicles] = useState<StockVehicle[]>([]);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [selectedStockVehicleId, setSelectedStockVehicleId] = useState<string | null>(null);
+  const [stockAutofillId, setStockAutofillId] = useState<string | null>(null);
 
   // Trade-in vehicles state
   const [tradeInVehicles, setTradeInVehicles] = useState<TradeInVehicle[]>([]);
@@ -64,6 +105,7 @@ export function CreateOperationForm({
   const [tradeInVersion, setTradeInVersion] = useState("");
   const [tradeInColor, setTradeInColor] = useState("");
   const [tradeInKilometros, setTradeInKilometros] = useState("");
+  const [tradeInPrecioRevista, setTradeInPrecioRevista] = useState("");
   const [tradeInPrecioNegociado, setTradeInPrecioNegociado] = useState("");
   const [tradeInNotasMecanicas, setTradeInNotasMecanicas] = useState("");
   const [tradeInNotasGenerales, setTradeInNotasGenerales] = useState("");
@@ -154,6 +196,7 @@ export function CreateOperationForm({
     setTradeInVersion("");
     setTradeInColor("");
     setTradeInKilometros("");
+    setTradeInPrecioRevista("");
     setTradeInPrecioNegociado("");
     setTradeInNotasMecanicas("");
     setTradeInNotasGenerales("");
@@ -174,6 +217,11 @@ export function CreateOperationForm({
       }
     }
     if (!tradeInPatente.trim()) errors.tradeInPatente = "La patente es requerida";
+    if (!tradeInPrecioRevista) {
+      errors.tradeInPrecioRevista = "El precio revista es requerido";
+    } else if (parseFloat(tradeInPrecioRevista) <= 0) {
+      errors.tradeInPrecioRevista = "El precio debe ser mayor a 0";
+    }
     if (!tradeInPrecioNegociado) {
       errors.tradeInPrecioNegociado = "El precio negociado es requerido";
     } else if (parseFloat(tradeInPrecioNegociado) <= 0) {
@@ -198,6 +246,7 @@ export function CreateOperationForm({
       version: tradeInVersion.trim(),
       color: tradeInColor.trim(),
       kilometros: tradeInKilometros,
+      precioRevista: tradeInPrecioRevista,
       precioNegociado: tradeInPrecioNegociado,
       notasMecanicas: tradeInNotasMecanicas.trim(),
       notasGenerales: tradeInNotasGenerales.trim(),
@@ -206,10 +255,87 @@ export function CreateOperationForm({
     setTradeInVehicles((prev) => [...prev, newVehicle]);
     resetTradeInForm();
     setShowTradeInForm(false);
+    setFieldErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.vehiculoUsado;
+      return newErrors;
+    });
   };
 
   const handleRemoveTradeInVehicle = (id: string) => {
     setTradeInVehicles((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleEditTradeInVehicle = (vehicle: TradeInVehicle) => {
+    setTradeInVehicles((prev) => prev.filter((v) => v.id !== vehicle.id));
+    setTradeInMarcaId(vehicle.marcaId);
+    setTradeInModelo(vehicle.modelo);
+    setTradeInAnio(vehicle.anio);
+    setTradeInPatente(vehicle.patente);
+    setTradeInVersion(vehicle.version);
+    setTradeInColor(vehicle.color);
+    setTradeInKilometros(vehicle.kilometros);
+    setTradeInPrecioRevista(vehicle.precioRevista);
+    setTradeInPrecioNegociado(vehicle.precioNegociado);
+    setTradeInNotasMecanicas(vehicle.notasMecanicas);
+    setTradeInNotasGenerales(vehicle.notasGenerales);
+    setTradeInFieldErrors({});
+    setShowTradeInForm(true);
+  };
+
+  const fetchStockDisponibles = async () => {
+    setStockLoading(true);
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(`${baseUrl}/api/stock/disponibles`);
+      if (res.ok) {
+        const data = await res.json();
+        setStockVehicles(data.vehicles ?? []);
+      } else {
+        setStockVehicles([]);
+      }
+    } catch {
+      setStockVehicles([]);
+    } finally {
+      setStockLoading(false);
+    }
+  };
+
+  const handleOpenStockModal = () => {
+    setSelectedStockVehicleId(null);
+    setShowStockModal(true);
+    fetchStockDisponibles();
+  };
+
+  const handleConfirmStockSelection = () => {
+    const vehicle = stockVehicles.find((v) => v.id === selectedStockVehicleId);
+    if (!vehicle) return;
+
+    const brand = brands.find(
+      (b) => b.nombre.toLowerCase() === vehicle.marca.toLowerCase()
+    );
+    if (brand) setMarcaId(brand.id);
+
+    setModelo(vehicle.modelo);
+    if (vehicle.anio != null) setAnio(String(vehicle.anio));
+    setPatente(vehicle.patente ?? "");
+    if (vehicle.categoriaId) setCategoriaId(vehicle.categoriaId);
+    setVersion(vehicle.version ?? "");
+    setColor(vehicle.color ?? "");
+    setKilometros(vehicle.km != null ? String(vehicle.km) : "");
+    setNotasMecanicas(vehicle.notasMecanicas ?? "");
+    setNotasGenerales(vehicle.notasGenerales ?? "");
+    setPrecioRevista(vehicle.precioRevista != null ? String(vehicle.precioRevista) : "");
+    setPrecioOferta(vehicle.precioOferta != null ? String(vehicle.precioOferta) : "");
+    setPrecioVentaTotal(vehicle.precioRevista != null ? String(vehicle.precioRevista) : "");
+
+    ["marcaId", "modelo", "anio", "categoriaId", "color", "kilometros", "precioRevista", "precioVentaTotal"].forEach((f) =>
+      handleInputChange(f)
+    );
+
+    setStockAutofillId(vehicle.id);
+    setShowStockModal(false);
+    setSelectedStockVehicleId(null);
   };
 
   const handleTradeInInputChange = (field: string) => {
@@ -225,9 +351,21 @@ export function CreateOperationForm({
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
+    // Operation fields validation
     if (!tipoOperacionId) errors.tipoOperacionId = "Seleccioná un tipo de operación";
     if (!fechaInicio) errors.fechaInicio = "La fecha de inicio es requerida";
-    if (!patente.trim()) errors.patente = "La patente es requerida";
+    if (!precioVentaTotal) {
+      errors.precioVentaTotal = "El precio de venta es requerido";
+    } else if (parseFloat(precioVentaTotal) <= 0) {
+      errors.precioVentaTotal = "El precio debe ser mayor a 0";
+    }
+    if (!ingresosBrutos) {
+      errors.ingresosBrutos = "El ingreso bruto es requerido";
+    } else if (parseFloat(ingresosBrutos) <= 0) {
+      errors.ingresosBrutos = "El ingreso debe ser mayor a 0";
+    }
+
+    // Vehicle fields validation (from VehicleFieldsForm)
     if (!marcaId) errors.marcaId = "Seleccioná una marca";
     if (!modelo.trim()) errors.modelo = "El modelo es requerido";
     if (!anio) {
@@ -239,15 +377,27 @@ export function CreateOperationForm({
       }
     }
     if (!categoriaId) errors.categoriaId = "Seleccioná una categoría";
-    if (!precioVentaTotal) {
-      errors.precioVentaTotal = "El precio de venta es requerido";
-    } else if (parseFloat(precioVentaTotal) <= 0) {
-      errors.precioVentaTotal = "El precio debe ser mayor a 0";
+    if (!version.trim()) errors.version = "La versión es requerida";
+    if (!color.trim()) errors.color = "El color es requerido";
+    if (!kilometros) {
+      errors.kilometros = "Los kilómetros son requeridos";
+    } else if (parseInt(kilometros) < 0) {
+      errors.kilometros = "Los kilómetros deben ser mayores o iguales a 0";
     }
-    if (!ingresosBrutos) {
-      errors.ingresosBrutos = "El ingreso bruto es requerido";
-    } else if (parseFloat(ingresosBrutos) <= 0) {
-      errors.ingresosBrutos = "El ingreso debe ser mayor a 0";
+    if (!precioRevista) {
+      errors.precioRevista = "El precio revista es requerido";
+    } else if (parseFloat(precioRevista) <= 0) {
+      errors.precioRevista = "El precio debe ser mayor a 0";
+    }
+
+    // Validación de vehículo usado para "Venta con toma de usado"
+    const selectedTipo = operationTypes.find((t) => t.id === tipoOperacionId);
+    if (
+      selectedTipo?.nombre === "Venta con toma de usado" &&
+      tradeInVehicles.length === 0
+    ) {
+      errors.vehiculoUsado =
+        "Debés añadir el vehículo usado antes de guardar esta operación";
     }
 
     setFieldErrors(errors);
@@ -269,54 +419,76 @@ export function CreateOperationForm({
       const baseUrl =
         typeof window !== "undefined" ? window.location.origin : "";
       
-      const payload: any = {
-        tipoOperacionId,
-        fechaInicio,
-        patente: patente.trim(),
-        marcaId,
-        modelo: modelo.trim(),
-        anio: parseInt(anio),
-        categoriaId,
-        precioVentaTotal: parseFloat(precioVentaTotal),
-        ingresosBrutos: parseFloat(ingresosBrutos),
-      };
-
-      // Add trade-in vehicles if any
-      if (tradeInVehicles.length > 0) {
-        payload.vehiculosIntercambio = tradeInVehicles.map((v) => ({
-          marcaId: v.marcaId,
-          modelo: v.modelo,
-          anio: parseInt(v.anio),
-          patente: v.patente,
-          version: v.version || undefined,
-          color: v.color || undefined,
-          kilometros: v.kilometros ? parseInt(v.kilometros) : undefined,
-          precioNegociado: parseFloat(v.precioNegociado),
-          notasMecanicas: v.notasMecanicas || undefined,
-          notasGenerales: v.notasGenerales || undefined,
-        }));
+      const formData = new FormData();
+      
+      formData.append("marcaId", marcaId);
+      formData.append("modelo", modelo.trim());
+      formData.append("anio", anio);
+      formData.append("categoriaId", categoriaId);
+      formData.append("version", version.trim());
+      formData.append("color", color.trim());
+      formData.append("kilometros", kilometros);
+      formData.append("precioRevista", precioRevista);
+      
+      if (patente.trim()) {
+        formData.append("patente", patente.trim());
       }
+      if (precioOferta) {
+        formData.append("precioOferta", precioOferta);
+      }
+      if (notasMecanicas.trim()) {
+        formData.append("notasMecanicas", notasMecanicas.trim());
+      }
+      if (notasGenerales.trim()) {
+        formData.append("notasGenerales", notasGenerales.trim());
+      }
+
+      formData.append("tipoOperacionId", tipoOperacionId);
+      formData.append("fechaInicio", fechaInicio);
+      formData.append("precioVentaTotal", precioVentaTotal);
+      formData.append("ingresosBrutos", ingresosBrutos);
+
+      const tipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
+      if (stockAutofillId && tipoNombre === "Venta desde stock") {
+        formData.append("stockVehicleId", stockAutofillId);
+      }
+
+      if (tradeInVehicles.length > 0) {
+        formData.append("vehiculoUsado", JSON.stringify(tradeInVehicles[0]));
+      }
+
+      photos.forEach((photo) => {
+        formData.append("fotos", photo.file);
+      });
 
       const res = await fetch(`${baseUrl}/api/operations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (res.status === 201) {
         setSuccessMessage("Operación creada exitosamente");
-        // Reset form
+        // Reset operation fields
         setTipoOperacionId("");
         setFechaInicio("");
-        setPatente("");
+        setPrecioVentaTotal("");
+        setIngresosBrutos("");
+        // Reset vehicle fields
         setMarcaId("");
         setModelo("");
         setAnio("");
+        setPatente("");
         setCategoriaId("");
-        setPrecioVentaTotal("");
-        setIngresosBrutos("");
+        setVersion("");
+        setColor("");
+        setKilometros("");
+        setNotasMecanicas("");
+        setNotasGenerales("");
+        setPrecioRevista("");
+        setPrecioOferta("");
+        setPhotos([]);
         setFieldErrors({});
         setTradeInVehicles([]);
         resetTradeInForm();
@@ -346,24 +518,97 @@ export function CreateOperationForm({
     if (error) setError(null);
   };
 
+  const handleAutofill = () => {
+    if (operationTypes.length > 0) setTipoOperacionId(operationTypes[0].id);
+    const today = new Date().toISOString().split('T')[0];
+    setFechaInicio(today);
+    setPrecioVentaTotal("24000");
+    setIngresosBrutos("22000");
+    
+    if (brands.length > 0) setMarcaId(brands[0].id);
+    setModelo("Corolla");
+    setAnio("2023");
+    setPatente("ABC123");
+    if (categories.length > 0) setCategoriaId(categories[0].id);
+    setVersion("XEi");
+    setColor("Blanco");
+    setKilometros("15000");
+    setNotasMecanicas("Motor en excelente estado, service al día");
+    setNotasGenerales("Único dueño, garage");
+    setPrecioRevista("25000");
+    setPrecioOferta("23000");
+    setFieldErrors({});
+  };
+
+  const selectedTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
+  const needsTradeIn = selectedTipoNombre === "Venta con toma de usado";
+  const isVentaDesdeStock = selectedTipoNombre === "Venta desde stock";
+
   const isFormValid =
     tipoOperacionId &&
     fechaInicio &&
-    patente.trim() &&
     marcaId &&
     modelo.trim() &&
     anio &&
     categoriaId &&
+    version.trim() &&
+    color.trim() &&
+    kilometros &&
+    precioRevista &&
     precioVentaTotal &&
     ingresosBrutos &&
+    (!needsTradeIn || tradeInVehicles.length > 0) &&
     Object.keys(fieldErrors).length === 0;
 
-  const comisionEstimada = ingresosBrutos && precioVentaTotal
-    ? (((parseFloat(ingresosBrutos) - 0) / parseFloat(precioVentaTotal)) * 100).toFixed(2)
-    : "0.00";
+  const vehicleFieldsData: VehicleFieldsData = {
+    marcaId,
+    modelo,
+    anio,
+    patente,
+    categoriaId,
+    version,
+    color,
+    kilometros,
+    notasMecanicas,
+    notasGenerales,
+    precioRevista,
+    precioOferta,
+    photos,
+    precioVentaTotal,
+    ingresosBrutos,
+  };
+
+  const vehicleFieldsHandlers: VehicleFieldsHandlers = {
+    setMarcaId,
+    setModelo,
+    setAnio,
+    setPatente,
+    setCategoriaId,
+    setVersion,
+    setColor,
+    setKilometros,
+    setNotasMecanicas,
+    setNotasGenerales,
+    setPrecioRevista,
+    setPrecioOferta,
+    setPhotos,
+    setPrecioVentaTotal,
+    setIngresosBrutos,
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {/* Botón de autocompletado - TEMPORAL PARA TESTING */}
+      <button
+        type="button"
+        onClick={handleAutofill}
+        className="flex h-10 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 text-xs font-semibold text-purple-700 transition-all hover:border-purple-400 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        disabled={isSubmitting}
+      >
+        <span className="material-symbols-outlined text-lg">auto_fix_high</span>
+        <span>AUTOCOMPLETAR (temporal para testing)</span>
+      </button>
+
       {/* Mensajes globales */}
       {successMessage && (
         <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
@@ -377,25 +622,25 @@ export function CreateOperationForm({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Información del Vehículo */}
-        <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
-            <span className="material-symbols-outlined text-2xl text-blue-600">
-              directions_car
-            </span>
-            <h2 className="text-lg font-semibold text-zinc-900">
-              Información del Vehículo
-            </h2>
-          </div>
+      {/* Tipo de Operación y Fecha */}
+      <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
+          <span className="material-symbols-outlined text-2xl text-blue-600">
+            category
+          </span>
+          <h2 className="text-lg font-semibold text-zinc-900">
+            Datos de la Operación
+          </h2>
+        </div>
 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Tipo de Operación */}
           <div className="flex flex-col gap-2">
             <label
               htmlFor="tipoOperacion"
               className="text-sm font-medium text-zinc-700"
             >
-              Tipo de Operación
+              Tipo de Operación <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
@@ -405,8 +650,25 @@ export function CreateOperationForm({
                 id="tipoOperacion"
                 value={tipoOperacionId}
                 onChange={(e) => {
+                  const prevTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
+                  const newTipoNombre = operationTypes.find((t) => t.id === e.target.value)?.nombre;
                   setTipoOperacionId(e.target.value);
                   handleInputChange("tipoOperacionId");
+                  handleInputChange("vehiculoUsado");
+                  if (
+                    prevTipoNombre === "Venta desde stock" &&
+                    newTipoNombre !== "Venta desde stock" &&
+                    stockAutofillId
+                  ) {
+                    setMarcaId("");
+                    setModelo("");
+                    setPatente("");
+                    setColor("");
+                    setKilometros("");
+                    setPrecioRevista("");
+                    setPrecioOferta("");
+                    setStockAutofillId(null);
+                  }
                 }}
                 className={`h-12 w-full appearance-none rounded-lg border ${
                   fieldErrors.tipoOperacionId
@@ -415,7 +677,7 @@ export function CreateOperationForm({
                 } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
                 disabled={isSubmitting || typesLoading}
               >
-                <option value="">Seleccionar tipo...</option>
+                <option value="">Seleccionar tipo de operación...</option>
                 {operationTypes.map((type) => (
                   <option key={type.id} value={type.id}>
                     {type.nombre}
@@ -433,352 +695,95 @@ export function CreateOperationForm({
             )}
           </div>
 
-          {/* Fecha de Inicio y Patente */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="fechaInicio"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Fecha de Inicio
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  calendar_today
-                </span>
-                <input
-                  id="fechaInicio"
-                  type="date"
-                  value={fechaInicio}
-                  onChange={(e) => {
-                    setFechaInicio(e.target.value);
-                    handleInputChange("fechaInicio");
-                  }}
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.fechaInicio
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.fechaInicio && (
-                <span className="text-xs text-red-600">
-                  {fieldErrors.fechaInicio}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="patente"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Patente / Placa
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  badge
-                </span>
-                <input
-                  id="patente"
-                  type="text"
-                  value={patente}
-                  onChange={(e) => {
-                    setPatente(e.target.value);
-                    handleInputChange("patente");
-                  }}
-                  placeholder="ABC-123"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.patente
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.patente && (
-                <span className="text-xs text-red-600">{fieldErrors.patente}</span>
-              )}
-            </div>
-          </div>
-
-          {/* Marca */}
-          <div className="flex flex-col gap-2">
-            <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
-              Marca
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                branding_watermark
-              </span>
-              <select
-                id="marca"
-                value={marcaId}
-                onChange={(e) => {
-                  setMarcaId(e.target.value);
-                  handleInputChange("marcaId");
-                }}
-                className={`h-12 w-full appearance-none rounded-lg border ${
-                  fieldErrors.marcaId
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={isSubmitting || brandsLoading}
-              >
-                <option value="">Selecciona una marca</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.nombre}
-                  </option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                expand_more
-              </span>
-            </div>
-            {fieldErrors.marcaId && (
-              <span className="text-xs text-red-600">{fieldErrors.marcaId}</span>
-            )}
-          </div>
-
-          {/* Modelo y Año */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="modelo"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Modelo
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  directions_car
-                </span>
-                <input
-                  id="modelo"
-                  type="text"
-                  value={modelo}
-                  onChange={(e) => {
-                    setModelo(e.target.value);
-                    handleInputChange("modelo");
-                  }}
-                  placeholder="Ej: Corolla Cross"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.modelo
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.modelo && (
-                <span className="text-xs text-red-600">{fieldErrors.modelo}</span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="anio" className="text-sm font-medium text-zinc-700">
-                Año
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  event
-                </span>
-                <input
-                  id="anio"
-                  type="number"
-                  value={anio}
-                  onChange={(e) => {
-                    setAnio(e.target.value);
-                    handleInputChange("anio");
-                  }}
-                  placeholder="2024"
-                  min="1900"
-                  max="2100"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.anio
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={isSubmitting}
-                />
-              </div>
-              {fieldErrors.anio && (
-                <span className="text-xs text-red-600">{fieldErrors.anio}</span>
-              )}
-            </div>
-          </div>
-
-          {/* Categoría */}
+          {/* Fecha de Inicio */}
           <div className="flex flex-col gap-2">
             <label
-              htmlFor="categoria"
+              htmlFor="fechaInicio"
               className="text-sm font-medium text-zinc-700"
             >
-              Categoría
+              Fecha de Inicio <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                label
-              </span>
-              <select
-                id="categoria"
-                value={categoriaId}
-                onChange={(e) => {
-                  setCategoriaId(e.target.value);
-                  handleInputChange("categoriaId");
-                }}
-                className={`h-12 w-full appearance-none rounded-lg border ${
-                  fieldErrors.categoriaId
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={isSubmitting || categoriesLoading}
-              >
-                <option value="">Seleccionar categoría</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.nombre}
-                  </option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                expand_more
-              </span>
-            </div>
-            {fieldErrors.categoriaId && (
-              <span className="text-xs text-red-600">
-                {fieldErrors.categoriaId}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Condiciones Comerciales */}
-        <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
-            <span className="material-symbols-outlined text-2xl text-blue-600">
-              payments
-            </span>
-            <h2 className="text-lg font-semibold text-zinc-900">
-              Condiciones Comerciales
-            </h2>
-          </div>
-
-          {/* Precio Venta Total */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="precioVentaTotal"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Precio Venta Total
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                attach_money
+                calendar_today
               </span>
               <input
-                id="precioVentaTotal"
-                type="number"
-                step="0.01"
-                value={precioVentaTotal}
+                id="fechaInicio"
+                type="date"
+                value={fechaInicio}
                 onChange={(e) => {
-                  setPrecioVentaTotal(e.target.value);
-                  handleInputChange("precioVentaTotal");
+                  setFechaInicio(e.target.value);
+                  handleInputChange("fechaInicio");
                 }}
-                placeholder="0.00"
                 className={`h-12 w-full rounded-lg border ${
-                  fieldErrors.precioVentaTotal
+                  fieldErrors.fechaInicio
                     ? "border-red-300 bg-red-50"
                     : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                } pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
                 disabled={isSubmitting}
               />
             </div>
-            {fieldErrors.precioVentaTotal && (
+            {fieldErrors.fechaInicio && (
               <span className="text-xs text-red-600">
-                {fieldErrors.precioVentaTotal}
+                {fieldErrors.fechaInicio}
               </span>
             )}
-          </div>
-
-          {/* Ingreso Bruto */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="ingresosBrutos"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Ingreso Bruto
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                monetization_on
-              </span>
-              <input
-                id="ingresosBrutos"
-                type="number"
-                step="0.01"
-                value={ingresosBrutos}
-                onChange={(e) => {
-                  setIngresosBrutos(e.target.value);
-                  handleInputChange("ingresosBrutos");
-                }}
-                placeholder="0.00"
-                className={`h-12 w-full rounded-lg border ${
-                  fieldErrors.ingresosBrutos
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={isSubmitting}
-              />
-            </div>
-            {fieldErrors.ingresosBrutos && (
-              <span className="text-xs text-red-600">
-                {fieldErrors.ingresosBrutos}
-              </span>
-            )}
-          </div>
-
-          {/* Comisión Estimada (calculada) */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="comisionEstimada"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Comisión Estimada
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                calculate
-              </span>
-              <input
-                id="comisionEstimada"
-                type="text"
-                value={`${comisionEstimada}%`}
-                readOnly
-                className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700 transition-colors focus:outline-none"
-                disabled
-              />
-            </div>
-            <p className="text-xs text-zinc-500">
-              Se calcula automáticamente según ingreso bruto / precio venta
-            </p>
           </div>
         </div>
       </div>
 
+      {/* Botón Buscar en stock - solo visible para "Venta desde stock" */}
+      {isVentaDesdeStock && (
+        <button
+          type="button"
+          onClick={handleOpenStockModal}
+          className="flex h-12 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-indigo-300 bg-indigo-50 text-sm font-semibold text-indigo-700 transition-all hover:border-indigo-400 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+          disabled={isSubmitting}
+        >
+          <span className="material-symbols-outlined text-xl">search</span>
+          <span>
+            {stockAutofillId ? "Cambiar vehículo del stock" : "Buscar en stock"}
+          </span>
+        </button>
+      )}
+
+      {/* Información del Vehículo - usando VehicleFieldsForm */}
+      <VehicleFieldsForm
+        data={vehicleFieldsData}
+        handlers={vehicleFieldsHandlers}
+        brands={brands}
+        categories={categories}
+        brandsLoading={brandsLoading}
+        categoriesLoading={categoriesLoading}
+        fieldErrors={fieldErrors}
+        onFieldChange={handleInputChange}
+        disabled={isSubmitting}
+        isDragging={isDragging}
+        onDragStateChange={setIsDragging}
+        showOperationFields={true}
+      />
+
       {/* Botón para añadir auto en parte de pago - Siempre visible */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={() => setShowTradeInForm(true)}
-          className="flex h-12 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 text-sm font-semibold text-blue-700 transition-all hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          className={`flex h-12 items-center justify-center gap-2 rounded-lg border-2 border-dashed text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
+            fieldErrors.vehiculoUsado
+              ? "border-red-300 bg-red-50 text-red-700 hover:border-red-400 hover:bg-red-100 focus:ring-red-500"
+              : "border-blue-300 bg-blue-50 text-blue-700 hover:border-blue-400 hover:bg-blue-100 focus:ring-blue-500"
+          }`}
           disabled={isSubmitting}
         >
           <span className="material-symbols-outlined text-xl">add_circle</span>
           <span>Añadir auto en parte de pago</span>
         </button>
+        {fieldErrors.vehiculoUsado && (
+          <div className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">
+            <span className="material-symbols-outlined text-base">error</span>
+            <span>{fieldErrors.vehiculoUsado}</span>
+          </div>
+        )}
       </div>
 
       {/* Formulario de Vehículos en Parte de Pago */}
@@ -796,17 +801,40 @@ export function CreateOperationForm({
                     Agregar vehículo en parte de pago
                   </h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowTradeInForm(false);
-                    resetTradeInForm();
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-                  disabled={isSubmitting}
-                >
-                  <span className="material-symbols-outlined text-xl">close</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTradeInMarcaId(brands[0]?.id ?? "");
+                      setTradeInModelo("Corolla");
+                      setTradeInAnio("2021");
+                      setTradeInPatente("ABC-123");
+                      setTradeInVersion("XLE");
+                      setTradeInColor("Blanco");
+                      setTradeInKilometros("45000");
+                      setTradeInPrecioRevista("18000000");
+                      setTradeInPrecioNegociado("15000000");
+                      setTradeInNotasMecanicas("Buen estado general");
+                    }}
+                    title="Autocompletar datos de prueba"
+                    className="flex h-8 items-center gap-1 rounded-lg border border-dashed border-zinc-300 px-2 text-xs text-zinc-400 transition-colors hover:border-zinc-400 hover:text-zinc-600 focus:outline-none"
+                    disabled={isSubmitting}
+                  >
+                    <span className="material-symbols-outlined text-base">auto_fix_high</span>
+                    Test
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTradeInForm(false);
+                      resetTradeInForm();
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                    disabled={isSubmitting}
+                  >
+                    <span className="material-symbols-outlined text-xl">close</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -1037,6 +1065,43 @@ export function CreateOperationForm({
                   </div>
                 </div>
 
+                {/* Precio Revista */}
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="tradeInPrecioRevista"
+                    className="text-sm font-medium text-zinc-700"
+                  >
+                    Precio Revista <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                      menu_book
+                    </span>
+                    <input
+                      id="tradeInPrecioRevista"
+                      type="number"
+                      step="0.01"
+                      value={tradeInPrecioRevista}
+                      onChange={(e) => {
+                        setTradeInPrecioRevista(e.target.value);
+                        handleTradeInInputChange("tradeInPrecioRevista");
+                      }}
+                      placeholder="0.00"
+                      className={`h-12 w-full rounded-lg border ${
+                        tradeInFieldErrors.tradeInPrecioRevista
+                          ? "border-red-300 bg-red-50"
+                          : "border-zinc-300 bg-zinc-50"
+                      } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50`}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  {tradeInFieldErrors.tradeInPrecioRevista && (
+                    <span className="text-xs text-red-600">
+                      {tradeInFieldErrors.tradeInPrecioRevista}
+                    </span>
+                  )}
+                </div>
+
                 {/* Precio Negociado */}
                 <div className="flex flex-col gap-2">
                   <label
@@ -1172,18 +1237,30 @@ export function CreateOperationForm({
                                 Kilómetros: {parseInt(vehicle.kilometros).toLocaleString()} km
                               </p>
                             )}
-                            <p className="mt-1 text-sm font-medium text-emerald-700">
-                              Precio estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
+                            <p className="mt-1 text-sm text-zinc-600">
+                              Revista: ${parseFloat(vehicle.precioRevista).toLocaleString()} • Estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-                            disabled={isSubmitting}
-                          >
-                            <span className="material-symbols-outlined text-xl">delete</span>
-                          </button>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleEditTradeInVehicle(vehicle)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={isSubmitting}
+                              aria-label="Editar vehículo"
+                            >
+                              <span className="material-symbols-outlined text-xl">edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                              disabled={isSubmitting}
+                              aria-label="Eliminar vehículo"
+                            >
+                              <span className="material-symbols-outlined text-xl">delete</span>
+                            </button>
+                          </div>
                         </div>
                         {(vehicle.notasMecanicas || vehicle.notasGenerales) && (
                           <div className="mt-2 flex flex-col gap-1 text-xs text-zinc-600">
@@ -1254,14 +1331,26 @@ export function CreateOperationForm({
                           Precio estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        disabled={isSubmitting}
-                      >
-                        <span className="material-symbols-outlined text-xl">delete</span>
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleEditTradeInVehicle(vehicle)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                          aria-label="Editar vehículo"
+                        >
+                          <span className="material-symbols-outlined text-xl">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          disabled={isSubmitting}
+                          aria-label="Eliminar vehículo"
+                        >
+                          <span className="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                      </div>
                     </div>
                     {(vehicle.notasMecanicas || vehicle.notasGenerales) && (
                       <div className="mt-2 flex flex-col gap-1 text-xs text-zinc-600">
@@ -1281,6 +1370,143 @@ export function CreateOperationForm({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Buscar en stock */}
+      {showStockModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Buscar vehículo en stock"
+        >
+          <div className="flex w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-indigo-600">
+                  search
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">
+                  Buscar vehículo en stock
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowStockModal(false);
+                  setSelectedStockVehicleId(null);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                aria-label="Cerrar modal"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+              {stockLoading ? (
+                <div className="flex items-center justify-center gap-3 py-12 text-zinc-500">
+                  <span className="material-symbols-outlined animate-spin text-2xl">
+                    progress_activity
+                  </span>
+                  <span className="text-sm">Cargando vehículos disponibles...</span>
+                </div>
+              ) : stockVehicles.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-400">
+                  <span className="material-symbols-outlined text-4xl">
+                    directions_car
+                  </span>
+                  <p className="text-sm">No hay vehículos disponibles en stock.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {stockVehicles.map((vehicle) => (
+                    <button
+                      key={vehicle.id}
+                      type="button"
+                      onClick={() => setSelectedStockVehicleId(vehicle.id)}
+                      className={`w-full rounded-lg border-2 p-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        selectedStockVehicleId === vehicle.id
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                              selectedStockVehicleId === vehicle.id
+                                ? "bg-indigo-100"
+                                : "bg-zinc-100"
+                            }`}
+                          >
+                            <span
+                              className={`material-symbols-outlined text-xl ${
+                                selectedStockVehicleId === vehicle.id
+                                  ? "text-indigo-600"
+                                  : "text-zinc-500"
+                              }`}
+                            >
+                              {selectedStockVehicleId === vehicle.id
+                                ? "check_circle"
+                                : "directions_car"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-zinc-900">
+                              {vehicle.marca} {vehicle.modelo}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                              {vehicle.patente && (
+                                <span className="mr-2">Patente: {vehicle.patente}</span>
+                              )}
+                              {vehicle.color && <span>{vehicle.color}</span>}
+                              {vehicle.km != null && (
+                                <span className="ml-2">
+                                  · {vehicle.km.toLocaleString()} km
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        {vehicle.precioRevista != null && (
+                          <p className="shrink-0 text-sm font-medium text-zinc-700">
+                            ${vehicle.precioRevista.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowStockModal(false);
+                  setSelectedStockVehicleId(null);
+                }}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmStockSelection}
+                disabled={!selectedStockVehicleId}
+                className="flex h-10 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-indigo-600"
+              >
+                <span className="material-symbols-outlined text-base">check</span>
+                Seleccionar
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1312,7 +1538,7 @@ export function CreateOperationForm({
           ) : (
             <>
               <span className="material-symbols-outlined text-xl">save</span>
-              <span>Crear Operación</span>
+              <span>Guardar Operación</span>
             </>
           )}
         </button>

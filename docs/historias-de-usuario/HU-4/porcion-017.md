@@ -4,6 +4,7 @@
 **Par:** —
 **Tipo:** BACK
 **Prerequisitos:** Ninguno
+**Estado:** ✅ Completada
 
 ## Descripción
 

@@ -4,6 +4,7 @@
 **Par:** porcion-019
 **Tipo:** FRONT
 **Prerequisitos:** Ninguno
+**estado:** ✅ Completada
 
 ## Descripción
 

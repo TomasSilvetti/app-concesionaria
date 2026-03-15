@@ -55,17 +55,24 @@ export async function GET(
             nombre: true,
           },
         },
+        VehiculoVendido: {
+          include: {
+            VehicleBrand: true,
+            VehicleCategory: true,
+            VehiclePhoto: {
+              orderBy: {
+                orden: 'asc',
+              },
+            },
+          },
+        },
         OperationExchange: {
           include: {
-            Stock: {
+            Vehicle: {
               include: {
-                Operation: {
-                  include: {
-                    VehicleBrand: {
-                      select: {
-                        nombre: true,
-                      },
-                    },
+                VehicleBrand: {
+                  select: {
+                    nombre: true,
                   },
                 },
               },
@@ -100,9 +107,21 @@ export async function GET(
       fechaInicio: operation.fechaInicio,
       fechaVenta: operation.fechaVenta,
       diasVenta: diasVenta,
-      modelo: operation.modelo,
-      anio: operation.anio,
-      patente: operation.patente,
+      modelo: operation.VehiculoVendido.modelo,
+      anio: operation.VehiculoVendido.anio,
+      patente: operation.VehiculoVendido.patente,
+      version: operation.VehiculoVendido.version,
+      color: operation.VehiculoVendido.color,
+      kilometros: operation.VehiculoVendido.kilometros,
+      notasMecanicas: operation.VehiculoVendido.notasMecanicas,
+      notasGenerales: operation.VehiculoVendido.notasGenerales,
+      precioRevista: operation.VehiculoVendido.precioRevista,
+      precioOferta: operation.VehiculoVendido.precioOferta,
+      fotos: operation.VehiculoVendido.VehiclePhoto.map((photo) => ({
+        id: photo.id,
+        nombreArchivo: photo.nombreArchivo,
+        orden: photo.orden,
+      })),
       precioVentaTotal: operation.precioVentaTotal,
       ingresosBrutos: operation.ingresosBrutos,
       gastosAsociados: operation.gastosAsociados,
@@ -116,14 +135,14 @@ export async function GET(
       categoriaId: operation.categoriaId,
       tipoOperacionId: operation.tipoOperacionId,
       vehiculosIntercambiados: operation.OperationExchange.map((exchange) => ({
-        marca: exchange.Stock.Operation.VehicleBrand.nombre,
-        modelo: exchange.Stock.Operation.modelo,
-        anio: exchange.Stock.Operation.anio,
-        patente: exchange.Stock.Operation.patente,
+        marca: exchange.Vehicle.VehicleBrand.nombre,
+        modelo: exchange.Vehicle.modelo,
+        anio: exchange.Vehicle.anio,
+        patente: exchange.Vehicle.patente,
         precioNegociado: exchange.precioNegociado,
-        version: exchange.Stock.version,
-        color: exchange.Stock.color,
-        kilometros: exchange.Stock.kilometros,
+        version: exchange.Vehicle.version,
+        color: exchange.Vehicle.color,
+        kilometros: exchange.Vehicle.kilometros,
       })),
       gastos: operation.Expense.map((expense) => ({
         fecha: expense.fecha,
@@ -214,14 +233,9 @@ export async function PATCH(
     const editableFields = [
       "fechaInicio",
       "fechaVenta",
-      "modelo",
-      "anio",
-      "patente",
       "precioVentaTotal",
       "ingresosBrutos",
       "estado",
-      "marcaId",
-      "categoriaId",
       "tipoOperacionId",
     ] as const;
 
@@ -254,30 +268,6 @@ export async function PATCH(
           }
           break;
         }
-        case "modelo":
-          if (typeof value === "string" && value.trim()) {
-            updateData.modelo = value.trim();
-          } else if (value !== undefined && value !== null) {
-            errors.push("modelo debe ser un texto no vacío");
-          }
-          break;
-        case "anio": {
-          const currentYear = new Date().getFullYear();
-          const num = typeof value === "string" ? parseInt(value, 10) : value;
-          if (typeof num !== "number" || isNaN(num) || num < 1900 || num > currentYear + 1) {
-            errors.push(`anio debe ser un número entre 1900 y ${currentYear + 1}`);
-          } else {
-            updateData.anio = num;
-          }
-          break;
-        }
-        case "patente":
-          if (typeof value === "string" && value.trim()) {
-            updateData.patente = value.trim();
-          } else if (value !== undefined && value !== null) {
-            errors.push("patente debe ser un texto no vacío");
-          }
-          break;
         case "precioVentaTotal": {
           const num = typeof value === "string" ? parseFloat(value) : value;
           if (typeof num !== "number" || isNaN(num) || num <= 0) {
@@ -303,8 +293,6 @@ export async function PATCH(
             errors.push(`estado debe ser uno de: ${ALLOWED_ESTADOS.join(", ")}`);
           }
           break;
-        case "marcaId":
-        case "categoriaId":
         case "tipoOperacionId":
           if (typeof value === "string" && value.trim()) {
             updateData[field] = value.trim();
@@ -332,30 +320,6 @@ export async function PATCH(
         { message: "fechaVenta no puede ser anterior a fechaInicio" },
         { status: 400 }
       );
-    }
-
-    if (updateData.marcaId) {
-      const marca = await prisma.vehicleBrand.findFirst({
-        where: { id: updateData.marcaId as string, clienteId },
-      });
-      if (!marca) {
-        return NextResponse.json(
-          { message: "marcaId no existe o no pertenece al cliente" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (updateData.categoriaId) {
-      const categoria = await prisma.vehicleCategory.findFirst({
-        where: { id: updateData.categoriaId as string, clienteId },
-      });
-      if (!categoria) {
-        return NextResponse.json(
-          { message: "categoriaId no existe o no pertenece al cliente" },
-          { status: 400 }
-        );
-      }
     }
 
     if (updateData.tipoOperacionId) {
@@ -393,15 +357,22 @@ export async function PATCH(
         VehicleBrand: { select: { nombre: true } },
         VehicleCategory: { select: { nombre: true } },
         OperationType: { select: { nombre: true } },
+        VehiculoVendido: {
+          include: {
+            VehicleBrand: true,
+            VehicleCategory: true,
+            VehiclePhoto: {
+              orderBy: {
+                orden: 'asc',
+              },
+            },
+          },
+        },
         OperationExchange: {
           include: {
-            Stock: {
+            Vehicle: {
               include: {
-                Operation: {
-                  include: {
-                    VehicleBrand: { select: { nombre: true } },
-                  },
-                },
+                VehicleBrand: { select: { nombre: true } },
               },
             },
           },
@@ -419,37 +390,90 @@ export async function PATCH(
       (fechaFin.getTime() - new Date(updated.fechaInicio).getTime()) / (1000 * 60 * 60 * 24)
     );
 
+    const updatedWithVehicle = await prisma.operation.findUnique({
+      where: { id: updated.id },
+      include: {
+        VehicleBrand: { select: { nombre: true } },
+        VehicleCategory: { select: { nombre: true } },
+        OperationType: { select: { nombre: true } },
+        VehiculoVendido: {
+          include: {
+            VehicleBrand: true,
+            VehicleCategory: true,
+            VehiclePhoto: {
+              orderBy: {
+                orden: 'asc',
+              },
+            },
+          },
+        },
+        OperationExchange: {
+          include: {
+            Vehicle: {
+              include: {
+                VehicleBrand: { select: { nombre: true } },
+              },
+            },
+          },
+        },
+        Expense: {
+          include: {
+            Category: { select: { nombre: true } },
+          },
+        },
+      },
+    });
+
+    if (!updatedWithVehicle) {
+      return NextResponse.json(
+        { message: "Error al obtener operación actualizada" },
+        { status: 500 }
+      );
+    }
+
     const operationFormatted = {
-      idOperacion: updated.idOperacion,
-      fechaInicio: updated.fechaInicio,
-      fechaVenta: updated.fechaVenta,
+      idOperacion: updatedWithVehicle.idOperacion,
+      fechaInicio: updatedWithVehicle.fechaInicio,
+      fechaVenta: updatedWithVehicle.fechaVenta,
       diasVenta,
-      modelo: updated.modelo,
-      anio: updated.anio,
-      patente: updated.patente,
-      precioVentaTotal: updated.precioVentaTotal,
-      ingresosBrutos: updated.ingresosBrutos,
-      gastosAsociados: updated.gastosAsociados,
-      ingresosNetos: updated.ingresosNetos,
-      comision: updated.comision,
-      estado: updated.estado,
-      marcaNombre: updated.VehicleBrand.nombre,
-      categoriaNombre: updated.VehicleCategory.nombre,
-      tipoOperacionNombre: updated.OperationType.nombre,
-      marcaId: updated.marcaId,
-      categoriaId: updated.categoriaId,
-      tipoOperacionId: updated.tipoOperacionId,
-      vehiculosIntercambiados: updated.OperationExchange.map((ex) => ({
-        marca: ex.Stock.Operation.VehicleBrand.nombre,
-        modelo: ex.Stock.Operation.modelo,
-        anio: ex.Stock.Operation.anio,
-        patente: ex.Stock.Operation.patente,
-        precioNegociado: ex.precioNegociado,
-        version: ex.Stock.version,
-        color: ex.Stock.color,
-        kilometros: ex.Stock.kilometros,
+      modelo: updatedWithVehicle.VehiculoVendido.modelo,
+      anio: updatedWithVehicle.VehiculoVendido.anio,
+      patente: updatedWithVehicle.VehiculoVendido.patente,
+      version: updatedWithVehicle.VehiculoVendido.version,
+      color: updatedWithVehicle.VehiculoVendido.color,
+      kilometros: updatedWithVehicle.VehiculoVendido.kilometros,
+      notasMecanicas: updatedWithVehicle.VehiculoVendido.notasMecanicas,
+      notasGenerales: updatedWithVehicle.VehiculoVendido.notasGenerales,
+      precioRevista: updatedWithVehicle.VehiculoVendido.precioRevista,
+      precioOferta: updatedWithVehicle.VehiculoVendido.precioOferta,
+      fotos: updatedWithVehicle.VehiculoVendido.VehiclePhoto.map((photo) => ({
+        id: photo.id,
+        nombreArchivo: photo.nombreArchivo,
+        orden: photo.orden,
       })),
-      gastos: updated.Expense.map((exp) => ({
+      precioVentaTotal: updatedWithVehicle.precioVentaTotal,
+      ingresosBrutos: updatedWithVehicle.ingresosBrutos,
+      gastosAsociados: updatedWithVehicle.gastosAsociados,
+      ingresosNetos: updatedWithVehicle.ingresosNetos,
+      comision: updatedWithVehicle.comision,
+      estado: updatedWithVehicle.estado,
+      marcaNombre: updatedWithVehicle.VehicleBrand.nombre,
+      categoriaNombre: updatedWithVehicle.VehicleCategory.nombre,
+      tipoOperacionNombre: updatedWithVehicle.OperationType.nombre,
+      marcaId: updatedWithVehicle.marcaId,
+      categoriaId: updatedWithVehicle.categoriaId,
+      tipoOperacionId: updatedWithVehicle.tipoOperacionId,
+      vehiculosIntercambiados: updatedWithVehicle.OperationExchange.map((ex) => ({
+        marca: ex.Vehicle.VehicleBrand.nombre,
+        modelo: ex.Vehicle.modelo,
+        anio: ex.Vehicle.anio,
+        patente: ex.Vehicle.patente,
+        precioNegociado: ex.precioNegociado,
+        version: ex.Vehicle.version,
+        color: ex.Vehicle.color,
+        kilometros: ex.Vehicle.kilometros,
+      })),
+      gastos: updatedWithVehicle.Expense.map((exp) => ({
         fecha: exp.fecha,
         descripcion: exp.descripcion,
         categoria: exp.Category.nombre,

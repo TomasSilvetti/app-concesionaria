@@ -1,44 +1,49 @@
-# porcion-033 — Modal de asociación a operación — vista [FRONT]
+# porcion-033 — Botón "Buscar en stock" en formulario de operación venta stock [FRONT]
 
 **Historia de usuario:** HU-4: Gestión de Stock de Vehículos
 **Par:** porcion-034
 **Tipo:** FRONT
-**Prerequisitos:** porcion-018
+**Estado:** 🔄 En progreso
+**Prerequisitos:** porcion-018, formulario de creación de operación
 
 ## Descripción
 
-Crear un modal que permita asociar un vehículo del stock a una operación activa. El modal muestra un listado de todas las operaciones activas con su idOperacion y datos del vehículo principal (marca, modelo, patente). El usuario selecciona una operación y confirma la asociación.
+Agregar un botón "Buscar en stock" en el formulario de creación/edición de operación cuando el tipo seleccionado es "venta stock". Al hacer clic, se abre un modal con el listado de vehículos del stock disponibles (sin operación asociada). Al seleccionar un vehículo y confirmar, sus datos se autocompletán en los campos correspondientes del formulario de operación.
 
 ## Ejemplo de uso
 
-El usuario hace clic en "Asociar a operación" en un vehículo del stock. Se abre un modal con un listado de operaciones activas. Cada operación muestra "OP-123 - Toyota Corolla ABC123". El usuario selecciona una operación y hace clic en "Confirmar". El sistema asocia el vehículo a esa operación y muestra una notificación de éxito.
+El usuario crea una nueva operación y selecciona el tipo "venta stock". Aparece el botón "Buscar en stock". Hace clic en él y se abre un modal con los vehículos disponibles (no asociados a ninguna operación). Cada fila muestra marca, modelo, patente, color y km. El usuario selecciona un Toyota Corolla y hace clic en "Seleccionar". Los campos del formulario (marca, modelo, patente, color, km, precio revista, precio oferta) se autocompletan con los datos de ese vehículo.
 
 ## Criterios de aceptación
 
-- [ ] Al hacer clic en "Asociar a operación" en un vehículo, se abre el modal
-- [ ] El modal muestra un listado de todas las operaciones activas del cliente
-- [ ] Cada operación en el listado muestra: idOperacion, marca, modelo y patente del vehículo principal
-- [ ] El usuario puede seleccionar una operación haciendo clic en ella
-- [ ] La operación seleccionada se resalta visualmente
-- [ ] Hay botones "Confirmar" y "Cancelar"
-- [ ] El botón "Confirmar" está deshabilitado si no hay operación seleccionada
-- [ ] Al hacer clic en "Cancelar", el modal se cierra sin asociar
-- [ ] Mientras se procesa la asociación, se muestra un indicador de carga
+- [ ] El botón "Buscar en stock" solo aparece cuando el tipo de operación es "venta stock"
+- [ ] Al hacer clic en "Buscar en stock", se abre el modal con el listado de vehículos disponibles
+- [ ] Solo se muestran vehículos sin operación asociada (disponibles)
+- [ ] Cada vehículo en el listado muestra: marca, modelo, patente, color, kilómetros y precio revista
+- [ ] El usuario puede seleccionar un vehículo haciendo clic en él
+- [ ] El vehículo seleccionado se resalta visualmente
+- [ ] Hay botones "Seleccionar" y "Cancelar"
+- [ ] El botón "Seleccionar" está deshabilitado si no hay vehículo seleccionado
+- [ ] Al confirmar, los campos del formulario de operación se autocompletar con los datos del vehículo seleccionado
+- [ ] Al hacer clic en "Cancelar", el modal se cierra sin modificar el formulario
+- [ ] Si ya había un vehículo autocompletado, al seleccionar uno nuevo se reemplaza
+- [ ] Mientras carga el listado de vehículos, se muestra un indicador de carga
 - [ ] El componente es responsive y se visualiza correctamente en mobile, tablet y desktop
 
 ## Pruebas
 
 ### Pruebas unitarias
 
-- [ ] Al abrir el modal, se carga el listado de operaciones activas
-- [ ] Al seleccionar una operación, el estado se actualiza correctamente
-- [ ] El botón "Confirmar" se habilita solo cuando hay una operación seleccionada
-- [ ] Al hacer clic en "Cancelar", el modal se cierra sin realizar llamadas al endpoint
+- [ ] El botón "Buscar en stock" solo renderiza cuando el tipo de operación es "venta stock"
+- [ ] Al abrir el modal, se realiza la llamada al endpoint de vehículos disponibles
+- [ ] Al seleccionar un vehículo, el estado interno del modal se actualiza correctamente
+- [ ] El botón "Seleccionar" se habilita solo cuando hay un vehículo seleccionado
+- [ ] Al confirmar, los campos del formulario reciben los valores del vehículo seleccionado
+- [ ] Al hacer clic en "Cancelar", el modal se cierra sin modificar los campos del formulario
 
 ### Pruebas de integración
 
-- [ ] Al abrir el modal, se realiza una llamada GET a `/api/operations?estado=open`
-- [ ] Las operaciones recibidas se muestran correctamente en el listado
-- [ ] Al hacer clic en "Confirmar", se realiza una llamada PATCH a `/api/stock/[id]/asociar`
-- [ ] Si el endpoint devuelve éxito, se muestra notificación de éxito, se cierra el modal y se actualiza el listado
-- [ ] Si el endpoint devuelve error, se muestra el mensaje de error sin cerrar el modal
+- [ ] Al abrir el modal, se realiza una llamada GET a `/api/stock/disponibles`
+- [ ] Solo se muestran vehículos sin `operacionId`
+- [ ] Al seleccionar un vehículo y confirmar, los campos del formulario se autocompletan correctamente
+- [ ] Al cambiar el tipo de operación a otro valor, el botón desaparece y los campos autocompletados se limpian

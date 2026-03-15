@@ -20,17 +20,22 @@ export interface StockFilters {
   precioMax?: number;
   anio?: number;
   kilometrosMax?: number;
-  tipoIngreso?: string;
 }
 
 interface StockFiltersProps {
   onApplyFilters: (filters: StockFilters) => void;
   onClearFilters: () => void;
+  selectedCount?: number;
+  onExportCatalog?: () => void;
+  isExporting?: boolean;
 }
 
 export function StockFilters({
   onApplyFilters,
   onClearFilters,
+  selectedCount = 0,
+  onExportCatalog,
+  isExporting = false,
 }: StockFiltersProps) {
   const [marcaId, setMarcaId] = useState<string>("");
   const [categoriaId, setCategoriaId] = useState<string>("");
@@ -38,7 +43,6 @@ export function StockFilters({
   const [precioMax, setPrecioMax] = useState<string>("");
   const [anio, setAnio] = useState<string>("");
   const [kilometrosMax, setKilometrosMax] = useState<string>("");
-  const [tipoIngreso, setTipoIngreso] = useState<string>("");
 
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
@@ -92,8 +96,7 @@ export function StockFilters({
     precioMin !== "" ||
     precioMax !== "" ||
     anio !== "" ||
-    kilometrosMax !== "" ||
-    tipoIngreso !== "";
+    kilometrosMax !== "";
 
   const handleApplyFilters = () => {
     const filters: StockFilters = {};
@@ -104,7 +107,6 @@ export function StockFilters({
     if (precioMax) filters.precioMax = parseFloat(precioMax);
     if (anio) filters.anio = parseInt(anio, 10);
     if (kilometrosMax) filters.kilometrosMax = parseFloat(kilometrosMax);
-    if (tipoIngreso) filters.tipoIngreso = tipoIngreso;
 
     onApplyFilters(filters);
   };
@@ -116,7 +118,6 @@ export function StockFilters({
     setPrecioMax("");
     setAnio("");
     setKilometrosMax("");
-    setTipoIngreso("");
     onClearFilters();
   };
 
@@ -127,7 +128,6 @@ export function StockFilters({
     if (precioMin || precioMax) count++;
     if (anio) count++;
     if (kilometrosMax) count++;
-    if (tipoIngreso) count++;
     return count;
   };
 
@@ -275,31 +275,6 @@ export function StockFilters({
             />
           </div>
         </div>
-
-        <div className="flex flex-col gap-2">
-          <label htmlFor="tipoIngreso" className="text-sm font-medium text-zinc-700">
-            Tipo de ingreso
-          </label>
-          <div className="relative">
-            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-              input
-            </span>
-            <select
-              id="tipoIngreso"
-              value={tipoIngreso}
-              onChange={(e) => setTipoIngreso(e.target.value)}
-              className="h-11 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">Todos los tipos</option>
-              <option value="compra">Compra</option>
-              <option value="consignacion">Consignación</option>
-              <option value="intercambio">Intercambio</option>
-            </select>
-            <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-              expand_more
-            </span>
-          </div>
-        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -353,19 +328,35 @@ export function StockFilters({
                   Hasta {kilometrosMax} km
                 </span>
               )}
-              {tipoIngreso && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                  <span className="material-symbols-outlined text-sm">
-                    input
-                  </span>
-                  {tipoIngreso === "compra" ? "Compra" : tipoIngreso === "consignacion" ? "Consignación" : "Intercambio"}
-                </span>
-              )}
             </>
           )}
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={onExportCatalog}
+            disabled={selectedCount === 0 || isExporting}
+            className="flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+            aria-label="Exportar catálogo PDF"
+          >
+            {isExporting ? (
+              <>
+                <span className="material-symbols-outlined animate-spin text-xl">
+                  progress_activity
+                </span>
+                Generando PDF...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-xl">
+                  picture_as_pdf
+                </span>
+                Exportar catálogo{selectedCount > 0 ? ` (${selectedCount})` : ""}
+              </>
+            )}
+          </button>
+
           <button
             type="button"
             onClick={handleClearFilters}

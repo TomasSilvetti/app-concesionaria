@@ -182,7 +182,31 @@ Si **sí se necesita migración**, presentar al desarrollador el análisis y ped
 
 Esperar confirmación explícita antes de crear el archivo de migración y ejecutarlo.
 
-Una vez confirmado, crear la migración siguiendo el sistema del proyecto y ejecutarla. Confirmar al desarrollador que se aplicó correctamente.
+Una vez confirmado, crear la migración siguiendo el sistema del proyecto.
+
+**Para Prisma:**
+
+Los comandos de Prisma como `npx prisma migrate dev` son interactivos y no funcionan en entornos no interactivos (como Cursor). Por lo tanto:
+
+1. Modificar el archivo `schema.prisma` con los cambios necesarios
+2. Presentar al desarrollador el comando que debe ejecutar manualmente:
+
+> **📋 Ejecutá este comando en tu terminal:**
+> ```
+> npx prisma migrate dev --name {nombre_descriptivo_de_migracion}
+> ```
+>
+> Este comando va a:
+> - Detectar los cambios en el schema
+> - Generar el archivo SQL de migración automáticamente
+> - Aplicar la migración a la base de datos
+> - Regenerar el cliente de Prisma con los tipos actualizados
+>
+> Una vez que lo ejecutes, confirmame si se aplicó correctamente o si hubo algún error.
+
+3. Esperar confirmación del desarrollador de que ejecutó el comando y que la migración se aplicó exitosamente antes de continuar.
+
+**Para otros ORMs** (TypeORM, Sequelize, Django, etc.): seguir el flujo normal de crear y ejecutar migraciones programáticamente.
 
 ---
 
