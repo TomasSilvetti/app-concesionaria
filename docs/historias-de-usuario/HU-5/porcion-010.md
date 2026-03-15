@@ -4,7 +4,8 @@
 **Par:** porcion-011
 **Tipo:** FRONT
 **Prerequisitos:** porcion-002, HU-6 (refactorización del modelo de vehículos)
-**Estado:** ⏸️ Pausada (esperando HU-6)
+**Estado:** completada
+
 
 ## Descripción
 

@@ -4,7 +4,8 @@
 **Par:** porcion-006
 **Tipo:** BACK
 **Prerequisitos:** porcion-003, HU-6 (refactorización del modelo de vehículos)
-**Estado:** ⏸️ Pausada (esperando HU-6)
+**Estado:** ✅ Completada
+**Completada el:** 15/03/2026
 
 ## Descripción
 

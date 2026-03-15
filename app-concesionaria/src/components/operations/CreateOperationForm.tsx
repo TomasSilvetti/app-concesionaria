@@ -33,6 +33,7 @@ interface TradeInVehicle {
   version: string;
   color: string;
   kilometros: string;
+  precioRevista: string;
   precioNegociado: string;
   notasMecanicas: string;
   notasGenerales: string;
@@ -81,6 +82,7 @@ export function CreateOperationForm({
   const [tradeInVersion, setTradeInVersion] = useState("");
   const [tradeInColor, setTradeInColor] = useState("");
   const [tradeInKilometros, setTradeInKilometros] = useState("");
+  const [tradeInPrecioRevista, setTradeInPrecioRevista] = useState("");
   const [tradeInPrecioNegociado, setTradeInPrecioNegociado] = useState("");
   const [tradeInNotasMecanicas, setTradeInNotasMecanicas] = useState("");
   const [tradeInNotasGenerales, setTradeInNotasGenerales] = useState("");
@@ -171,6 +173,7 @@ export function CreateOperationForm({
     setTradeInVersion("");
     setTradeInColor("");
     setTradeInKilometros("");
+    setTradeInPrecioRevista("");
     setTradeInPrecioNegociado("");
     setTradeInNotasMecanicas("");
     setTradeInNotasGenerales("");
@@ -191,6 +194,11 @@ export function CreateOperationForm({
       }
     }
     if (!tradeInPatente.trim()) errors.tradeInPatente = "La patente es requerida";
+    if (!tradeInPrecioRevista) {
+      errors.tradeInPrecioRevista = "El precio revista es requerido";
+    } else if (parseFloat(tradeInPrecioRevista) <= 0) {
+      errors.tradeInPrecioRevista = "El precio debe ser mayor a 0";
+    }
     if (!tradeInPrecioNegociado) {
       errors.tradeInPrecioNegociado = "El precio negociado es requerido";
     } else if (parseFloat(tradeInPrecioNegociado) <= 0) {
@@ -215,6 +223,7 @@ export function CreateOperationForm({
       version: tradeInVersion.trim(),
       color: tradeInColor.trim(),
       kilometros: tradeInKilometros,
+      precioRevista: tradeInPrecioRevista,
       precioNegociado: tradeInPrecioNegociado,
       notasMecanicas: tradeInNotasMecanicas.trim(),
       notasGenerales: tradeInNotasGenerales.trim(),
@@ -227,6 +236,23 @@ export function CreateOperationForm({
 
   const handleRemoveTradeInVehicle = (id: string) => {
     setTradeInVehicles((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleEditTradeInVehicle = (vehicle: TradeInVehicle) => {
+    setTradeInVehicles((prev) => prev.filter((v) => v.id !== vehicle.id));
+    setTradeInMarcaId(vehicle.marcaId);
+    setTradeInModelo(vehicle.modelo);
+    setTradeInAnio(vehicle.anio);
+    setTradeInPatente(vehicle.patente);
+    setTradeInVersion(vehicle.version);
+    setTradeInColor(vehicle.color);
+    setTradeInKilometros(vehicle.kilometros);
+    setTradeInPrecioRevista(vehicle.precioRevista);
+    setTradeInPrecioNegociado(vehicle.precioNegociado);
+    setTradeInNotasMecanicas(vehicle.notasMecanicas);
+    setTradeInNotasGenerales(vehicle.notasGenerales);
+    setTradeInFieldErrors({});
+    setShowTradeInForm(true);
   };
 
   const handleTradeInInputChange = (field: string) => {
@@ -867,6 +893,43 @@ export function CreateOperationForm({
                   </div>
                 </div>
 
+                {/* Precio Revista */}
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="tradeInPrecioRevista"
+                    className="text-sm font-medium text-zinc-700"
+                  >
+                    Precio Revista <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                      menu_book
+                    </span>
+                    <input
+                      id="tradeInPrecioRevista"
+                      type="number"
+                      step="0.01"
+                      value={tradeInPrecioRevista}
+                      onChange={(e) => {
+                        setTradeInPrecioRevista(e.target.value);
+                        handleTradeInInputChange("tradeInPrecioRevista");
+                      }}
+                      placeholder="0.00"
+                      className={`h-12 w-full rounded-lg border ${
+                        tradeInFieldErrors.tradeInPrecioRevista
+                          ? "border-red-300 bg-red-50"
+                          : "border-zinc-300 bg-zinc-50"
+                      } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50`}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  {tradeInFieldErrors.tradeInPrecioRevista && (
+                    <span className="text-xs text-red-600">
+                      {tradeInFieldErrors.tradeInPrecioRevista}
+                    </span>
+                  )}
+                </div>
+
                 {/* Precio Negociado */}
                 <div className="flex flex-col gap-2">
                   <label
@@ -1002,18 +1065,30 @@ export function CreateOperationForm({
                                 Kilómetros: {parseInt(vehicle.kilometros).toLocaleString()} km
                               </p>
                             )}
-                            <p className="mt-1 text-sm font-medium text-emerald-700">
-                              Precio estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
+                            <p className="mt-1 text-sm text-zinc-600">
+                              Revista: ${parseFloat(vehicle.precioRevista).toLocaleString()} • Estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-                            disabled={isSubmitting}
-                          >
-                            <span className="material-symbols-outlined text-xl">delete</span>
-                          </button>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleEditTradeInVehicle(vehicle)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={isSubmitting}
+                              aria-label="Editar vehículo"
+                            >
+                              <span className="material-symbols-outlined text-xl">edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                              disabled={isSubmitting}
+                              aria-label="Eliminar vehículo"
+                            >
+                              <span className="material-symbols-outlined text-xl">delete</span>
+                            </button>
+                          </div>
                         </div>
                         {(vehicle.notasMecanicas || vehicle.notasGenerales) && (
                           <div className="mt-2 flex flex-col gap-1 text-xs text-zinc-600">
@@ -1084,14 +1159,26 @@ export function CreateOperationForm({
                           Precio estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        disabled={isSubmitting}
-                      >
-                        <span className="material-symbols-outlined text-xl">delete</span>
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleEditTradeInVehicle(vehicle)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                          aria-label="Editar vehículo"
+                        >
+                          <span className="material-symbols-outlined text-xl">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTradeInVehicle(vehicle.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          disabled={isSubmitting}
+                          aria-label="Eliminar vehículo"
+                        >
+                          <span className="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                      </div>
                     </div>
                     {(vehicle.notasMecanicas || vehicle.notasGenerales) && (
                       <div className="mt-2 flex flex-col gap-1 text-xs text-zinc-600">

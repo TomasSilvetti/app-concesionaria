@@ -1,0 +1,8 @@
+{
+  "outputStyle": "Learning",
+  "permissions": {
+    "allow": [
+      "Bash(grep -h \"Estado\" c:UserstomasDocumentsProyectosApp-Concesionariadocshistorias-de-usuarioHU-6porcion-*.md)"
+    ]
+  }
+}
