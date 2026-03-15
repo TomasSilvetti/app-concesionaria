@@ -32,19 +32,50 @@ interface StockFilters {
 interface StockTableProps {
   refreshTrigger?: number;
   filters?: StockFilters;
+  onSelectionChange?: (vehicles: StockVehicle[]) => void;
 }
 
 type SortField = "marca" | "modelo" | "kilometros" | "precioRevista" | "precioOferta";
 type SortOrder = "asc" | "desc";
 
-export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
+export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: StockTableProps) {
   const [vehicles, setVehicles] = useState<StockVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortField>("marca");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [vehicleToDelete, setVehicleToDelete] = useState<StockVehicle | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const router = useRouter();
+
+  const handleToggleSelect = (e: React.MouseEvent, vehicle: StockVehicle) => {
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(vehicle.id)) {
+        next.delete(vehicle.id);
+      } else {
+        next.add(vehicle.id);
+      }
+      const selected = vehicles.filter((v) => next.has(v.id));
+      onSelectionChange?.(selected);
+      return next;
+    });
+  };
+
+  const handleToggleAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const allIds = new Set(vehicles.map((v) => v.id));
+      setSelectedIds(allIds);
+      onSelectionChange?.(vehicles);
+    } else {
+      setSelectedIds(new Set());
+      onSelectionChange?.([]);
+    }
+  };
+
+  const allSelected = vehicles.length > 0 && selectedIds.size === vehicles.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < vehicles.length;
 
   const fetchVehicles = async () => {
     setIsLoading(true);
@@ -82,6 +113,8 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
 
   useEffect(() => {
     fetchVehicles();
+    setSelectedIds(new Set());
+    onSelectionChange?.([]);
   }, [refreshTrigger, sortBy, sortOrder, filters]);
 
   const handleSort = (field: SortField) => {
@@ -166,6 +199,16 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
         <table className="w-full">
           <thead className="bg-zinc-50">
             <tr>
+              <th className="px-4 py-3 text-center w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                  onChange={handleToggleAll}
+                  className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  aria-label="Seleccionar todos los vehículos"
+                />
+              </th>
               <th className="px-6 py-3 text-left">
                 <button
                   onClick={() => handleSort("marca")}
@@ -245,7 +288,7 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
           <tbody className="divide-y divide-zinc-200 bg-white">
             {vehicles.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-16">
+                <td colSpan={9} className="px-6 py-16">
                   <div className="flex flex-col items-center justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
                       <span className="material-symbols-outlined text-4xl text-zinc-400">
@@ -265,8 +308,18 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
               vehicles.map((vehicle) => (
                 <tr
                   key={vehicle.id}
-                  className="transition-colors hover:bg-zinc-50"
+                  className={`transition-colors hover:bg-zinc-50 ${selectedIds.has(vehicle.id) ? "bg-blue-50" : ""}`}
                 >
+                  <td className="px-4 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(vehicle.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleToggleSelect(e, vehicle)}
+                      className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      aria-label={`Seleccionar ${vehicle.marca} ${vehicle.modelo}`}
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <span className="text-sm font-medium text-zinc-900">
                       {vehicle.marca}
@@ -363,7 +416,7 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
           vehicles.map((vehicle) => (
             <div
               key={vehicle.id}
-              className="rounded-xl border border-zinc-200 bg-white p-4 transition-shadow hover:shadow-md"
+              className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${selectedIds.has(vehicle.id) ? "border-blue-300 bg-blue-50" : "border-zinc-200 bg-white"}`}
             >
               <div className="flex items-start gap-4">
                 <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100">
@@ -377,17 +430,27 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
                       <h3 className="text-base font-semibold text-zinc-900">
                         {vehicle.marca} {vehicle.modelo}
                       </h3>
-                      {vehicle.version && (
-                        <p className="text-sm text-zinc-600">
-                          {vehicle.version}
-                        </p>
-                      )}
-                      {vehicle.color && (
-                        <p className="text-xs text-zinc-500">
-                          Color: {vehicle.color}
-                        </p>
-                      )}
                     </div>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(vehicle.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleToggleSelect(e, vehicle)}
+                      className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      aria-label={`Seleccionar ${vehicle.marca} ${vehicle.modelo}`}
+                    />
+                  </div>
+                  <div>
+                    {vehicle.version && (
+                      <p className="text-sm text-zinc-600">
+                        {vehicle.version}
+                      </p>
+                    )}
+                    {vehicle.color && (
+                      <p className="text-xs text-zinc-500">
+                        Color: {vehicle.color}
+                      </p>
+                    )}
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs">

@@ -1,6 +1,6 @@
 # porcion-031 — Eliminación con validación — endpoint DELETE con protección [BACK]
 
-**Estado:** 🔄 En progreso
+**Estado:** completada
 
 **Historia de usuario:** HU-4: Gestión de Stock de Vehículos
 **Par:** porcion-030

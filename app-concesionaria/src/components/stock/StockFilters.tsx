@@ -25,11 +25,17 @@ export interface StockFilters {
 interface StockFiltersProps {
   onApplyFilters: (filters: StockFilters) => void;
   onClearFilters: () => void;
+  selectedCount?: number;
+  onExportCatalog?: () => void;
+  isExporting?: boolean;
 }
 
 export function StockFilters({
   onApplyFilters,
   onClearFilters,
+  selectedCount = 0,
+  onExportCatalog,
+  isExporting = false,
 }: StockFiltersProps) {
   const [marcaId, setMarcaId] = useState<string>("");
   const [categoriaId, setCategoriaId] = useState<string>("");
@@ -327,6 +333,30 @@ export function StockFilters({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={onExportCatalog}
+            disabled={selectedCount === 0 || isExporting}
+            className="flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+            aria-label="Exportar catálogo PDF"
+          >
+            {isExporting ? (
+              <>
+                <span className="material-symbols-outlined animate-spin text-xl">
+                  progress_activity
+                </span>
+                Generando PDF...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-xl">
+                  picture_as_pdf
+                </span>
+                Exportar catálogo{selectedCount > 0 ? ` (${selectedCount})` : ""}
+              </>
+            )}
+          </button>
+
           <button
             type="button"
             onClick={handleClearFilters}
