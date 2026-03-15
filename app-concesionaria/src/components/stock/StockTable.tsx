@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import "material-symbols/outlined.css";
 
 interface StockVehicle {
@@ -40,6 +41,8 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortField>("marca");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [vehicleToDelete, setVehicleToDelete] = useState<StockVehicle | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   const fetchVehicles = async () => {
@@ -112,10 +115,36 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
     router.push(`/stock/${id}/editar`);
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, vehicle: StockVehicle) => {
     e.stopPropagation();
-    // TODO: Implementar lógica de eliminación
-    console.log("Eliminar vehículo:", id);
+    setVehicleToDelete(vehicle);
+  };
+
+  const handleCancelDelete = () => {
+    setVehicleToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!vehicleToDelete) return;
+    setIsDeleting(true);
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(`${baseUrl}/api/stock/${vehicleToDelete.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setVehicles((prev) => prev.filter((v) => v.id !== vehicleToDelete.id));
+        toast.success("Vehículo eliminado correctamente");
+        setVehicleToDelete(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.message || "Error al eliminar el vehículo");
+      }
+    } catch {
+      toast.error("Error de conexión al intentar eliminar");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -295,7 +324,7 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
                         </span>
                       </button>
                       <button
-                        onClick={(e) => handleDelete(e, vehicle.id)}
+                        onClick={(e) => handleDeleteClick(e, vehicle)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                         aria-label={`Eliminar vehículo ${vehicle.marca} ${vehicle.modelo}`}
                         title="Eliminar"
@@ -403,7 +432,7 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
                       Editar
                     </button>
                     <button
-                      onClick={(e) => handleDelete(e, vehicle.id)}
+                      onClick={(e) => handleDeleteClick(e, vehicle)}
                       className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                       aria-label={`Eliminar vehículo ${vehicle.marca} ${vehicle.modelo}`}
                     >
@@ -419,6 +448,113 @@ export function StockTable({ refreshTrigger, filters = {} }: StockTableProps) {
           ))
         )}
       </div>
+
+      {/* Diálogo de confirmación de eliminación */}
+      {vehicleToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-modal-title"
+          onClick={handleCancelDelete}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                  vehicleToDelete.operacionId ? "bg-blue-100" : "bg-red-100"
+                }`}
+              >
+                <span
+                  className={`material-symbols-outlined text-2xl ${
+                    vehicleToDelete.operacionId ? "text-blue-600" : "text-red-600"
+                  }`}
+                >
+                  {vehicleToDelete.operacionId ? "link" : "delete"}
+                </span>
+              </div>
+              <h2
+                id="delete-modal-title"
+                className="text-xl font-semibold text-zinc-900"
+              >
+                {vehicleToDelete.operacionId
+                  ? "Vehículo vinculado a una operación"
+                  : "Eliminar vehículo"}
+              </h2>
+            </div>
+
+            <p className="mb-4 text-sm text-zinc-600">
+              {vehicleToDelete.operacionId ? (
+                <>
+                  Este vehículo está asociado a la operación{" "}
+                  <span className="font-semibold text-zinc-900">
+                    {vehicleToDelete.operacionId}
+                  </span>
+                  . Primero debés desvincularlo desde la edición de la operación.
+                </>
+              ) : (
+                <>
+                  ¿Estás seguro de eliminar{" "}
+                  <span className="font-semibold text-zinc-900">
+                    {vehicleToDelete.marca} {vehicleToDelete.modelo}
+                  </span>
+                  ? Esta acción no se puede deshacer.
+                </>
+              )}
+            </p>
+
+            {vehicleToDelete.operacionId ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelDelete}
+                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    router.push(`/operaciones/${vehicleToDelete.operacionId}`);
+                    setVehicleToDelete(null);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <span className="material-symbols-outlined text-base">open_in_new</span>
+                  Ir a la operación
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin text-base">
+                        progress_activity
+                      </span>
+                      Eliminando...
+                    </>
+                  ) : (
+                    "Confirmar"
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
