@@ -25,13 +25,19 @@ interface StockFilters {
   precioMax?: string;
   anio?: string;
   kilometrosMax?: string;
+  mostrarConOperacion?: boolean;
 }
 
 function buildWhereClause(clienteId: string, filters: StockFilters) {
   const where: any = {
     clienteId: clienteId,
-    estado: "disponible",
   };
+
+  if (filters.mostrarConOperacion) {
+    where.estado = { in: ["disponible", "en_proceso"] };
+  } else {
+    where.estado = "disponible";
+  }
 
   if (filters.precioMin || filters.precioMax) {
     where.OR = [
@@ -144,6 +150,7 @@ export async function GET(req: NextRequest) {
       precioMax: searchParams.get("precioMax") || undefined,
       anio: searchParams.get("anio") || undefined,
       kilometrosMax: searchParams.get("kilometrosMax") || undefined,
+      mostrarConOperacion: searchParams.get("mostrarConOperacion") === "true",
     };
 
     if (orderBy && !ALLOWED_ORDER_BY_FIELDS.includes(orderBy)) {

@@ -26,6 +26,10 @@ const vehicleInclude = {
       },
     },
   },
+  OperacionesVenta: {
+    select: { idOperacion: true },
+    take: 1,
+  },
 };
 
 export async function GET(
@@ -65,7 +69,7 @@ export async function GET(
       return NextResponse.json({ message: "Acceso denegado" }, { status: 403 });
     }
 
-    const { Operation, ...vehicleRest } = vehicle;
+    const { Operation, OperacionesVenta, ...vehicleRest } = vehicle;
     const response = {
       ...vehicleRest,
       operacion: Operation
@@ -79,6 +83,9 @@ export async function GET(
                 }
               : null,
           }
+        : null,
+      operacionDeVenta: OperacionesVenta[0]
+        ? { idOperacion: OperacionesVenta[0].idOperacion }
         : null,
     };
 

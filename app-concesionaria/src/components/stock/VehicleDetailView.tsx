@@ -22,6 +22,10 @@ interface Operacion {
   vehiculoVendido: OperacionVehiculoVendido | null;
 }
 
+interface OperacionDeVenta {
+  idOperacion: string;
+}
+
 interface Vehicle {
   id: string;
   marcaId: string;
@@ -44,6 +48,7 @@ interface Vehicle {
   VehicleCategory: { nombre: string };
   VehiclePhoto: VehiclePhoto[];
   operacion?: Operacion | null;
+  operacionDeVenta?: OperacionDeVenta | null;
 }
 
 interface VehicleDetailViewProps {
@@ -381,6 +386,23 @@ export function VehicleDetailView({ vehicleId }: VehicleDetailViewProps) {
                 {vehicle.operacionId}
               </span>
             </p>
+          </div>
+        ) : vehicle.operacionDeVenta ? (
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
+                ID de Operación
+              </p>
+              <div className="mt-1">
+                <Link
+                  href={`/operaciones/${vehicle.operacionDeVenta.idOperacion}`}
+                  className="inline-flex items-center gap-1 font-mono text-sm font-medium text-blue-600 underline-offset-2 hover:underline"
+                >
+                  {vehicle.operacionDeVenta.idOperacion}
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                </Link>
+              </div>
+            </div>
           </div>
         ) : (
           <p className="text-sm italic text-zinc-400">Sin operación asociada</p>

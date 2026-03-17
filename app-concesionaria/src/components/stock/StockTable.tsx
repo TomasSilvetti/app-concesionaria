@@ -27,6 +27,7 @@ interface StockFilters {
   precioMax?: number;
   anio?: number;
   kilometrosMax?: number;
+  mostrarConOperacion?: boolean;
 }
 
 interface StockTableProps {
@@ -94,6 +95,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
       if (filters.precioMax !== undefined) params.append("precioMax", filters.precioMax.toString());
       if (filters.anio !== undefined) params.append("anio", filters.anio.toString());
       if (filters.kilometrosMax !== undefined) params.append("kilometrosMax", filters.kilometrosMax.toString());
+      if (filters.mostrarConOperacion) params.append("mostrarConOperacion", "true");
 
       const url = `${baseUrl}/api/stock?${params.toString()}`;
 

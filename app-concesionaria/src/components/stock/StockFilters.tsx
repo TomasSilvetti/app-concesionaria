@@ -20,6 +20,7 @@ export interface StockFilters {
   precioMax?: number;
   anio?: number;
   kilometrosMax?: number;
+  mostrarConOperacion?: boolean;
 }
 
 interface StockFiltersProps {
@@ -43,6 +44,7 @@ export function StockFilters({
   const [precioMax, setPrecioMax] = useState<string>("");
   const [anio, setAnio] = useState<string>("");
   const [kilometrosMax, setKilometrosMax] = useState<string>("");
+  const [mostrarConOperacion, setMostrarConOperacion] = useState<boolean>(false);
 
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
@@ -96,7 +98,8 @@ export function StockFilters({
     precioMin !== "" ||
     precioMax !== "" ||
     anio !== "" ||
-    kilometrosMax !== "";
+    kilometrosMax !== "" ||
+    mostrarConOperacion;
 
   const handleApplyFilters = () => {
     const filters: StockFilters = {};
@@ -107,6 +110,7 @@ export function StockFilters({
     if (precioMax) filters.precioMax = parseFloat(precioMax);
     if (anio) filters.anio = parseInt(anio, 10);
     if (kilometrosMax) filters.kilometrosMax = parseFloat(kilometrosMax);
+    if (mostrarConOperacion) filters.mostrarConOperacion = true;
 
     onApplyFilters(filters);
   };
@@ -118,6 +122,7 @@ export function StockFilters({
     setPrecioMax("");
     setAnio("");
     setKilometrosMax("");
+    setMostrarConOperacion(false);
     onClearFilters();
   };
 
@@ -128,6 +133,7 @@ export function StockFilters({
     if (precioMin || precioMax) count++;
     if (anio) count++;
     if (kilometrosMax) count++;
+    if (mostrarConOperacion) count++;
     return count;
   };
 
@@ -277,6 +283,19 @@ export function StockFilters({
         </div>
       </div>
 
+      <div className="flex items-center gap-3">
+        <input
+          id="mostrarConOperacion"
+          type="checkbox"
+          checked={mostrarConOperacion}
+          onChange={(e) => setMostrarConOperacion(e.target.checked)}
+          className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-2"
+        />
+        <label htmlFor="mostrarConOperacion" className="text-sm font-medium text-zinc-700 cursor-pointer select-none">
+          Mostrar vehículos con operación activa
+        </label>
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           {activeFiltersCount > 0 && (
@@ -326,6 +345,14 @@ export function StockFilters({
                     speed
                   </span>
                   Hasta {kilometrosMax} km
+                </span>
+              )}
+              {mostrarConOperacion && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                  <span className="material-symbols-outlined text-sm">
+                    pending_actions
+                  </span>
+                  Con operación activa
                 </span>
               )}
             </>
