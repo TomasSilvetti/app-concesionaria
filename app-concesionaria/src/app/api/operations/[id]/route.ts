@@ -88,6 +88,12 @@ export async function GET(
             },
           },
         },
+        OperationDocument: {
+          select: {
+            id: true,
+            nombreArchivo: true,
+          },
+        },
       },
     });
 
@@ -127,6 +133,7 @@ export async function GET(
       gastosAsociados: operation.gastosAsociados,
       ingresosNetos: operation.ingresosNetos,
       comision: operation.comision,
+      precioToma: operation.precioToma,
       estado: operation.estado,
       marcaNombre: operation.VehicleBrand.nombre,
       categoriaNombre: operation.VehicleCategory.nombre,
@@ -134,6 +141,9 @@ export async function GET(
       marcaId: operation.marcaId,
       categoriaId: operation.categoriaId,
       tipoOperacionId: operation.tipoOperacionId,
+      documentoDetalle: operation.OperationDocument
+        ? { id: operation.OperationDocument.id, nombreArchivo: operation.OperationDocument.nombreArchivo }
+        : null,
       vehiculosIntercambiados: operation.OperationExchange.map((exchange) => ({
         marca: exchange.Vehicle.VehicleBrand.nombre,
         modelo: exchange.Vehicle.modelo,
@@ -235,6 +245,7 @@ export async function PATCH(
       "fechaVenta",
       "precioVentaTotal",
       "ingresosBrutos",
+      "precioToma",
       "estado",
       "tipoOperacionId",
     ] as const;
@@ -283,6 +294,19 @@ export async function PATCH(
             errors.push("ingresosBrutos debe ser un número positivo");
           } else {
             updateData.ingresosBrutos = num;
+          }
+          break;
+        }
+        case "precioToma": {
+          if (value === null || value === "") {
+            updateData.precioToma = null;
+          } else {
+            const num = typeof value === "string" ? parseFloat(value) : value;
+            if (typeof num !== "number" || isNaN(num) || num <= 0) {
+              errors.push("precioToma debe ser un número positivo");
+            } else {
+              updateData.precioToma = num;
+            }
           }
           break;
         }
@@ -421,6 +445,12 @@ export async function PATCH(
             Category: { select: { nombre: true } },
           },
         },
+        OperationDocument: {
+          select: {
+            id: true,
+            nombreArchivo: true,
+          },
+        },
       },
     });
 
@@ -456,6 +486,7 @@ export async function PATCH(
       gastosAsociados: updatedWithVehicle.gastosAsociados,
       ingresosNetos: updatedWithVehicle.ingresosNetos,
       comision: updatedWithVehicle.comision,
+      precioToma: updatedWithVehicle.precioToma,
       estado: updatedWithVehicle.estado,
       marcaNombre: updatedWithVehicle.VehicleBrand.nombre,
       categoriaNombre: updatedWithVehicle.VehicleCategory.nombre,
@@ -463,6 +494,9 @@ export async function PATCH(
       marcaId: updatedWithVehicle.marcaId,
       categoriaId: updatedWithVehicle.categoriaId,
       tipoOperacionId: updatedWithVehicle.tipoOperacionId,
+      documentoDetalle: updatedWithVehicle.OperationDocument
+        ? { id: updatedWithVehicle.OperationDocument.id, nombreArchivo: updatedWithVehicle.OperationDocument.nombreArchivo }
+        : null,
       vehiculosIntercambiados: updatedWithVehicle.OperationExchange.map((ex) => ({
         marca: ex.Vehicle.VehicleBrand.nombre,
         modelo: ex.Vehicle.modelo,

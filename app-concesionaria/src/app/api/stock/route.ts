@@ -224,6 +224,15 @@ export async function GET(req: NextRequest) {
             idOperacion: true,
           },
         },
+        VehiclePhoto: {
+          select: {
+            id: true,
+          },
+          orderBy: {
+            orden: "asc",
+          },
+          take: 1,
+        },
       },
       orderBy: orderByClause,
     });
@@ -242,6 +251,7 @@ export async function GET(req: NextRequest) {
       operacionId: vehicle.operacionId,
       idOperacion: vehicle.Operation?.idOperacion ?? null,
       estado: vehicle.estado,
+      fotoId: vehicle.VehiclePhoto[0]?.id ?? null,
     }));
 
     return NextResponse.json({ 

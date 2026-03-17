@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import "material-symbols/outlined.css";
@@ -54,6 +54,7 @@ interface OperationDetail {
   gastosAsociados: number;
   ingresosNetos: number;
   comision: number;
+  precioToma: number | null;
   estado: "abierta" | "cerrada" | "cancelada";
   diasVenta: number | null;
   marcaNombre: string;
@@ -64,6 +65,7 @@ interface OperationDetail {
   tipoOperacionId: string;
   vehiculosIntercambiados: VehicleExchange[];
   gastos: Expense[];
+  documentoDetalle: { id: string; nombreArchivo: string } | null;
 }
 
 export default function OperacionEditPage() {
@@ -81,8 +83,15 @@ export default function OperacionEditPage() {
   const [fechaVenta, setFechaVenta] = useState("");
   const [precioVentaTotal, setPrecioVentaTotal] = useState("");
   const [ingresosBrutos, setIngresosBrutos] = useState("");
+  const [precioToma, setPrecioToma] = useState("");
   const [estado, setEstado] = useState<"abierta" | "cerrada" | "cancelada">("abierta");
   const [tipoOperacionId, setTipoOperacionId] = useState("");
+
+  // Documento de detalle
+  const [documentoActual, setDocumentoActual] = useState<{ id: string; nombreArchivo: string } | null>(null);
+  const [nuevoDocumento, setNuevoDocumento] = useState<File | null>(null);
+  const [isSavingDocumento, setIsSavingDocumento] = useState(false);
+  const documentoInputRef = useRef<HTMLInputElement>(null);
 
   // Calculated fields
   const [ingresosNetos, setIngresosNetos] = useState(0);
@@ -116,9 +125,11 @@ export default function OperacionEditPage() {
           setFechaVenta(data.fechaVenta ? data.fechaVenta.split('T')[0] : "");
           setPrecioVentaTotal(data.precioVentaTotal?.toString() || "");
           setIngresosBrutos(data.ingresosBrutos?.toString() || "");
+          setPrecioToma(data.precioToma != null ? data.precioToma.toString() : "");
           setEstado(data.estado || "abierta");
           setTipoOperacionId(data.tipoOperacionId || "");
           setGastosAsociados(data.gastosAsociados || 0);
+          setDocumentoActual(data.documentoDetalle ?? null);
           
           // Recalculate ingresosNetos and comision with correct formula
           const ingresosCalculados = (data.ingresosBrutos || 0) - (data.gastosAsociados || 0);
@@ -134,6 +145,7 @@ export default function OperacionEditPage() {
             fechaVenta: data.fechaVenta ? data.fechaVenta.split('T')[0] : "",
             precioVentaTotal: data.precioVentaTotal?.toString() || "",
             ingresosBrutos: data.ingresosBrutos?.toString() || "",
+            precioToma: data.precioToma != null ? data.precioToma.toString() : "",
             estado: data.estado || "abierta",
             tipoOperacionId: data.tipoOperacionId || "",
           });
@@ -288,6 +300,9 @@ export default function OperacionEditPage() {
     if (ingresosBrutos !== originalValues.ingresosBrutos) {
       modified.ingresosBrutos = parseFloat(ingresosBrutos);
     }
+    if (precioToma !== originalValues.precioToma) {
+      modified.precioToma = precioToma ? parseFloat(precioToma) : null;
+    }
     if (estado !== originalValues.estado) {
       modified.estado = estado;
     }
@@ -336,6 +351,37 @@ export default function OperacionEditPage() {
       setError("No se pudo conectar con el servidor. Intentá nuevamente.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveDocumento = async () => {
+    if (!nuevoDocumento) return;
+
+    setIsSavingDocumento(true);
+    setError(null);
+
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const fd = new FormData();
+      fd.append("documentoDetalle", nuevoDocumento);
+
+      const res = await fetch(`${baseUrl}/api/operations/${id}/documento`, {
+        method: "PUT",
+        body: fd,
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        setDocumentoActual({ id: "updated", nombreArchivo: nuevoDocumento.name });
+        setNuevoDocumento(null);
+      } else {
+        setError(data.message ?? "Error al guardar el documento");
+      }
+    } catch {
+      setError("No se pudo conectar con el servidor. Intentá nuevamente.");
+    } finally {
+      setIsSavingDocumento(false);
     }
   };
 
@@ -742,6 +788,34 @@ export default function OperacionEditPage() {
                 )}
               </div>
 
+              {/* Precio de Toma */}
+              <div className="flex flex-col gap-2">
+                <label htmlFor="precioToma" className="text-sm font-medium text-zinc-700">
+                  Precio de Toma
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    handshake
+                  </span>
+                  <input
+                    id="precioToma"
+                    type="number"
+                    step="0.01"
+                    value={precioToma}
+                    onChange={(e) => {
+                      setPrecioToma(e.target.value);
+                      handleInputChange("precioToma");
+                    }}
+                    placeholder="0.00"
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                    disabled={isSaving}
+                  />
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Precio al que la concesionaria compra el vehículo (opcional)
+                </p>
+              </div>
+
               {/* Gastos Asociados (solo lectura) */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-zinc-700">
@@ -945,6 +1019,105 @@ export default function OperacionEditPage() {
                 </table>
               </div>
             )}
+          </div>
+
+          {/* Sección: Documento de Detalle */}
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-2xl text-blue-600">
+                description
+              </span>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Documento de Detalle
+              </h2>
+            </div>
+            <div className="flex flex-col gap-4">
+              {documentoActual && !nuevoDocumento && (
+                <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-2xl text-blue-600">description</span>
+                    <div>
+                      <p className="text-sm font-medium text-zinc-900">{documentoActual.nombreArchivo}</p>
+                      <p className="text-xs text-zinc-500">Documento actual</p>
+                    </div>
+                  </div>
+                  <a
+                    href={`/api/operations/${id}/documento`}
+                    download={documentoActual.nombreArchivo}
+                    className="flex items-center gap-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none"
+                  >
+                    <span className="material-symbols-outlined text-base">download</span>
+                    Descargar
+                  </a>
+                </div>
+              )}
+
+              {nuevoDocumento ? (
+                <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-2xl text-blue-600">upload_file</span>
+                    <div>
+                      <p className="text-sm font-medium text-zinc-900">{nuevoDocumento.name}</p>
+                      <p className="text-xs text-zinc-500">
+                        {(nuevoDocumento.size / 1024 / 1024).toFixed(2)} MB — pendiente de guardar
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveDocumento}
+                      disabled={isSavingDocumento}
+                      className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+                    >
+                      {isSavingDocumento ? (
+                        <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                      ) : (
+                        <span className="material-symbols-outlined text-base">save</span>
+                      )}
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNuevoDocumento(null)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 focus:outline-none"
+                      disabled={isSavingDocumento}
+                      aria-label="Quitar documento"
+                    >
+                      <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => !isSaving && documentoInputRef.current?.click()}
+                  className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-6 transition-all hover:border-blue-400 hover:bg-blue-50"
+                >
+                  <span className="material-symbols-outlined text-3xl text-zinc-400">upload_file</span>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-zinc-700">
+                      {documentoActual ? "Hacé clic para reemplazar el documento" : "Hacé clic para subir el documento"}
+                    </p>
+                    <p className="text-xs text-zinc-400">PDF, DOC o DOCX hasta 20MB</p>
+                  </div>
+                </div>
+              )}
+
+              <input
+                ref={documentoInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  if (file && file.size <= 20 * 1024 * 1024) {
+                    setNuevoDocumento(file);
+                  }
+                  e.target.value = "";
+                }}
+                className="hidden"
+                disabled={isSaving}
+              />
+            </div>
           </div>
 
           {/* Sección: Gastos asociados (solo lectura) */}

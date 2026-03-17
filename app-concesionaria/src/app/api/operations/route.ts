@@ -223,6 +223,8 @@ export async function GET(req: NextRequest) {
       marcaNombre: op.VehicleBrand.nombre,
       categoriaNombre: op.VehicleCategory.nombre,
       tipoOperacionNombre: op.OperationType.nombre,
+      vehiculoId: op.vehiculoVendidoId,
+      vehiculoFotoId: op.VehiculoVendido.VehiclePhoto[0]?.id ?? null,
     }));
 
     return NextResponse.json({ 
@@ -278,8 +280,10 @@ export async function POST(req: NextRequest) {
     const fechaInicioStr = formData.get("fechaInicio") as string;
     const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
     const ingresosBrutosStr = formData.get("ingresosBrutos") as string;
+    const precioTomaStr = formData.get("precioToma") as string | null;
     const vehiculoUsadoStr = formData.get("vehiculoUsado") as string | null;
     const stockVehicleId = formData.get("stockVehicleId") as string | null;
+    const documentoDetalle = formData.get("documentoDetalle") as File | null;
 
     const errors: string[] = [];
 
@@ -310,6 +314,7 @@ export async function POST(req: NextRequest) {
     const precioOferta = precioOfertaStr ? parseFloat(precioOfertaStr) : null;
     const precioVentaTotal = parseFloat(precioVentaTotalStr);
     const ingresosBrutos = parseFloat(ingresosBrutosStr);
+    const precioToma = precioTomaStr ? parseFloat(precioTomaStr) : null;
 
     const parsedFechaInicio = new Date(fechaInicioStr);
     if (isNaN(parsedFechaInicio.getTime())) {
@@ -470,6 +475,28 @@ export async function POST(req: NextRequest) {
     const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+    const ALLOWED_DOC_MIME_TYPES = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    const MAX_DOC_SIZE = 20 * 1024 * 1024;
+
+    if (documentoDetalle && documentoDetalle.size > 0) {
+      if (!ALLOWED_DOC_MIME_TYPES.includes(documentoDetalle.type)) {
+        return NextResponse.json(
+          { message: "Tipo de documento no permitido. Solo se permiten PDF, DOC y DOCX" },
+          { status: 400 }
+        );
+      }
+      if (documentoDetalle.size > MAX_DOC_SIZE) {
+        return NextResponse.json(
+          { message: "El documento excede el tamaño máximo permitido de 20MB" },
+          { status: 400 }
+        );
+      }
+    }
+
     if (fotos.length > 0) {
       for (const foto of fotos) {
         if (!ALLOWED_MIME_TYPES.includes(foto.type)) {
@@ -576,6 +603,7 @@ export async function POST(req: NextRequest) {
           gastosAsociados,
           ingresosNetos,
           comision,
+          precioToma: precioToma ?? null,
           estado: "abierta",
           marcaId,
           categoriaId,
@@ -614,6 +642,21 @@ export async function POST(req: NextRequest) {
           },
         },
       });
+
+      if (documentoDetalle && documentoDetalle.size > 0) {
+        const docBuffer = await documentoDetalle.arrayBuffer();
+        const docBytes = Buffer.from(docBuffer);
+        await tx.operationDocument.create({
+          data: {
+            id: randomUUID(),
+            operacionId: operationId,
+            nombreArchivo: documentoDetalle.name,
+            mimeType: documentoDetalle.type,
+            datos: docBytes,
+            actualizadoEn: now,
+          },
+        });
+      }
 
       if (vehiculoUsado) {
         const usedVehicleId = randomUUID();

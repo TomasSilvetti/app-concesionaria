@@ -78,6 +78,7 @@ model Operation {
   comision          Float
   gastosAsociados   Float               @default(0)
   ingresosNetos     Float
+  precioToma        Float?
   estado            String              @default("open")
   creadoEn          DateTime            @default(now())
   actualizadoEn     DateTime
@@ -92,6 +93,7 @@ model Operation {
   OperationType     OperationType       @relation(fields: [tipoOperacionId], references: [id])
   VehiculoVendido   Vehicle             @relation("VehiculosVendidos", fields: [vehiculoVendidoId], references: [id], onDelete: Cascade)
   OperationExchange OperationExchange[]
+  OperationDocument OperationDocument?
   Vehicle           Vehicle[]
 
   @@unique([clienteId, idOperacion])
@@ -101,6 +103,17 @@ model Operation {
   @@index([marcaId])
   @@index([tipoOperacionId])
   @@index([vehiculoVendidoId])
+}
+
+model OperationDocument {
+  id            String    @id
+  operacionId   String    @unique
+  nombreArchivo String
+  mimeType      String
+  datos         Bytes
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime
+  Operation     Operation @relation(fields: [operacionId], references: [id], onDelete: Cascade)
 }
 
 model OperationExchange {

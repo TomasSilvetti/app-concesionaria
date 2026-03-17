@@ -35,6 +35,7 @@ export interface VehicleFieldsData {
   photos: PhotoFile[];
   precioVentaTotal?: string;
   ingresosBrutos?: string;
+  precioToma?: string;
 }
 
 export interface VehicleFieldsHandlers {
@@ -53,6 +54,7 @@ export interface VehicleFieldsHandlers {
   setPhotos: React.Dispatch<React.SetStateAction<PhotoFile[]>>;
   setPrecioVentaTotal?: (value: string) => void;
   setIngresosBrutos?: (value: string) => void;
+  setPrecioToma?: (value: string) => void;
 }
 
 interface VehicleFieldsFormProps {
@@ -660,6 +662,37 @@ export function VehicleFieldsForm({
                     {fieldErrors.ingresosBrutos}
                   </span>
                 )}
+              </div>
+
+              {/* Precio de Toma */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioToma"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio de Toma
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    handshake
+                  </span>
+                  <input
+                    id="precioToma"
+                    type="number"
+                    step="0.01"
+                    value={data.precioToma || ""}
+                    onChange={(e) => {
+                      handlers.setPrecioToma?.(e.target.value);
+                      handleInputChange("precioToma");
+                    }}
+                    placeholder="0.00"
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                    disabled={disabled}
+                  />
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Precio al que la concesionaria compra el vehículo (opcional)
+                </p>
               </div>
 
               {/* Comisión Calculada */}

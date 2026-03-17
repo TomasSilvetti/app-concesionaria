@@ -18,6 +18,7 @@ interface StockVehicle {
   precioOferta: number | null;
   operacionId: string | null;
   idOperacion: string | null;
+  fotoId: string | null;
 }
 
 interface StockFilters {
@@ -211,6 +212,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                   aria-label="Seleccionar todos los vehículos"
                 />
               </th>
+              <th className="px-4 py-3 w-16" />
               <th className="px-6 py-3 text-left">
                 <button
                   onClick={() => handleSort("marca")}
@@ -290,7 +292,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
           <tbody className="divide-y divide-zinc-200 bg-white">
             {vehicles.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-16">
+                <td colSpan={10} className="px-6 py-16">
                   <div className="flex flex-col items-center justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
                       <span className="material-symbols-outlined text-4xl text-zinc-400">
@@ -321,6 +323,21 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                       className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                       aria-label={`Seleccionar ${vehicle.marca} ${vehicle.modelo}`}
                     />
+                  </td>
+                  <td className="px-4 py-3">
+                    {vehicle.fotoId ? (
+                      <img
+                        src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}`}
+                        alt={`${vehicle.marca} ${vehicle.modelo}`}
+                        className="h-10 w-14 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-14 items-center justify-center rounded bg-zinc-100">
+                        <span className="material-symbols-outlined text-lg text-zinc-400">
+                          directions_car
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm font-medium text-zinc-900">
@@ -421,11 +438,19 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
               className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${selectedIds.has(vehicle.id) ? "border-blue-300 bg-blue-50" : "border-zinc-200 bg-white"}`}
             >
               <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100">
-                  <span className="material-symbols-outlined text-3xl text-zinc-400">
-                    directions_car
-                  </span>
-                </div>
+                {vehicle.fotoId ? (
+                  <img
+                    src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}`}
+                    alt={`${vehicle.marca} ${vehicle.modelo}`}
+                    className="h-16 w-16 flex-shrink-0 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100">
+                    <span className="material-symbols-outlined text-3xl text-zinc-400">
+                      directions_car
+                    </span>
+                  </div>
+                )}
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div>
