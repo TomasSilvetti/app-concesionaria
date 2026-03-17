@@ -18,7 +18,6 @@ const VALID_OPERATION_TYPES = [
   "Venta desde stock",
   "Venta con toma de usado",
   "Venta 0km",
-  "A conseguir",
 ] as const;
 
 type SortField = typeof ALLOWED_SORT_FIELDS[number];

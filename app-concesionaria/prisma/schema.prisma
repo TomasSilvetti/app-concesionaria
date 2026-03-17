@@ -36,6 +36,7 @@ model Client {
   Operation       Operation[]
   OperationType   OperationType[]
   Origin          Origin[]
+  Pendiente       Pendiente[]
   User            User[]
   VehicleBrand    VehicleBrand[]
   VehicleCategory VehicleCategory[]
@@ -215,6 +216,19 @@ model VehicleCategory {
   Client    Client      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model Pendiente {
+  id            String   @id
+  clienteId     String
+  nombreCliente String
+  detalle       String
+  completado    Boolean  @default(false)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime
+  Client        Client   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
   @@index([clienteId])
 }
 

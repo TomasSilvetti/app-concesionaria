@@ -185,7 +185,6 @@ async function main() {
     "Venta desde stock",
     "Venta con toma de usado",
     "Venta 0km",
-    "A conseguir"
   ];
 
   for (const clienteActual of todosLosClientes) {

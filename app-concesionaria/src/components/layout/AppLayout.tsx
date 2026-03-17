@@ -41,6 +41,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       icon: "directions_car",
       path: "/stock",
     },
+    {
+      label: "Pendientes",
+      icon: "checklist",
+      path: "/pendientes",
+    },
     ...(isAdmin ? [{
       label: "Usuarios",
       icon: "group",
