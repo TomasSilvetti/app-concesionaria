@@ -421,16 +421,6 @@ export function CreateOperationForm({
       errors.precioRevista = "El precio debe ser mayor a 0";
     }
 
-    // Validación de vehículo usado para "Venta con toma de usado"
-    const selectedTipo = operationTypes.find((t) => t.id === tipoOperacionId);
-    if (
-      selectedTipo?.nombre === "Venta con toma de usado" &&
-      tradeInVehicles.length === 0
-    ) {
-      errors.vehiculoUsado =
-        "Debés añadir el vehículo usado antes de guardar esta operación";
-    }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -577,7 +567,6 @@ export function CreateOperationForm({
   };
 
   const selectedTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
-  const needsTradeIn = selectedTipoNombre === "Venta con toma de usado";
   const isVentaDesdeStock = selectedTipoNombre === "Venta desde stock";
 
   const isFormValid =
@@ -593,7 +582,6 @@ export function CreateOperationForm({
     precioRevista &&
     precioVentaTotal &&
     ingresosBrutos &&
-    (!needsTradeIn || tradeInVehicles.length > 0) &&
     Object.keys(fieldErrors).length === 0;
 
   const vehicleFieldsData: VehicleFieldsData = {
@@ -769,8 +757,8 @@ export function CreateOperationForm({
         </div>
       </div>
 
-      {/* Botón Buscar en stock - visible para "Venta desde stock" y "Venta con toma de usado" */}
-      {(isVentaDesdeStock || needsTradeIn) && (
+      {/* Botón Buscar en stock - visible para "Venta desde stock" */}
+      {isVentaDesdeStock && (
         <button
           type="button"
           onClick={handleOpenStockModal}

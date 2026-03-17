@@ -183,7 +183,6 @@ async function main() {
 
   const tiposOperacion = [
     "Venta desde stock",
-    "Venta con toma de usado",
     "Venta 0km",
   ];
 

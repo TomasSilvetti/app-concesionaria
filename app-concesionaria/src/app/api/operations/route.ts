@@ -16,7 +16,6 @@ const ALLOWED_SORT_FIELDS = [
 
 const VALID_OPERATION_TYPES = [
   "Venta desde stock",
-  "Venta con toma de usado",
   "Venta 0km",
 ] as const;
 
@@ -405,7 +404,7 @@ export async function POST(req: NextRequest) {
 
     if (stockVehicleId) {
       const stockVehicle = await prisma.vehicle.findFirst({
-        where: { id: stockVehicleId, clienteId, estado: "disponible", operacionId: null },
+        where: { id: stockVehicleId, clienteId, estado: "disponible" },
       });
       if (!stockVehicle) {
         return NextResponse.json(
@@ -413,13 +412,6 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-    }
-
-    if (tipoOperacion.nombre === "Venta con toma de usado" && !vehiculoUsadoStr) {
-      return NextResponse.json(
-        { message: "Debés añadir el vehículo usado antes de guardar esta operación" },
-        { status: 400 }
-      );
     }
 
     let vehiculoUsado: Record<string, string> | null = null;
@@ -473,12 +465,31 @@ export async function POST(req: NextRequest) {
     const now = new Date();
 
     const fotos = formData.getAll("fotos") as File[];
-    
-    if (fotos.length > 0) {
-      const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-      const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const vehiculoUsadoFotos = formData.getAll("vehiculoUsadoFotos") as File[];
 
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    if (fotos.length > 0) {
       for (const foto of fotos) {
+        if (!ALLOWED_MIME_TYPES.includes(foto.type)) {
+          return NextResponse.json(
+            { message: `Tipo de archivo no permitido: ${foto.type}. Solo se permiten imágenes JPEG, PNG y WebP` },
+            { status: 400 }
+          );
+        }
+
+        if (foto.size > MAX_FILE_SIZE) {
+          return NextResponse.json(
+            { message: `El archivo ${foto.name} excede el tamaño máximo permitido de 10MB` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    if (vehiculoUsadoFotos.length > 0) {
+      for (const foto of vehiculoUsadoFotos) {
         if (!ALLOWED_MIME_TYPES.includes(foto.type)) {
           return NextResponse.json(
             { message: `Tipo de archivo no permitido: ${foto.type}. Solo se permiten imágenes JPEG, PNG y WebP` },
@@ -637,6 +648,29 @@ export async function POST(req: NextRequest) {
             actualizadoEn: now,
           },
         });
+
+        if (vehiculoUsadoFotos.length > 0) {
+          const usedPhotosData = await Promise.all(
+            vehiculoUsadoFotos.map(async (foto, index) => {
+              const buffer = await foto.arrayBuffer();
+              const bytes = Buffer.from(buffer);
+
+              return {
+                id: randomUUID(),
+                stockId: usedVehicleId,
+                nombreArchivo: foto.name,
+                mimeType: foto.type,
+                datos: bytes,
+                orden: index,
+                creadoEn: now,
+              };
+            })
+          );
+
+          await tx.vehiclePhoto.createMany({
+            data: usedPhotosData,
+          });
+        }
 
         await tx.operationExchange.create({
           data: {

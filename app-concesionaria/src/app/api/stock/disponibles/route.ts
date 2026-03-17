@@ -25,7 +25,6 @@ export async function GET() {
     const vehicles = await prisma.vehicle.findMany({
       where: {
         clienteId,
-        operacionId: null,
         estado: "disponible",
       },
       include: {

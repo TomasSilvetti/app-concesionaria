@@ -8,7 +8,10 @@
       "Bash(npx prisma:*)",
       "Bash(grep -E \"\\(\\\\.ts|\\\\.js|\\\\.d\\\\.ts\\)$\")",
       "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrccomponents -type f -name *[Pp]ago* -o -name *[Pp]ayment*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/)",
+      "Bash(grep -n \"PUT\\\\|PUT\\\\|PATCH\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/api/operations/[id]/route.ts)",
+      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/edit/)"
     ]
   },
   "outputStyle": "default"
