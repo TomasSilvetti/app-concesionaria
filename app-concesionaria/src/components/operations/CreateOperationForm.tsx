@@ -732,8 +732,8 @@ export function CreateOperationForm({
         </div>
       </div>
 
-      {/* Botón Buscar en stock - solo visible para "Venta desde stock" */}
-      {isVentaDesdeStock && (
+      {/* Botón Buscar en stock - visible para "Venta desde stock" y "Venta con toma de usado" */}
+      {(isVentaDesdeStock || needsTradeIn) && (
         <button
           type="button"
           onClick={handleOpenStockModal}
