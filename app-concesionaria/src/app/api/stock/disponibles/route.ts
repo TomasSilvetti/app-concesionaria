@@ -34,6 +34,14 @@ export async function GET() {
             nombre: true,
           },
         },
+        VehiclePhoto: {
+          select: {
+            id: true,
+          },
+          orderBy: {
+            orden: "asc",
+          },
+        },
       },
       orderBy: {
         creadoEn: "desc",
@@ -54,6 +62,7 @@ export async function GET() {
       notasGenerales: vehicle.notasGenerales,
       precioRevista: vehicle.precioRevista,
       precioOferta: vehicle.precioOferta,
+      fotos: vehicle.VehiclePhoto.map((p) => ({ id: p.id })),
     }));
 
     return NextResponse.json({ vehicles: vehiclesFormatted }, { status: 200 });

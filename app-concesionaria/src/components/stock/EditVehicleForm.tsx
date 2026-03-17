@@ -43,6 +43,7 @@ export function EditVehicleForm({
   const [precioRevista, setPrecioRevista] = useState("");
   const [precioOferta, setPrecioOferta] = useState("");
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
+  const [existingPhotoIds, setExistingPhotoIds] = useState<string[]>([]);
 
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
@@ -124,6 +125,9 @@ export function EditVehicleForm({
         setNotasGenerales(vehicle.notasGenerales ?? "");
         setPrecioRevista(vehicle.precioRevista?.toString() ?? "");
         setPrecioOferta(vehicle.precioOferta?.toString() ?? "");
+        setExistingPhotoIds(
+          (vehicle.VehiclePhoto ?? []).map((p: { id: string }) => p.id)
+        );
       } else if (res.status === 404) {
         setError("Vehículo no encontrado.");
       } else {
@@ -240,6 +244,22 @@ export function EditVehicleForm({
     }
   };
 
+  const handleDeleteExistingPhoto = async (photoId: string) => {
+    try {
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(
+        `${baseUrl}/api/stock/${vehicleId}/photos/${photoId}`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        setExistingPhotoIds((prev) => prev.filter((id) => id !== photoId));
+      }
+    } catch {
+      // silently ignore
+    }
+  };
+
   const handleInputChange = (field: string) => {
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
@@ -333,6 +353,9 @@ export function EditVehicleForm({
         disabled={isSubmitting}
         isDragging={isDragging}
         onDragStateChange={setIsDragging}
+        stockPhotoIds={existingPhotoIds}
+        stockVehicleId={vehicleId}
+        onDeleteExistingPhoto={handleDeleteExistingPhoto}
       />
 
       {/* Botones de acción */}

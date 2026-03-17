@@ -6,7 +6,9 @@
       "Bash(grep \"Estado:\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-6/porcion-*.md)",
       "Bash(ls tailwind*)",
       "Bash(npx prisma:*)",
-      "Bash(grep -E \"\\(\\\\.ts|\\\\.js|\\\\.d\\\\.ts\\)$\")"
+      "Bash(grep -E \"\\(\\\\.ts|\\\\.js|\\\\.d\\\\.ts\\)$\")",
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrccomponents -type f -name *[Pp]ago* -o -name *[Pp]ayment*)",
+      "Bash(npx tsc:*)"
     ]
   },
   "outputStyle": "default"

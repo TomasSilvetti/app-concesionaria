@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "material-symbols/outlined.css";
 import {
   VehicleFieldsForm,
@@ -38,6 +38,7 @@ interface StockVehicle {
   notasGenerales: string | null;
   precioRevista: number | null;
   precioOferta: number | null;
+  fotos: { id: string }[];
 }
 
 interface TradeInVehicle {
@@ -53,6 +54,7 @@ interface TradeInVehicle {
   precioNegociado: string;
   notasMecanicas: string;
   notasGenerales: string;
+  photos: PhotoFile[];
 }
 
 interface CreateOperationFormProps {
@@ -92,6 +94,7 @@ export function CreateOperationForm({
   const [stockLoading, setStockLoading] = useState(false);
   const [selectedStockVehicleId, setSelectedStockVehicleId] = useState<string | null>(null);
   const [stockAutofillId, setStockAutofillId] = useState<string | null>(null);
+  const [stockPhotoIds, setStockPhotoIds] = useState<string[]>([]);
 
   // Trade-in vehicles state
   const [tradeInVehicles, setTradeInVehicles] = useState<TradeInVehicle[]>([]);
@@ -110,6 +113,9 @@ export function CreateOperationForm({
   const [tradeInNotasMecanicas, setTradeInNotasMecanicas] = useState("");
   const [tradeInNotasGenerales, setTradeInNotasGenerales] = useState("");
   const [tradeInFieldErrors, setTradeInFieldErrors] = useState<Record<string, string>>({});
+  const [tradeInPhotos, setTradeInPhotos] = useState<PhotoFile[]>([]);
+  const [tradeInIsDragging, setTradeInIsDragging] = useState(false);
+  const tradeInFileInputRef = useRef<HTMLInputElement>(null);
 
   // Data for selectors
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
@@ -201,6 +207,7 @@ export function CreateOperationForm({
     setTradeInNotasMecanicas("");
     setTradeInNotasGenerales("");
     setTradeInFieldErrors({});
+    setTradeInPhotos([]);
   };
 
   const validateTradeInForm = (): boolean => {
@@ -250,6 +257,7 @@ export function CreateOperationForm({
       precioNegociado: tradeInPrecioNegociado,
       notasMecanicas: tradeInNotasMecanicas.trim(),
       notasGenerales: tradeInNotasGenerales.trim(),
+      photos: tradeInPhotos,
     };
 
     setTradeInVehicles((prev) => [...prev, newVehicle]);
@@ -279,6 +287,7 @@ export function CreateOperationForm({
     setTradeInPrecioNegociado(vehicle.precioNegociado);
     setTradeInNotasMecanicas(vehicle.notasMecanicas);
     setTradeInNotasGenerales(vehicle.notasGenerales);
+    setTradeInPhotos(vehicle.photos);
     setTradeInFieldErrors({});
     setShowTradeInForm(true);
   };
@@ -334,6 +343,7 @@ export function CreateOperationForm({
     );
 
     setStockAutofillId(vehicle.id);
+    setStockPhotoIds(vehicle.fotos.map((f) => f.id));
     setShowStockModal(false);
     setSelectedStockVehicleId(null);
   };
@@ -346,6 +356,27 @@ export function CreateOperationForm({
         return newErrors;
       });
     }
+  };
+
+  const handleTradeInPhotoSelect = (files: FileList | null) => {
+    if (!files) return;
+    const validFiles = Array.from(files).filter(
+      (file) => file.type.startsWith("image/") && file.size <= 10 * 1024 * 1024
+    );
+    const newPhotos = validFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setTradeInPhotos((prev) => [...prev, ...newPhotos]);
+  };
+
+  const handleTradeInRemovePhoto = (id: string) => {
+    setTradeInPhotos((prev) => {
+      const photo = prev.find((p) => p.id === id);
+      if (photo) URL.revokeObjectURL(photo.preview);
+      return prev.filter((p) => p.id !== id);
+    });
   };
 
   const validateForm = (): boolean => {
@@ -454,7 +485,11 @@ export function CreateOperationForm({
       }
 
       if (tradeInVehicles.length > 0) {
-        formData.append("vehiculoUsado", JSON.stringify(tradeInVehicles[0]));
+        const { photos: tradeInVehiclePhotos, ...vehicleData } = tradeInVehicles[0];
+        formData.append("vehiculoUsado", JSON.stringify(vehicleData));
+        tradeInVehiclePhotos.forEach((photo) => {
+          formData.append("vehiculoUsadoFotos", photo.file);
+        });
       }
 
       photos.forEach((photo) => {
@@ -489,6 +524,7 @@ export function CreateOperationForm({
         setPrecioRevista("");
         setPrecioOferta("");
         setPhotos([]);
+        setStockPhotoIds([]);
         setFieldErrors({});
         setTradeInVehicles([]);
         resetTradeInForm();
@@ -668,6 +704,7 @@ export function CreateOperationForm({
                     setPrecioRevista("");
                     setPrecioOferta("");
                     setStockAutofillId(null);
+                    setStockPhotoIds([]);
                   }
                 }}
                 className={`h-12 w-full appearance-none rounded-lg border ${
@@ -761,6 +798,8 @@ export function CreateOperationForm({
         isDragging={isDragging}
         onDragStateChange={setIsDragging}
         showOperationFields={true}
+        stockPhotoIds={stockPhotoIds.length > 0 ? stockPhotoIds : undefined}
+        stockVehicleId={stockAutofillId ?? undefined}
       />
 
       {/* Botón para añadir auto en parte de pago - Siempre visible */}
@@ -1186,6 +1225,81 @@ export function CreateOperationForm({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Fotos del vehículo en parte de pago */}
+              <div className="flex flex-col gap-3 lg:col-span-2">
+                <label className="text-sm font-medium text-zinc-700">
+                  Fotos del vehículo
+                </label>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setTradeInIsDragging(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); setTradeInIsDragging(false); }}
+                  onDrop={(e) => { e.preventDefault(); setTradeInIsDragging(false); handleTradeInPhotoSelect(e.dataTransfer.files); }}
+                  onClick={() => !isSubmitting && tradeInFileInputRef.current?.click()}
+                  className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 transition-all ${
+                    tradeInIsDragging
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "border-zinc-300 bg-zinc-50 hover:border-emerald-400 hover:bg-emerald-50"
+                  } ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
+                >
+                  <span className="material-symbols-outlined text-3xl text-emerald-500">cloud_upload</span>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-zinc-700">
+                      Arrastrá las fotos aquí o hacé clic para seleccionar
+                    </p>
+                    <p className="text-xs text-zinc-400">JPG, PNG o WEBP hasta 10MB por archivo</p>
+                  </div>
+                  <input
+                    ref={tradeInFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={(e) => handleTradeInPhotoSelect(e.target.files)}
+                    className="hidden"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {tradeInPhotos.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-zinc-600">
+                        Fotos seleccionadas ({tradeInPhotos.length})
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          tradeInPhotos.forEach((p) => URL.revokeObjectURL(p.preview));
+                          setTradeInPhotos([]);
+                        }}
+                        className="text-xs font-medium text-red-600 hover:text-red-700 focus:outline-none rounded px-1"
+                        disabled={isSubmitting}
+                      >
+                        Eliminar todas
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {tradeInPhotos.map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
+                        >
+                          <img src={photo.preview} alt={photo.file.name} className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleTradeInRemovePhoto(photo.id); }}
+                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow transition-opacity hover:bg-red-700 focus:outline-none group-hover:opacity-100"
+                            disabled={isSubmitting}
+                            aria-label={`Eliminar foto ${photo.file.name}`}
+                          >
+                            <span className="material-symbols-outlined text-sm">close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Botón agregar vehículo */}

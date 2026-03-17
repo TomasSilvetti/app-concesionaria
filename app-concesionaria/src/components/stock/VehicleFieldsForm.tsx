@@ -68,6 +68,9 @@ interface VehicleFieldsFormProps {
   isDragging?: boolean;
   onDragStateChange?: (isDragging: boolean) => void;
   showOperationFields?: boolean;
+  stockPhotoIds?: string[];
+  stockVehicleId?: string;
+  onDeleteExistingPhoto?: (photoId: string) => void;
 }
 
 export function VehicleFieldsForm({
@@ -83,6 +86,9 @@ export function VehicleFieldsForm({
   isDragging = false,
   onDragStateChange,
   showOperationFields = false,
+  stockPhotoIds,
+  stockVehicleId,
+  onDeleteExistingPhoto,
 }: VehicleFieldsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -736,6 +742,48 @@ export function VehicleFieldsForm({
             disabled={disabled}
           />
         </div>
+
+        {/* Fotos existentes del vehículo de stock */}
+        {stockPhotoIds && stockPhotoIds.length > 0 && stockVehicleId && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-green-600">check_circle</span>
+              <p className="text-sm font-medium text-zinc-700">
+                Fotos del vehículo ({stockPhotoIds.length})
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {stockPhotoIds.map((photoId) => (
+                <div
+                  key={photoId}
+                  className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
+                >
+                  <img
+                    src={`/api/stock/${stockVehicleId}/photos/${photoId}`}
+                    alt="Foto del vehículo"
+                    className="h-full w-full object-cover"
+                  />
+                  {onDeleteExistingPhoto && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteExistingPhoto(photoId);
+                      }}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow-lg transition-opacity hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 group-hover:opacity-100"
+                      disabled={disabled}
+                      aria-label="Eliminar foto"
+                    >
+                      <span className="material-symbols-outlined text-lg">
+                        close
+                      </span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Galería de fotos seleccionadas */}
         {data.photos.length > 0 && (
