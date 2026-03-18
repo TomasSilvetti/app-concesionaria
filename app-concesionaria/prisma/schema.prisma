@@ -43,27 +43,31 @@ model Client {
 }
 
 model Expense {
-  id            String     @id
-  clienteId     String
-  operacionId   String?
-  fecha         DateTime
-  descripcion   String
-  categoriaId   String
-  tipo          String
-  monto         Float
-  estado        String
-  origenId      String
-  creadoEn      DateTime   @default(now())
-  actualizadoEn DateTime
-  Category      Category   @relation(fields: [categoriaId], references: [id])
-  Client        Client     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  Operation     Operation? @relation(fields: [operacionId], references: [id])
-  Origin        Origin     @relation(fields: [origenId], references: [id])
+  id                 String     @id
+  clienteId          String
+  operacionId        String?
+  fecha              DateTime
+  descripcion        String
+  categoriaId        String
+  tipo               String
+  monto              Float
+  estado             String
+  origenId           String
+  quienPagoUserId    String?
+  quienPagoEspecial  String?
+  creadoEn           DateTime   @default(now())
+  actualizadoEn      DateTime
+  Category           Category   @relation(fields: [categoriaId], references: [id])
+  Client             Client     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  Operation          Operation? @relation(fields: [operacionId], references: [id])
+  Origin             Origin     @relation(fields: [origenId], references: [id])
+  QuienPagoUser      User?      @relation("GastosComoQuienPago", fields: [quienPagoUserId], references: [id])
 
   @@index([categoriaId])
   @@index([clienteId])
   @@index([operacionId])
   @@index([origenId])
+  @@index([quienPagoUserId])
 }
 
 model Operation {
@@ -164,10 +168,11 @@ model User {
   rol           String   @default("usuario")
   clienteId     String?
   permisos      Json?
-  activo        Boolean  @default(true)
-  creadoEn      DateTime @default(now())
-  actualizadoEn DateTime
-  Client        Client?  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  activo               Boolean  @default(true)
+  creadoEn             DateTime @default(now())
+  actualizadoEn        DateTime
+  Client               Client?  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  gastosComoQuienPago  Expense[] @relation("GastosComoQuienPago")
 
   @@index([clienteId])
   @@index([username])
