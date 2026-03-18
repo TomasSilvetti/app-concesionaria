@@ -1,5 +1,7 @@
 # porcion-004 — Módulo Gastos — página, selector de período y métricas [FRONT]
 
+**Estado:** 🔄 En progreso
+
 **Historia de usuario:** HU-7: Módulo Gastos
 **Par:** porcion-005
 **Tipo:** FRONT
