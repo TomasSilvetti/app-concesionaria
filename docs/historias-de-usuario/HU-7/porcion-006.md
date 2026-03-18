@@ -1,5 +1,7 @@
 # porcion-006 — Módulo Gastos — gráficos de torta [FRONT]
 
+**Estado:** completada
+
 **Historia de usuario:** HU-7: Módulo Gastos
 **Par:** porcion-007
 **Tipo:** FRONT

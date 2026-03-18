@@ -506,165 +506,9 @@ export function VehicleFieldsForm({
             </h2>
           </div>
 
-          {/* Precio Revista */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="precioRevista"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Precio Revista <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                attach_money
-              </span>
-              <input
-                id="precioRevista"
-                type="number"
-                step="0.01"
-                value={data.precioRevista}
-                onChange={(e) => {
-                  handlers.setPrecioRevista(e.target.value);
-                  handleInputChange("precioRevista");
-                }}
-                placeholder="0.00"
-                className={`h-12 w-full rounded-lg border ${
-                  fieldErrors.precioRevista
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={disabled}
-              />
-            </div>
-            {fieldErrors.precioRevista && (
-              <span className="text-xs text-red-600">
-                {fieldErrors.precioRevista}
-              </span>
-            )}
-          </div>
-
-          {/* Precio Oferta (solo en Stock) o Precio Venta Total (en Operaciones) */}
-          {!showOperationFields ? (
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="precioOferta"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Precio Oferta
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  local_offer
-                </span>
-                <input
-                  id="precioOferta"
-                  type="number"
-                  step="0.01"
-                  value={data.precioOferta}
-                  onChange={(e) => {
-                    handlers.setPrecioOferta(e.target.value);
-                    handleInputChange("precioOferta");
-                  }}
-                  placeholder="0.00"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.precioOferta
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={disabled}
-                />
-              </div>
-              {fieldErrors.precioOferta && (
-                <span className="text-xs text-red-600">
-                  {fieldErrors.precioOferta}
-                </span>
-              )}
-              <p className="text-xs text-zinc-500">
-                Precio especial de venta (opcional)
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="precioVentaTotal"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Precio de Venta Total <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  local_offer
-                </span>
-                <input
-                  id="precioVentaTotal"
-                  type="number"
-                  step="0.01"
-                  value={data.precioVentaTotal || ""}
-                  onChange={(e) => {
-                    handlers.setPrecioVentaTotal?.(e.target.value);
-                    handleInputChange("precioVentaTotal");
-                  }}
-                  placeholder="0.00"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.precioVentaTotal
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={disabled}
-                />
-              </div>
-              {fieldErrors.precioVentaTotal && (
-                <span className="text-xs text-red-600">
-                  {fieldErrors.precioVentaTotal}
-                </span>
-              )}
-              <p className="text-xs text-zinc-500">
-                Precio pactado de la operación
-              </p>
-            </div>
-          )}
-
-          {/* Campos adicionales solo para operaciones */}
-          {showOperationFields && (
+          {showOperationFields ? (
             <>
-              {/* Ingreso Bruto */}
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="ingresosBrutos"
-                  className="text-sm font-medium text-zinc-700"
-                >
-                  Ingreso Bruto <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    monetization_on
-                  </span>
-                  <input
-                    id="ingresosBrutos"
-                    type="number"
-                    step="0.01"
-                    value={data.ingresosBrutos || ""}
-                    onChange={(e) => {
-                      handlers.setIngresosBrutos?.(e.target.value);
-                      handleInputChange("ingresosBrutos");
-                    }}
-                    placeholder="0.00"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.ingresosBrutos
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={disabled}
-                  />
-                </div>
-                {fieldErrors.ingresosBrutos && (
-                  <span className="text-xs text-red-600">
-                    {fieldErrors.ingresosBrutos}
-                  </span>
-                )}
-              </div>
-
-              {/* Precio de Toma */}
+              {/* 1. Precio de Toma */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="precioToma"
@@ -695,7 +539,114 @@ export function VehicleFieldsForm({
                 </p>
               </div>
 
-              {/* Comisión Calculada */}
+              {/* 2. Precio de Venta Total (estimado) */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioVentaTotal"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio de Venta Estimado <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    local_offer
+                  </span>
+                  <input
+                    id="precioVentaTotal"
+                    type="number"
+                    step="0.01"
+                    value={data.precioVentaTotal || ""}
+                    onChange={(e) => {
+                      handlers.setPrecioVentaTotal?.(e.target.value);
+                      handleInputChange("precioVentaTotal");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioVentaTotal
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioVentaTotal && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioVentaTotal}
+                  </span>
+                )}
+                <p className="text-xs text-zinc-500">
+                  Precio pactado de la operación
+                </p>
+              </div>
+
+              {/* 3. Precio Revista */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioRevista"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio Revista <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    attach_money
+                  </span>
+                  <input
+                    id="precioRevista"
+                    type="number"
+                    step="0.01"
+                    value={data.precioRevista}
+                    onChange={(e) => {
+                      handlers.setPrecioRevista(e.target.value);
+                      handleInputChange("precioRevista");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioRevista
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioRevista && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioRevista}
+                  </span>
+                )}
+              </div>
+
+              {/* 4. Ingreso Bruto (auto-calculado) */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="ingresosBrutos"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Ingreso Bruto
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    monetization_on
+                  </span>
+                  <input
+                    id="ingresosBrutos"
+                    type="text"
+                    value={
+                      data.precioVentaTotal
+                        ? `$${(parseFloat(data.precioVentaTotal) - parseFloat(data.precioToma || "0")).toFixed(2)}`
+                        : "$0.00"
+                    }
+                    readOnly
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700 transition-colors focus:outline-none"
+                    disabled
+                  />
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Se calcula automáticamente: precio venta estimado − precio de toma
+                </p>
+              </div>
+
+              {/* 5. Comisión Calculada */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="comisionCalculada"
@@ -710,11 +661,12 @@ export function VehicleFieldsForm({
                   <input
                     id="comisionCalculada"
                     type="text"
-                    value={
-                      data.ingresosBrutos && data.precioVentaTotal
-                        ? `${(((parseFloat(data.ingresosBrutos) - 0) / parseFloat(data.precioVentaTotal)) * 100).toFixed(2)}%`
-                        : "0.00%"
-                    }
+                    value={(() => {
+                      const venta = parseFloat(data.precioVentaTotal || "0");
+                      const toma = parseFloat(data.precioToma || "0");
+                      if (!venta) return "0.00%";
+                      return `${(((venta - toma) / venta) * 100).toFixed(2)}%`;
+                    })()}
                     readOnly
                     className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700 transition-colors focus:outline-none"
                     disabled
@@ -722,6 +674,85 @@ export function VehicleFieldsForm({
                 </div>
                 <p className="text-xs text-zinc-500">
                   Se calcula automáticamente según ingreso bruto / precio venta
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Precio Revista */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioRevista"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio Revista <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    attach_money
+                  </span>
+                  <input
+                    id="precioRevista"
+                    type="number"
+                    step="0.01"
+                    value={data.precioRevista}
+                    onChange={(e) => {
+                      handlers.setPrecioRevista(e.target.value);
+                      handleInputChange("precioRevista");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioRevista
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioRevista && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioRevista}
+                  </span>
+                )}
+              </div>
+
+              {/* Precio Oferta */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioOferta"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio Oferta
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    local_offer
+                  </span>
+                  <input
+                    id="precioOferta"
+                    type="number"
+                    step="0.01"
+                    value={data.precioOferta}
+                    onChange={(e) => {
+                      handlers.setPrecioOferta(e.target.value);
+                      handleInputChange("precioOferta");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioOferta
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioOferta && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioOferta}
+                  </span>
+                )}
+                <p className="text-xs text-zinc-500">
+                  Precio especial de venta (opcional)
                 </p>
               </div>
             </>

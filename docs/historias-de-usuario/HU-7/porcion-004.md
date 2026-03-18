@@ -1,6 +1,7 @@
 # porcion-004 — Módulo Gastos — página, selector de período y métricas [FRONT]
 
-**Estado:** 🔄 En progreso
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-18
 
 **Historia de usuario:** HU-7: Módulo Gastos
 **Par:** porcion-005

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import "material-symbols/outlined.css";
+import { GastosCharts } from "./GastosCharts";
+import { GastosTabla } from "./GastosTabla";
 
 interface Metricas {
   totalVendidoBruto: number;
@@ -180,9 +182,11 @@ export function GastosPage() {
         </div>
       )}
 
-      {/* Gráficos — porcion-006 */}
+      {/* Gráficos */}
+      <GastosCharts desde={desde} hasta={hasta} />
 
-      {/* Tabla de gastos — porcion-008 */}
+      {/* Tabla de gastos */}
+      <GastosTabla desde={desde} hasta={hasta} />
     </div>
   );
 }

@@ -1,5 +1,8 @@
 # porcion-007 — Endpoints para datos de gráficos [BACK]
 
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-18
+
 **Historia de usuario:** HU-7: Módulo Gastos
 **Par:** porcion-006
 **Tipo:** BACK

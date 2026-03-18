@@ -1,5 +1,8 @@
 # porcion-005 — Endpoint de métricas financieras [BACK]
 
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-18
+
 **Historia de usuario:** HU-7: Módulo Gastos
 **Par:** porcion-004
 **Tipo:** BACK

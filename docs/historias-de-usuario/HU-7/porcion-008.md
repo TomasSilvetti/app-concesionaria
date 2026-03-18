@@ -1,5 +1,7 @@
 # porcion-008 — Módulo Gastos — tabla de gastos con filtros [FRONT]
 
+**Estado:** completada
+
 **Historia de usuario:** HU-7: Módulo Gastos
 **Par:** porcion-009
 **Tipo:** FRONT
