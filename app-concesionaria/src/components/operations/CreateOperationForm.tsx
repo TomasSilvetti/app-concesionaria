@@ -69,6 +69,7 @@ export function CreateOperationForm({
   // Operation-specific fields
   const [tipoOperacionId, setTipoOperacionId] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
+  const [nombreComprador, setNombreComprador] = useState("");
   const [precioVentaTotal, setPrecioVentaTotal] = useState("");
   const [ingresosBrutos, setIngresosBrutos] = useState("");
   const [precioToma, setPrecioToma] = useState("");
@@ -142,6 +143,17 @@ export function CreateOperationForm({
     fetchCategories();
     fetchOperationTypes();
   }, []);
+
+  // Auto-calcular ingreso bruto como diferencia entre precio venta estimado y precio de toma
+  useEffect(() => {
+    const venta = parseFloat(precioVentaTotal);
+    const toma = parseFloat(precioToma || "0");
+    if (!isNaN(venta) && precioVentaTotal) {
+      setIngresosBrutos((venta - toma).toFixed(2));
+    } else {
+      setIngresosBrutos("");
+    }
+  }, [precioVentaTotal, precioToma]);
 
   const fetchBrands = async () => {
     try {
@@ -388,17 +400,12 @@ export function CreateOperationForm({
     // Operation fields validation
     if (!tipoOperacionId) errors.tipoOperacionId = "Seleccioná un tipo de operación";
     if (!fechaInicio) errors.fechaInicio = "La fecha de inicio es requerida";
+    if (!nombreComprador.trim()) errors.nombreComprador = "El nombre del comprador es obligatorio";
     if (!precioVentaTotal) {
       errors.precioVentaTotal = "El precio de venta es requerido";
     } else if (parseFloat(precioVentaTotal) <= 0) {
       errors.precioVentaTotal = "El precio debe ser mayor a 0";
     }
-    if (!ingresosBrutos) {
-      errors.ingresosBrutos = "El ingreso bruto es requerido";
-    } else if (parseFloat(ingresosBrutos) <= 0) {
-      errors.ingresosBrutos = "El ingreso debe ser mayor a 0";
-    }
-
     // Vehicle fields validation (from VehicleFieldsForm)
     if (!marcaId) errors.marcaId = "Seleccioná una marca";
     if (!modelo.trim()) errors.modelo = "El modelo es requerido";
@@ -469,6 +476,7 @@ export function CreateOperationForm({
 
       formData.append("tipoOperacionId", tipoOperacionId);
       formData.append("fechaInicio", fechaInicio);
+      formData.append("nombreComprador", nombreComprador.trim());
       formData.append("precioVentaTotal", precioVentaTotal);
       formData.append("ingresosBrutos", ingresosBrutos);
 
@@ -508,6 +516,7 @@ export function CreateOperationForm({
         // Reset operation fields
         setTipoOperacionId("");
         setFechaInicio("");
+        setNombreComprador("");
         setPrecioVentaTotal("");
         setIngresosBrutos("");
         // Reset vehicle fields
@@ -560,6 +569,7 @@ export function CreateOperationForm({
     if (operationTypes.length > 0) setTipoOperacionId(operationTypes[0].id);
     const today = new Date().toISOString().split('T')[0];
     setFechaInicio(today);
+    setNombreComprador("Juan Pérez");
     setPrecioVentaTotal("24000");
     setIngresosBrutos("22000");
     
@@ -584,6 +594,7 @@ export function CreateOperationForm({
   const isFormValid =
     tipoOperacionId &&
     fechaInicio &&
+    nombreComprador.trim() &&
     marcaId &&
     modelo.trim() &&
     anio &&
@@ -593,7 +604,6 @@ export function CreateOperationForm({
     kilometros &&
     precioRevista &&
     precioVentaTotal &&
-    ingresosBrutos &&
     Object.keys(fieldErrors).length === 0;
 
   const vehicleFieldsData: VehicleFieldsData = {
@@ -671,7 +681,7 @@ export function CreateOperationForm({
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
           {/* Tipo de Operación */}
           <div className="flex flex-col gap-2">
             <label
@@ -765,6 +775,42 @@ export function CreateOperationForm({
             {fieldErrors.fechaInicio && (
               <span className="text-xs text-red-600">
                 {fieldErrors.fechaInicio}
+              </span>
+            )}
+          </div>
+
+          {/* Nombre del Comprador */}
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="nombreComprador"
+              className="text-sm font-medium text-zinc-700"
+            >
+              Nombre del comprador <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                person
+              </span>
+              <input
+                id="nombreComprador"
+                type="text"
+                value={nombreComprador}
+                onChange={(e) => {
+                  setNombreComprador(e.target.value);
+                  handleInputChange("nombreComprador");
+                }}
+                placeholder="Nombre completo del comprador"
+                className={`h-12 w-full rounded-lg border ${
+                  fieldErrors.nombreComprador
+                    ? "border-red-300 bg-red-50"
+                    : "border-zinc-300 bg-zinc-50"
+                } pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                disabled={isSubmitting}
+              />
+            </div>
+            {fieldErrors.nombreComprador && (
+              <span className="text-xs text-red-600">
+                {fieldErrors.nombreComprador}
               </span>
             )}
           </div>

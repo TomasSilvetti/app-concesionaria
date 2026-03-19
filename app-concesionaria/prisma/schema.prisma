@@ -36,6 +36,8 @@ model Client {
   Operation       Operation[]
   OperationType   OperationType[]
   Origin          Origin[]
+  Pago            Pago[]
+  PaymentMethod   PaymentMethod[]
   Pendiente       Pendiente[]
   User            User[]
   VehicleBrand    VehicleBrand[]
@@ -68,6 +70,7 @@ model Operation {
   id                String              @id
   idOperacion       String
   clienteId         String
+  nombreComprador   String
   fechaInicio       DateTime
   fechaVenta        DateTime?
   vehiculoVendidoId String
@@ -85,6 +88,7 @@ model Operation {
   tipoOperacionId   String
   diasVenta         Int?
   Expense           Expense[]
+  Pago              Pago[]
   VehicleCategory   VehicleCategory     @relation(fields: [categoriaId], references: [id])
   Client            Client              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
@@ -253,4 +257,35 @@ model VehiclePhoto {
   Vehicle       Vehicle  @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@index([stockId])
+}
+
+model PaymentMethod {
+  id        String   @id
+  clienteId String
+  nombre    String
+  creadoEn  DateTime @default(now())
+  Client    Client   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  Pago      Pago[]
+
+  @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model Pago {
+  id            String        @id
+  operacionId   String
+  clienteId     String
+  fecha         DateTime
+  metodoPagoId  String
+  monto         Float
+  nota          String?
+  creadoEn      DateTime      @default(now())
+  actualizadoEn DateTime
+  Client        Client        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  Operation     Operation     @relation(fields: [operacionId], references: [id], onDelete: Cascade)
+  PaymentMethod PaymentMethod @relation(fields: [metodoPagoId], references: [id])
+
+  @@index([clienteId])
+  @@index([metodoPagoId])
+  @@index([operacionId])
 }
