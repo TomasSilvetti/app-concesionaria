@@ -112,20 +112,39 @@ export async function POST(
       return NextResponse.json({ error: "categoriaId no existe o no pertenece al cliente" }, { status: 400 });
     }
 
-    const expense = await prisma.expense.create({
-      data: {
-        id: crypto.randomUUID(),
-        clienteId,
-        operacionId: operation.id,
-        descripcion: String(descripcion).trim(),
-        monto: montoNum,
-        origenId,
-        categoriaId,
-      },
-      include: {
-        Origin: { select: { nombre: true } },
-        Category: { select: { nombre: true } },
-      },
+    const expense = await prisma.$transaction(async (tx) => {
+      const created = await tx.expense.create({
+        data: {
+          id: crypto.randomUUID(),
+          clienteId,
+          operacionId: operation.id,
+          descripcion: String(descripcion).trim(),
+          monto: montoNum,
+          origenId,
+          categoriaId,
+        },
+        include: {
+          Origin: { select: { nombre: true } },
+          Category: { select: { nombre: true } },
+        },
+      });
+
+      const aggregate = await tx.expense.aggregate({
+        where: { operacionId: operation.id },
+        _sum: { monto: true },
+      });
+      const gastosAsociados = aggregate._sum.monto ?? 0;
+      const ingresosNetos = operation.ingresosBrutos - gastosAsociados;
+      const comision = operation.precioVentaTotal > 0
+        ? (ingresosNetos / operation.precioVentaTotal) * 100
+        : 0;
+
+      await tx.operation.update({
+        where: { id: operation.id },
+        data: { gastosAsociados, ingresosNetos, comision, actualizadoEn: new Date() },
+      });
+
+      return created;
     });
 
     return NextResponse.json({ gasto: formatGasto(expense) }, { status: 201 });

@@ -66,6 +66,7 @@ interface OperationDetail {
   vehiculosIntercambiados: VehicleExchange[];
   gastos: Expense[];
   documentoDetalle: { id: string; nombreArchivo: string } | null;
+  nombreComprador: string | null;
 }
 
 export default function OperacionEditPage() {
@@ -606,6 +607,12 @@ export default function OperacionEditPage() {
                 <dt className="text-sm text-zinc-600">Precio Oferta</dt>
                 <dd className="text-sm font-semibold text-green-600">{formatCurrency(operation?.precioOferta || null)}</dd>
               </div>
+              {operation?.nombreComprador && (
+                <div className="flex justify-between border-b border-zinc-200 pb-2 sm:col-span-2">
+                  <dt className="text-sm text-zinc-600">Comprador</dt>
+                  <dd className="text-sm font-medium text-zinc-900">{operation.nombreComprador}</dd>
+                </div>
+              )}
               {operation?.notasMecanicas && (
                 <div className="flex flex-col gap-1 border-b border-zinc-200 pb-2 sm:col-span-2">
                   <dt className="text-sm text-zinc-600">Notas Mecánicas</dt>
@@ -711,6 +718,73 @@ export default function OperacionEditPage() {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Sección: Gastos asociados (solo lectura) - al lado de Fechas */}
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-2xl text-zinc-400">
+                receipt_long
+              </span>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Gastos Asociados
+              </h2>
+              <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                Solo lectura
+              </span>
+            </div>
+
+            {operation && operation.gastos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
+                  <span className="material-symbols-outlined text-2xl text-zinc-400">
+                    receipt_long
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-zinc-600">
+                  Sin gastos asociados
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-zinc-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Fecha
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Descripción
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Categoría
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Monto
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 bg-white">
+                    {operation?.gastos.map((gasto, index) => (
+                      <tr key={index} className="transition-colors hover:bg-zinc-50">
+                        <td className="px-4 py-3 text-sm text-zinc-900">
+                          {formatDate(gasto.fecha)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-zinc-900">
+                          {gasto.descripcion}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-zinc-900">
+                          {gasto.categoria}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-red-600">
+                          {formatCurrency(gasto.monto)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Sección: Información financiera */}
@@ -1120,72 +1194,6 @@ export default function OperacionEditPage() {
             </div>
           </div>
 
-          {/* Sección: Gastos asociados (solo lectura) */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-zinc-400">
-                receipt_long
-              </span>
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Gastos Asociados
-              </h2>
-              <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                Solo lectura
-              </span>
-            </div>
-
-            {operation && operation.gastos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
-                  <span className="material-symbols-outlined text-2xl text-zinc-400">
-                    receipt_long
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-zinc-600">
-                  Sin gastos asociados
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Fecha
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Descripción
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Categoría
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Monto
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 bg-white">
-                    {operation?.gastos.map((gasto, index) => (
-                      <tr key={index} className="transition-colors hover:bg-zinc-50">
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {formatDate(gasto.fecha)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.descripcion}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.categoria}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-red-600">
-                          {formatCurrency(gasto.monto)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </AppLayout>

@@ -87,13 +87,32 @@ export async function PATCH(
       updateData.categoriaId = categoriaId;
     }
 
-    const updated = await prisma.expense.update({
-      where: { id: gastoId },
-      data: updateData,
-      include: {
-        Origin: { select: { nombre: true } },
-        Category: { select: { nombre: true } },
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.expense.update({
+        where: { id: gastoId },
+        data: updateData,
+        include: {
+          Origin: { select: { nombre: true } },
+          Category: { select: { nombre: true } },
+        },
+      });
+
+      const aggregate = await tx.expense.aggregate({
+        where: { operacionId: operation.id },
+        _sum: { monto: true },
+      });
+      const gastosAsociados = aggregate._sum.monto ?? 0;
+      const ingresosNetos = operation.ingresosBrutos - gastosAsociados;
+      const comision = operation.precioVentaTotal > 0
+        ? (ingresosNetos / operation.precioVentaTotal) * 100
+        : 0;
+
+      await tx.operation.update({
+        where: { id: operation.id },
+        data: { gastosAsociados, ingresosNetos, comision, actualizadoEn: new Date() },
+      });
+
+      return result;
     });
 
     return NextResponse.json({ gasto: formatGasto(updated) });
@@ -133,7 +152,24 @@ export async function DELETE(
       return NextResponse.json({ message: "Gasto no encontrado" }, { status: 404 });
     }
 
-    await prisma.expense.delete({ where: { id: gastoId } });
+    await prisma.$transaction(async (tx) => {
+      await tx.expense.delete({ where: { id: gastoId } });
+
+      const aggregate = await tx.expense.aggregate({
+        where: { operacionId: operation.id },
+        _sum: { monto: true },
+      });
+      const gastosAsociados = aggregate._sum.monto ?? 0;
+      const ingresosNetos = operation.ingresosBrutos - gastosAsociados;
+      const comision = operation.precioVentaTotal > 0
+        ? (ingresosNetos / operation.precioVentaTotal) * 100
+        : 0;
+
+      await tx.operation.update({
+        where: { id: operation.id },
+        data: { gastosAsociados, ingresosNetos, comision, actualizadoEn: new Date() },
+      });
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
