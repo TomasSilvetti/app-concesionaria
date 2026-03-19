@@ -42,6 +42,7 @@ export function EditVehicleForm({
   const [notasGenerales, setNotasGenerales] = useState("");
   const [precioRevista, setPrecioRevista] = useState("");
   const [precioOferta, setPrecioOferta] = useState("");
+  const [precioToma, setPrecioToma] = useState("");
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [existingPhotoIds, setExistingPhotoIds] = useState<string[]>([]);
 
@@ -125,6 +126,7 @@ export function EditVehicleForm({
         setNotasGenerales(vehicle.notasGenerales ?? "");
         setPrecioRevista(vehicle.precioRevista?.toString() ?? "");
         setPrecioOferta(vehicle.precioOferta?.toString() ?? "");
+        setPrecioToma(vehicle.precioToma?.toString() ?? "");
         setExistingPhotoIds(
           (vehicle.VehiclePhoto ?? []).map((p: { id: string }) => p.id)
         );
@@ -169,6 +171,9 @@ export function EditVehicleForm({
     if (precioOferta && parseFloat(precioOferta) <= 0) {
       errors.precioOferta = "El precio debe ser mayor a 0";
     }
+    if (precioToma && parseFloat(precioToma) <= 0) {
+      errors.precioToma = "El precio debe ser mayor a 0";
+    }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -204,6 +209,9 @@ export function EditVehicleForm({
       }
       if (precioOferta) {
         formData.append("precioOferta", precioOferta);
+      }
+      if (precioToma) {
+        formData.append("precioToma", precioToma);
       }
       if (notasMecanicas.trim()) {
         formData.append("notasMecanicas", notasMecanicas.trim());
@@ -284,6 +292,7 @@ export function EditVehicleForm({
     notasGenerales,
     precioRevista,
     precioOferta,
+    precioToma,
     photos,
   };
 
@@ -300,6 +309,7 @@ export function EditVehicleForm({
     setNotasGenerales,
     setPrecioRevista,
     setPrecioOferta,
+    setPrecioToma,
     setPhotos,
   };
 

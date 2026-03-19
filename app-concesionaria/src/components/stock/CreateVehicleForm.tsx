@@ -40,6 +40,7 @@ export function CreateVehicleForm({
   const [notasGenerales, setNotasGenerales] = useState("");
   const [precioRevista, setPrecioRevista] = useState("");
   const [precioOferta, setPrecioOferta] = useState("");
+  const [precioToma, setPrecioToma] = useState("");
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
 
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
@@ -129,6 +130,9 @@ export function CreateVehicleForm({
     if (precioOferta && parseFloat(precioOferta) <= 0) {
       errors.precioOferta = "El precio debe ser mayor a 0";
     }
+    if (precioToma && parseFloat(precioToma) <= 0) {
+      errors.precioToma = "El precio debe ser mayor a 0";
+    }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -165,6 +169,9 @@ export function CreateVehicleForm({
       if (precioOferta) {
         formData.append("precioOferta", precioOferta);
       }
+      if (precioToma) {
+        formData.append("precioToma", precioToma);
+      }
       if (notasMecanicas.trim()) {
         formData.append("notasMecanicas", notasMecanicas.trim());
       }
@@ -198,6 +205,7 @@ export function CreateVehicleForm({
         setNotasGenerales("");
         setPrecioRevista("");
         setPrecioOferta("");
+        setPrecioToma("");
         setPhotos([]);
         setFieldErrors({});
         onSuccess?.();
@@ -239,6 +247,7 @@ export function CreateVehicleForm({
     notasGenerales,
     precioRevista,
     precioOferta,
+    precioToma,
     photos,
   };
 
@@ -255,6 +264,7 @@ export function CreateVehicleForm({
     setNotasGenerales,
     setPrecioRevista,
     setPrecioOferta,
+    setPrecioToma,
     setPhotos,
   };
 
@@ -271,6 +281,7 @@ export function CreateVehicleForm({
     setNotasGenerales("Único dueño, garage");
     setPrecioRevista("25000");
     setPrecioOferta("23000");
+    setPrecioToma("18000");
     setFieldErrors({});
   };
 

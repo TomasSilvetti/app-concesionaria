@@ -679,41 +679,44 @@ export function VehicleFieldsForm({
             </>
           ) : (
             <>
-              {/* Precio Revista */}
+              {/* Precio de Toma */}
               <div className="flex flex-col gap-2">
                 <label
-                  htmlFor="precioRevista"
+                  htmlFor="precioToma"
                   className="text-sm font-medium text-zinc-700"
                 >
-                  Precio Revista <span className="text-red-500">*</span>
+                  Precio de Toma
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    attach_money
+                    handshake
                   </span>
                   <input
-                    id="precioRevista"
+                    id="precioToma"
                     type="number"
                     step="0.01"
-                    value={data.precioRevista}
+                    value={data.precioToma || ""}
                     onChange={(e) => {
-                      handlers.setPrecioRevista(e.target.value);
-                      handleInputChange("precioRevista");
+                      handlers.setPrecioToma?.(e.target.value);
+                      handleInputChange("precioToma");
                     }}
                     placeholder="0.00"
                     className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.precioRevista
+                      fieldErrors.precioToma
                         ? "border-red-300 bg-red-50"
                         : "border-zinc-300 bg-zinc-50"
                     } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
                     disabled={disabled}
                   />
                 </div>
-                {fieldErrors.precioRevista && (
+                {fieldErrors.precioToma && (
                   <span className="text-xs text-red-600">
-                    {fieldErrors.precioRevista}
+                    {fieldErrors.precioToma}
                   </span>
                 )}
+                <p className="text-xs text-zinc-500">
+                  Precio al que la concesionaria compra el vehículo (opcional)
+                </p>
               </div>
 
               {/* Precio Oferta */}
@@ -754,6 +757,43 @@ export function VehicleFieldsForm({
                 <p className="text-xs text-zinc-500">
                   Precio especial de venta (opcional)
                 </p>
+              </div>
+
+              {/* Precio Revista */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioRevista"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio Revista <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    attach_money
+                  </span>
+                  <input
+                    id="precioRevista"
+                    type="number"
+                    step="0.01"
+                    value={data.precioRevista}
+                    onChange={(e) => {
+                      handlers.setPrecioRevista(e.target.value);
+                      handleInputChange("precioRevista");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioRevista
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioRevista && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioRevista}
+                  </span>
+                )}
               </div>
             </>
           )}
