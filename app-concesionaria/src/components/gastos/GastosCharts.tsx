@@ -58,7 +58,7 @@ function GraficoOperaciones({ desde, hasta }: { desde: string; hasta: string }) 
     { name: "Abiertas", value: abiertas, color: "#D1D5DB" },
   ];
 
-  const hasData = cerradas > 0 || canceladas > 0;
+  const hasData = total > 0;
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
