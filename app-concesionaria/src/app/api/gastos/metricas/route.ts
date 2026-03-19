@@ -40,9 +40,20 @@ export async function GET(req: NextRequest) {
     // Incluir hasta el final del día de 'hasta'
     hasta.setHours(23, 59, 59, 999);
 
-    const [operacionesResult, gastosResult, plataPorCobrarResult] =
+    const [pagosResult, operacionesResult, gastosResult, plataPorCobrarResult] =
       await Promise.all([
-        // SUM de precioVentaTotal y precioToma de operaciones cerradas en el período
+        // SUM de monto de Pagos de TODAS las operaciones (abiertas y cerradas) en el período
+        prisma.pago.aggregate({
+          where: {
+            clienteId,
+            fecha: { gte: desde, lte: hasta },
+          },
+          _sum: {
+            monto: true,
+          },
+        }),
+
+        // SUM de precioToma de operaciones cerradas en el período (para cálculo de ganancia)
         prisma.operation.aggregate({
           where: {
             clienteId,
@@ -50,7 +61,6 @@ export async function GET(req: NextRequest) {
             fechaVenta: { gte: desde, lte: hasta },
           },
           _sum: {
-            precioVentaTotal: true,
             precioToma: true,
           },
         }),
@@ -81,7 +91,7 @@ export async function GET(req: NextRequest) {
         }),
       ]);
 
-    const totalVendidoBruto = operacionesResult._sum.precioVentaTotal ?? 0;
+    const totalVendidoBruto = pagosResult._sum.monto ?? 0;
     const totalPrecioDeToma = operacionesResult._sum.precioToma ?? 0;
     const totalGastado = gastosResult._sum.monto ?? 0;
     const ganancia = totalVendidoBruto - totalPrecioDeToma - totalGastado;
