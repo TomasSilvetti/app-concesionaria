@@ -77,14 +77,15 @@ export async function GET(req: NextRequest) {
           },
         }),
 
-        // SUM de ingresosNetos de operaciones abiertas (sin filtro de período)
-        prisma.operation.aggregate({
+        // Operaciones abiertas con sus pagos para calcular saldo pendiente de cobro
+        prisma.operation.findMany({
           where: {
             clienteId,
             estado: { in: ["abierta", "open"] },
           },
-          _sum: {
-            ingresosNetos: true,
+          select: {
+            precioVentaTotal: true,
+            Pago: { select: { monto: true } },
           },
         }),
       ]);
@@ -95,7 +96,10 @@ export async function GET(req: NextRequest) {
       const gastosOp = op.Expense.reduce((s, e) => s + e.monto, 0);
       return sum + op.ingresosBrutos - gastosOp;
     }, 0);
-    const plataPorCobrar = plataPorCobrarResult._sum.ingresosNetos ?? 0;
+    const plataPorCobrar = plataPorCobrarResult.reduce((sum, op) => {
+      const pagado = op.Pago.reduce((s, p) => s + p.monto, 0);
+      return sum + Math.max(op.precioVentaTotal - pagado, 0);
+    }, 0);
 
     return NextResponse.json({
       totalVendidoBruto,
