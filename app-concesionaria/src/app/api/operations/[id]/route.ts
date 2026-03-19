@@ -367,6 +367,21 @@ export async function PATCH(
       }
     }
 
+    if (updateData.estado === "cerrada") {
+      const aggregate = await prisma.pago.aggregate({
+        where: { operacionId: existingOperation.id },
+        _sum: { monto: true },
+      });
+      const saldado = aggregate._sum.monto ?? 0;
+      const pendiente = existingOperation.precioVentaTotal - saldado;
+      if (pendiente > 0) {
+        return NextResponse.json(
+          { message: "No se puede cerrar la operación: hay pagos pendientes por $" + pendiente.toFixed(2) },
+          { status: 400 }
+        );
+      }
+    }
+
     const gastosAsociados = existingOperation.gastosAsociados;
     const ingresosBrutos = (updateData.ingresosBrutos as number) ?? existingOperation.ingresosBrutos;
     const precioVentaTotal = (updateData.precioVentaTotal as number) ?? existingOperation.precioVentaTotal;

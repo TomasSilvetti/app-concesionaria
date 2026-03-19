@@ -216,7 +216,7 @@ export async function POST(
       if (pendiente <= 0) {
         await tx.operation.update({
           where: { id: operation.id },
-          data: { estado: "closed", actualizadoEn: now },
+          data: { estado: "cerrada", actualizadoEn: now },
         });
       }
 

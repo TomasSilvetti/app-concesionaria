@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, subWeeks, subYears } from "date-fns";
 import "material-symbols/outlined.css";
 import { GastosCharts } from "./GastosCharts";
 import { GastosTabla } from "./GastosTabla";
@@ -23,18 +23,63 @@ function formatPesos(value: number): string {
   }).format(value);
 }
 
+type Preset = "semana" | "mes_actual" | "mes" | "anio" | "custom";
+
+function getPresetRange(preset: Preset): { desde: string; hasta: string } {
+  const today = new Date();
+  switch (preset) {
+    case "semana":
+      return {
+        desde: format(subWeeks(today, 1), "yyyy-MM-dd"),
+        hasta: format(today, "yyyy-MM-dd"),
+      };
+    case "mes_actual":
+      return {
+        desde: format(startOfMonth(today), "yyyy-MM-dd"),
+        hasta: format(endOfMonth(today), "yyyy-MM-dd"),
+      };
+    case "mes": {
+      const lastMonth = subMonths(today, 1);
+      return {
+        desde: format(startOfMonth(lastMonth), "yyyy-MM-dd"),
+        hasta: format(endOfMonth(lastMonth), "yyyy-MM-dd"),
+      };
+    }
+    case "anio":
+      return {
+        desde: format(subYears(today, 1), "yyyy-MM-dd"),
+        hasta: format(today, "yyyy-MM-dd"),
+      };
+    default:
+      return {
+        desde: format(startOfMonth(today), "yyyy-MM-dd"),
+        hasta: format(endOfMonth(today), "yyyy-MM-dd"),
+      };
+  }
+}
+
 function getDefaultPeriod() {
-  const lastMonth = subMonths(new Date(), 1);
+  const today = new Date();
   return {
-    desde: format(startOfMonth(lastMonth), "yyyy-MM-dd"),
-    hasta: format(endOfMonth(lastMonth), "yyyy-MM-dd"),
+    desde: format(startOfMonth(today), "yyyy-MM-dd"),
+    hasta: format(endOfMonth(today), "yyyy-MM-dd"),
   };
 }
 
 export function GastosPage() {
   const defaultPeriod = getDefaultPeriod();
+  const [preset, setPreset] = useState<Preset>("custom");
   const [desde, setDesde] = useState(defaultPeriod.desde);
   const [hasta, setHasta] = useState(defaultPeriod.hasta);
+
+  const handlePresetChange = (value: Preset) => {
+    setPreset(value);
+    if (value !== "custom") {
+      const range = getPresetRange(value);
+      setDesde(range.desde);
+      setHasta(range.hasta);
+    }
+  };
   const [metricas, setMetricas] = useState<Metricas | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -86,6 +131,22 @@ export function GastosPage() {
         {/* Selector de período */}
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Período
+            </label>
+            <select
+              value={preset}
+              onChange={(e) => handlePresetChange(e.target.value as Preset)}
+              className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="custom">Personalizado</option>
+              <option value="semana">Última semana</option>
+              <option value="mes_actual">Mes actual</option>
+              <option value="mes">Último mes</option>
+              <option value="anio">Último año</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
             <label
               htmlFor="gastos-desde"
               className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
@@ -96,7 +157,7 @@ export function GastosPage() {
               id="gastos-desde"
               type="date"
               value={desde}
-              onChange={(e) => setDesde(e.target.value)}
+              onChange={(e) => { setDesde(e.target.value); setPreset("custom"); }}
               className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               aria-label="Fecha desde"
             />
@@ -112,7 +173,7 @@ export function GastosPage() {
               id="gastos-hasta"
               type="date"
               value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
+              onChange={(e) => { setHasta(e.target.value); setPreset("custom"); }}
               className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               aria-label="Fecha hasta"
             />

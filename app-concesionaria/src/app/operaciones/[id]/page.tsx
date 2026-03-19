@@ -225,9 +225,17 @@ export default function OperacionDetailPage() {
               </span>
             </div>
             <div>
-              <h1 className="text-3xl font-semibold text-zinc-900">
-                Operación #{operation.idOperacion}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-semibold text-zinc-900">
+                  Operación #{operation.idOperacion}
+                </h1>
+                {(operation.estado === "cerrada" || operation.estado === "closed" as string) && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-widest text-green-700 border border-green-300">
+                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                    Operación Terminada
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-zinc-500">
                 Detalle completo de la operación
               </p>
