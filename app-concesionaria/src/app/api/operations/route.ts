@@ -199,6 +199,11 @@ export async function GET(req: NextRequest) {
             },
           },
         },
+        Pago: {
+          select: {
+            monto: true,
+          },
+        },
       },
       orderBy,
       take: limit + 1,
@@ -210,22 +215,27 @@ export async function GET(req: NextRequest) {
       ? operationsToReturn[operationsToReturn.length - 1].idOperacion
       : null;
 
-    const operationsFormatted = operationsToReturn.map((op) => ({
-      idOperacion: op.idOperacion,
-      fechaInicio: op.fechaInicio,
-      fechaVenta: op.fechaVenta,
-      modelo: op.VehiculoVendido.modelo,
-      anio: op.VehiculoVendido.anio,
-      patente: op.VehiculoVendido.patente,
-      precioVentaTotal: op.precioVentaTotal,
-      ingresosNetos: op.ingresosNetos,
-      estado: op.estado,
-      marcaNombre: op.VehicleBrand.nombre,
-      categoriaNombre: op.VehicleCategory.nombre,
-      tipoOperacionNombre: op.OperationType.nombre,
-      vehiculoId: op.vehiculoVendidoId,
-      vehiculoFotoId: op.VehiculoVendido.VehiclePhoto[0]?.id ?? null,
-    }));
+    const operationsFormatted = operationsToReturn.map((op) => {
+      const saldado = op.Pago.reduce((sum, p) => sum + p.monto, 0);
+      return {
+        idOperacion: op.idOperacion,
+        nombreComprador: op.nombreComprador,
+        fechaInicio: op.fechaInicio,
+        fechaVenta: op.fechaVenta,
+        modelo: op.VehiculoVendido.modelo,
+        anio: op.VehiculoVendido.anio,
+        patente: op.VehiculoVendido.patente,
+        precioVentaTotal: op.precioVentaTotal,
+        saldado,
+        ingresosNetos: op.ingresosNetos,
+        estado: op.estado,
+        marcaNombre: op.VehicleBrand.nombre,
+        categoriaNombre: op.VehicleCategory.nombre,
+        tipoOperacionNombre: op.OperationType.nombre,
+        vehiculoId: op.vehiculoVendidoId,
+        vehiculoFotoId: op.VehiculoVendido.VehiclePhoto[0]?.id ?? null,
+      };
+    });
 
     return NextResponse.json({ 
       operations: operationsFormatted,
@@ -276,6 +286,8 @@ export async function POST(req: NextRequest) {
     const notasGenerales = formData.get("notasGenerales") as string | null;
     const patente = formData.get("patente") as string | null;
     
+    const nombreComprador = formData.get("nombreComprador") as string;
+
     const tipoOperacionId = formData.get("tipoOperacionId") as string;
     const fechaInicioStr = formData.get("fechaInicio") as string;
     const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
@@ -296,6 +308,7 @@ export async function POST(req: NextRequest) {
     if (!kilometrosStr) errors.push("kilometros es requerido");
     if (!precioRevistaStr) errors.push("precioRevista es requerido");
     
+    if (!nombreComprador || !nombreComprador.trim()) errors.push("nombreComprador es requerido");
     if (!tipoOperacionId) errors.push("tipoOperacionId es requerido");
     if (!fechaInicioStr) errors.push("fechaInicio es requerido");
     if (!precioVentaTotalStr) errors.push("precioVentaTotal es requerido");
@@ -596,6 +609,7 @@ export async function POST(req: NextRequest) {
           id: operationId,
           idOperacion: nextIdOperacion,
           clienteId,
+          nombreComprador: nombreComprador.trim(),
           fechaInicio: parsedFechaInicio,
           vehiculoVendidoId: resolvedVehicleId,
           precioVentaTotal,
@@ -734,6 +748,7 @@ export async function POST(req: NextRequest) {
         operation: {
           id: newOperation.id,
           idOperacion: newOperation.idOperacion,
+          nombreComprador: newOperation.nombreComprador,
           fechaInicio: newOperation.fechaInicio,
           modelo: newOperation.VehiculoVendido.modelo,
           anio: newOperation.VehiculoVendido.anio,

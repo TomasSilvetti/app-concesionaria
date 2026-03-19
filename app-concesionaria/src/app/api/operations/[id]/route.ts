@@ -110,6 +110,7 @@ export async function GET(
 
     const operationFormatted = {
       idOperacion: operation.idOperacion,
+      nombreComprador: operation.nombreComprador,
       fechaInicio: operation.fechaInicio,
       fechaVenta: operation.fechaVenta,
       diasVenta: diasVenta,
@@ -241,6 +242,7 @@ export async function PATCH(
     const updateData: Record<string, unknown> = {};
 
     const editableFields = [
+      "nombreComprador",
       "fechaInicio",
       "fechaVenta",
       "precioVentaTotal",
@@ -256,6 +258,13 @@ export async function PATCH(
       const value = body[field];
 
       switch (field) {
+        case "nombreComprador":
+          if (typeof value === "string" && value.trim()) {
+            updateData.nombreComprador = value.trim();
+          } else if (value !== undefined && value !== null) {
+            errors.push("nombreComprador debe ser un texto no vacío");
+          }
+          break;
         case "fechaInicio": {
           if (value === null || value === undefined || value === "") continue;
           const parsed = new Date(value as string);
@@ -463,6 +472,7 @@ export async function PATCH(
 
     const operationFormatted = {
       idOperacion: updatedWithVehicle.idOperacion,
+      nombreComprador: updatedWithVehicle.nombreComprador,
       fechaInicio: updatedWithVehicle.fechaInicio,
       fechaVenta: updatedWithVehicle.fechaVenta,
       diasVenta,
