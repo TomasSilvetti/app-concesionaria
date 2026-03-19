@@ -32,6 +32,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       path: "/gastos",
     },
     {
+      label: "Cobranzas",
+      icon: "payments",
+      path: "/cobranzas",
+    },
+    {
       label: "Operaciones",
       icon: "work",
       path: "/operaciones",

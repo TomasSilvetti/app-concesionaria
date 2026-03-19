@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
+import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -342,7 +343,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Módulo de Gastos */}
-          <div className="lg:col-span-1 lg:row-span-2 lg:row-start-1">
+          <div className="lg:col-span-1 lg:row-span-3 lg:row-start-1">
             <OperationExpensesSection
             operacionId={operation.idOperacion}
             onTotalChange={setGastosTotal}
@@ -378,6 +379,12 @@ export default function OperacionDetailPage() {
               </div>
             </dl>
           </div>
+
+          {/* Sección: Cobranzas */}
+          <OperationCobranzasSection
+            operacionId={operation.idOperacion}
+            precioVentaTotal={operation.precioVentaTotal}
+          />
 
           {/* Sección: Información financiera */}
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">

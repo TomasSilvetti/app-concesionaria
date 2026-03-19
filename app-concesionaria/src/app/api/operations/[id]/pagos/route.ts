@@ -3,6 +3,76 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+
+    const clienteId = session.user.clienteId;
+    if (!clienteId) {
+      return NextResponse.json(
+        { message: "Usuario sin cliente asociado" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    const operation = await prisma.operation.findFirst({
+      where: { idOperacion: id, clienteId },
+      select: { id: true, precioVentaTotal: true },
+    });
+
+    if (!operation) {
+      return NextResponse.json(
+        { message: "Operación no encontrada" },
+        { status: 404 }
+      );
+    }
+
+    const pagos = await prisma.pago.findMany({
+      where: { operacionId: operation.id },
+      orderBy: { fecha: "asc" },
+      select: {
+        id: true,
+        fecha: true,
+        monto: true,
+        nota: true,
+        metodoPagoId: true,
+        PaymentMethod: { select: { nombre: true } },
+      },
+    });
+
+    const saldado = pagos.reduce((sum, p) => sum + p.monto, 0);
+    const pendiente = Math.max(operation.precioVentaTotal - saldado, 0);
+
+    return NextResponse.json({
+      pagos: pagos.map((p) => ({
+        id: p.id,
+        fecha: p.fecha,
+        monto: p.monto,
+        nota: p.nota,
+        metodoPagoId: p.metodoPagoId,
+        metodoPagoNombre: p.PaymentMethod.nombre,
+      })),
+      saldado,
+      pendiente,
+    });
+  } catch (error) {
+    console.error("Error al obtener pagos:", error);
+    return NextResponse.json(
+      { message: "Error al obtener pagos" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
