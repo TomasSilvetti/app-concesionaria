@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     // Incluir hasta el final del día de 'hasta'
     hasta.setHours(23, 59, 59, 999);
 
-    const [pagosResult, operacionesResult, gastosResult, plataPorCobrarResult] =
+    const [pagosResult, operacionesCerradas, gastosResult, plataPorCobrarResult] =
       await Promise.all([
         // SUM de monto de Pagos de TODAS las operaciones (abiertas y cerradas) en el período
         prisma.pago.aggregate({
@@ -53,26 +53,24 @@ export async function GET(req: NextRequest) {
           },
         }),
 
-        // SUM de precioToma de operaciones cerradas en el período (para cálculo de ganancia)
-        prisma.operation.aggregate({
+        // Operaciones cerradas en el período (por fechaInicio) con sus gastos reales
+        prisma.operation.findMany({
           where: {
             clienteId,
             estado: "cerrada",
-            fechaVenta: { gte: desde, lte: hasta },
+            fechaInicio: { gte: desde, lte: hasta },
           },
-          _sum: {
-            precioToma: true,
+          select: {
+            ingresosBrutos: true,
+            Expense: { select: { monto: true } },
           },
         }),
 
-        // SUM de monto de gastos asociados a operaciones cerradas en el período
+        // SUM de monto de todos los gastos del período (con o sin operación, cualquier estado)
         prisma.expense.aggregate({
           where: {
             clienteId,
-            Operation: {
-              estado: "cerrada",
-              fechaVenta: { gte: desde, lte: hasta },
-            },
+            fecha: { gte: desde, lte: hasta },
           },
           _sum: {
             monto: true,
@@ -92,14 +90,15 @@ export async function GET(req: NextRequest) {
       ]);
 
     const totalVendidoBruto = pagosResult._sum.monto ?? 0;
-    const totalPrecioDeToma = operacionesResult._sum.precioToma ?? 0;
     const totalGastado = gastosResult._sum.monto ?? 0;
-    const ganancia = totalVendidoBruto - totalPrecioDeToma - totalGastado;
+    const ganancia = operacionesCerradas.reduce((sum, op) => {
+      const gastosOp = op.Expense.reduce((s, e) => s + e.monto, 0);
+      return sum + op.ingresosBrutos - gastosOp;
+    }, 0);
     const plataPorCobrar = plataPorCobrarResult._sum.ingresosNetos ?? 0;
 
     return NextResponse.json({
       totalVendidoBruto,
-      totalPrecioDeToma,
       totalGastado,
       ganancia,
       plataPorCobrar,

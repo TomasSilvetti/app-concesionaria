@@ -74,6 +74,27 @@ Clasificar el impacto:
 | 🟡 **Medio** | Afecta 2-5 archivos o un componente usado en varios lugares |
 | 🔴 **Alto** | Afecta lógica central, múltiples módulos o comportamiento global |
 
+**⚠️ Detección de fix grande — derivar a fix-decomposer:**
+
+Antes de continuar al Paso 4, verificar si se cumple **cualquiera** de estos criterios:
+
+- 📁 Más de **3 archivos** a modificar
+- 🗂️ Afecta **más de 1 módulo** del sistema
+- 🗄️ Requiere **cambios en la base de datos** (migraciones, nuevas tablas o columnas)
+
+Si se cumple alguno, advertir al desarrollador y sugerir usar `fix-decomposer`:
+
+> ⚠️ **Este fix es más grande de lo que parece.**
+>
+> Detecté que {criterio detectado: hay {N} archivos a modificar / el cambio cruza más de un módulo / requiere cambios en la BD}.
+>
+> En lugar de hacer todos los cambios de una vez — lo que aumenta el riesgo de introducir nuevos errores — te sugiero descomponerlo en porciones más pequeñas, documentadas y verificables una por una.
+>
+> ¿Querés que lo descomponga en porciones de fix?
+
+- Si acepta → activar `fix-decomposer` con el análisis ya realizado como contexto
+- Si prefiere continuar con el fix directo → respetar la decisión y continuar al Paso 4
+
 ---
 
 ### Paso 4 — Proponer la solución
@@ -154,3 +175,11 @@ Si durante el análisis se detectaron cosas mejorables fuera del scope del fix, 
 - **Verificación explícita** — siempre decir exactamente cómo reproducir el escenario para confirmar que está resuelto
 - **Observaciones al final** — si se ve algo mejorable, mencionarlo después del fix, nunca tocarlo sin permiso
 - **Seguir las convenciones del proyecto** — el código del fix debe ser indistinguible del resto del código existente
+- **Derivar a fix-decomposer cuando corresponde** — si el fix supera los criterios de complejidad, no intentar resolverlo todo de una vez
+
+---
+
+## Relación con otras skills
+
+- **Fix grande**: si el análisis detecta más de 3 archivos, más de 1 módulo afectado o cambios en BD → derivar a `fix-decomposer`
+- **Desarrollo de porciones**: las porciones generadas por `fix-decomposer` se desarrollan con `frontend-developer` y `backend-developer`
