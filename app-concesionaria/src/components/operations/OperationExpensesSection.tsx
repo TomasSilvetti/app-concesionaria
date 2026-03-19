@@ -45,6 +45,8 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
   const [nuevaCatNombre, setNuevaCatNombre] = useState("");
   const [creatingOrigen, setCreatingOrigen] = useState(false);
   const [creatingCat, setCreatingCat] = useState(false);
+  const [showOrigenInput, setShowOrigenInput] = useState(false);
+  const [showCatInput, setShowCatInput] = useState(false);
 
   // Delete confirmation
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -122,6 +124,8 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
     setFormError("");
     setNuevoOrigenNombre("");
     setNuevaCatNombre("");
+    setShowOrigenInput(false);
+    setShowCatInput(false);
     setShowModal(true);
   };
 
@@ -134,6 +138,8 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
     setFormError("");
     setNuevoOrigenNombre("");
     setNuevaCatNombre("");
+    setShowOrigenInput(false);
+    setShowCatInput(false);
     setShowModal(true);
   };
 
@@ -147,6 +153,8 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
     setFormError("");
     setNuevoOrigenNombre("");
     setNuevaCatNombre("");
+    setShowOrigenInput(false);
+    setShowCatInput(false);
   };
 
   const handleCrearOrigen = async () => {
@@ -168,6 +176,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
       setOrigins((prev) => [...prev, newOrigin]);
       setFormOrigenId(newOrigin.id);
       setNuevoOrigenNombre("");
+      setShowOrigenInput(false);
     } catch {
       setFormError("Error al crear origen");
     } finally {
@@ -194,6 +203,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
       setCategories((prev) => [...prev, newCat]);
       setFormCategoriaId(newCat.id);
       setNuevaCatNombre("");
+      setShowCatInput(false);
     } catch {
       setFormError("Error al crear categoría");
     } finally {
@@ -488,30 +498,52 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
                     </option>
                   ))}
                 </select>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nuevoOrigenNombre}
-                    onChange={(e) => setNuevoOrigenNombre(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearOrigen(); } }}
-                    placeholder="Agregar nuevo..."
-                    disabled={saving || creatingOrigen}
-                    className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
-                  />
+                {showOrigenInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={nuevoOrigenNombre}
+                      onChange={(e) => setNuevoOrigenNombre(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearOrigen(); } }}
+                      placeholder="Nombre del pagador..."
+                      disabled={saving || creatingOrigen}
+                      autoFocus
+                      className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCrearOrigen}
+                      disabled={!nuevoOrigenNombre.trim() || saving || creatingOrigen}
+                      className="flex h-8 items-center gap-1 rounded-md bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40"
+                    >
+                      {creatingOrigen ? (
+                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      ) : (
+                        <span className="material-symbols-outlined text-sm">check</span>
+                      )}
+                      Agregar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowOrigenInput(false); setNuevoOrigenNombre(""); }}
+                      disabled={saving || creatingOrigen}
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                      aria-label="Cancelar"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    onClick={handleCrearOrigen}
-                    disabled={!nuevoOrigenNombre.trim() || saving || creatingOrigen}
-                    className="flex h-8 items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                    onClick={() => setShowOrigenInput(true)}
+                    disabled={saving}
+                    className="flex h-8 w-fit items-center gap-1 rounded-md border border-dashed border-zinc-300 px-3 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
                   >
-                    {creatingOrigen ? (
-                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-sm">add</span>
-                    )}
-                    Agregar
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Agregar nuevo
                   </button>
-                </div>
+                )}
               </div>
 
               {/* Categoría */}
@@ -533,30 +565,52 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
                     </option>
                   ))}
                 </select>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nuevaCatNombre}
-                    onChange={(e) => setNuevaCatNombre(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearCategoria(); } }}
-                    placeholder="Agregar nueva..."
-                    disabled={saving || creatingCat}
-                    className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
-                  />
+                {showCatInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={nuevaCatNombre}
+                      onChange={(e) => setNuevaCatNombre(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearCategoria(); } }}
+                      placeholder="Nombre de la categoría..."
+                      disabled={saving || creatingCat}
+                      autoFocus
+                      className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCrearCategoria}
+                      disabled={!nuevaCatNombre.trim() || saving || creatingCat}
+                      className="flex h-8 items-center gap-1 rounded-md bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40"
+                    >
+                      {creatingCat ? (
+                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      ) : (
+                        <span className="material-symbols-outlined text-sm">check</span>
+                      )}
+                      Agregar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowCatInput(false); setNuevaCatNombre(""); }}
+                      disabled={saving || creatingCat}
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                      aria-label="Cancelar"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    onClick={handleCrearCategoria}
-                    disabled={!nuevaCatNombre.trim() || saving || creatingCat}
-                    className="flex h-8 items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                    onClick={() => setShowCatInput(true)}
+                    disabled={saving}
+                    className="flex h-8 w-fit items-center gap-1 rounded-md border border-dashed border-zinc-300 px-3 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
                   >
-                    {creatingCat ? (
-                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                    ) : (
-                      <span className="material-symbols-outlined text-sm">add</span>
-                    )}
-                    Agregar
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Agregar nueva
                   </button>
-                </div>
+                )}
               </div>
 
               {/* Monto */}

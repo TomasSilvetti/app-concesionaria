@@ -9,7 +9,7 @@ import "material-symbols/outlined.css";
 
 interface Gasto {
   id: number;
-  operacionId: number;
+  operacionId: number | null;
   descripcion: string;
   quienPago: string;
   monto: number;
@@ -19,6 +19,11 @@ interface Gasto {
 interface GastosTablaProps {
   desde: string;
   hasta: string;
+}
+
+interface OpcionSelector {
+  id: string;
+  nombre: string;
 }
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -60,7 +65,7 @@ function formatFecha(fechaStr: string): string {
 function exportarCSV(gastos: Gasto[]) {
   const headers = ["ID Operación", "Descripción", "Quién pagó", "Monto", "Fecha"];
   const rows = gastos.map((g) => [
-    `#OP-${g.operacionId}`,
+    g.operacionId != null ? `#OP-${g.operacionId}` : "—",
     `"${g.descripcion.replace(/"/g, '""')}"`,
     g.quienPago,
     g.monto,
@@ -86,6 +91,25 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   const [filtroOperacion, setFiltroOperacion] = useState("");
   const [filtroQuienPago, setFiltroQuienPago] = useState("");
   const [pagina, setPagina] = useState(1);
+
+  // Modal agregar gasto
+  const [showModal, setShowModal] = useState(false);
+  const [formDescripcion, setFormDescripcion] = useState("");
+  const [formOrigenId, setFormOrigenId] = useState("");
+  const [formCategoriaId, setFormCategoriaId] = useState("");
+  const [formMonto, setFormMonto] = useState("");
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Origins y categories
+  const [origins, setOrigins] = useState<OpcionSelector[]>([]);
+  const [categories, setCategories] = useState<OpcionSelector[]>([]);
+  const [nuevoOrigenNombre, setNuevoOrigenNombre] = useState("");
+  const [nuevaCatNombre, setNuevaCatNombre] = useState("");
+  const [creatingOrigen, setCreatingOrigen] = useState(false);
+  const [creatingCat, setCreatingCat] = useState(false);
+  const [showOrigenInput, setShowOrigenInput] = useState(false);
+  const [showCatInput, setShowCatInput] = useState(false);
 
   const fetchGastos = useCallback(async (d: string, h: string) => {
     try {
@@ -136,6 +160,154 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   useEffect(() => {
     setPagina(1);
   }, [filtroOperacion, filtroQuienPago]);
+
+  const fetchOrigins = useCallback(async () => {
+    try {
+      const res = await fetch("/api/gastos/origins");
+      if (res.ok) {
+        const data = await res.json();
+        setOrigins(data.origins ?? []);
+      }
+    } catch { /* silently fail */ }
+  }, []);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch("/api/gastos/categories");
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data.categories ?? []);
+      }
+    } catch { /* silently fail */ }
+  }, []);
+
+  const openModal = () => {
+    setFormDescripcion("");
+    setFormOrigenId("");
+    setFormCategoriaId("");
+    setFormMonto("");
+    setFormError("");
+    setNuevoOrigenNombre("");
+    setNuevaCatNombre("");
+    setShowOrigenInput(false);
+    setShowCatInput(false);
+    fetchOrigins();
+    fetchCategories();
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setFormDescripcion("");
+    setFormOrigenId("");
+    setFormCategoriaId("");
+    setFormMonto("");
+    setFormError("");
+    setNuevoOrigenNombre("");
+    setNuevaCatNombre("");
+    setShowOrigenInput(false);
+    setShowCatInput(false);
+  };
+
+  const handleCrearOrigen = async () => {
+    if (!nuevoOrigenNombre.trim()) return;
+    setCreatingOrigen(true);
+    try {
+      const res = await fetch("/api/gastos/origins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nuevoOrigenNombre.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setFormError(data.error ?? "Error al crear origen");
+        return;
+      }
+      const data = await res.json();
+      const newOrigin: OpcionSelector = data.origin;
+      setOrigins((prev) => [...prev, newOrigin]);
+      setFormOrigenId(newOrigin.id);
+      setNuevoOrigenNombre("");
+      setShowOrigenInput(false);
+    } catch {
+      setFormError("Error al crear origen");
+    } finally {
+      setCreatingOrigen(false);
+    }
+  };
+
+  const handleCrearCategoria = async () => {
+    if (!nuevaCatNombre.trim()) return;
+    setCreatingCat(true);
+    try {
+      const res = await fetch("/api/gastos/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nuevaCatNombre.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setFormError(data.error ?? "Error al crear categoría");
+        return;
+      }
+      const data = await res.json();
+      const newCat: OpcionSelector = data.category;
+      setCategories((prev) => [...prev, newCat]);
+      setFormCategoriaId(newCat.id);
+      setNuevaCatNombre("");
+      setShowCatInput(false);
+    } catch {
+      setFormError("Error al crear categoría");
+    } finally {
+      setCreatingCat(false);
+    }
+  };
+
+  const handleAgregarGasto = async () => {
+    if (!formDescripcion.trim()) {
+      setFormError("La descripción es requerida");
+      return;
+    }
+    if (!formOrigenId) {
+      setFormError("Seleccioná quién pagó");
+      return;
+    }
+    if (!formCategoriaId) {
+      setFormError("Seleccioná una categoría");
+      return;
+    }
+    const monto = parseFloat(formMonto);
+    if (!formMonto || isNaN(monto) || monto <= 0) {
+      setFormError("Ingresá un monto válido mayor a 0");
+      return;
+    }
+
+    setSaving(true);
+    setFormError("");
+    try {
+      const res = await fetch("/api/gastos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          descripcion: formDescripcion.trim(),
+          origenId: formOrigenId,
+          categoriaId: formCategoriaId,
+          monto,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setFormError(data.error ?? "Error al crear el gasto");
+        return;
+      }
+      closeModal();
+      fetchGastos(desde, hasta);
+    } catch {
+      setFormError("Error al crear el gasto");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-0 rounded-xl border border-zinc-200 bg-white shadow-sm">
@@ -195,6 +367,17 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
             className="h-9 rounded-lg px-3 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
             Exportar CSV
+          </button>
+
+          {/* Agregar gasto */}
+          <button
+            type="button"
+            onClick={openModal}
+            aria-label="Agregar gasto"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+          >
+            <span className="material-symbols-outlined text-base" aria-hidden="true">add</span>
+            Agregar gasto
           </button>
         </div>
       </div>
@@ -278,9 +461,16 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                         className="border-b border-zinc-100 transition-colors hover:bg-zinc-50"
                       >
                         <td className="px-5 py-4">
-                          <span className="font-medium text-blue-600">
-                            #OP-{gasto.operacionId}
-                          </span>
+                          {gasto.operacionId != null ? (
+                            <span className="font-medium text-blue-600">
+                              #OP-{gasto.operacionId}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+                              <span className="material-symbols-outlined text-xs" aria-hidden="true">link_off</span>
+                              Sin operación
+                            </span>
+                          )}
                         </td>
                         <td className="px-5 py-4 text-zinc-700">
                           {gasto.descripcion}
@@ -351,6 +541,236 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
             </div>
           )}
         </>
+      )}
+
+      {/* Modal agregar gasto libre */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Agregar gasto"
+        >
+          <div className="flex w-full max-w-md flex-col rounded-xl bg-white shadow-xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-blue-600" aria-hidden="true">
+                  add_circle
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">Agregar gasto</h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                aria-label="Cerrar modal"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-xl" aria-hidden="true">close</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col gap-4 px-6 py-5">
+              {/* Descripción */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="ng-descripcion" className="text-sm font-medium text-zinc-700">
+                  Descripción
+                </label>
+                <input
+                  id="ng-descripcion"
+                  type="text"
+                  value={formDescripcion}
+                  onChange={(e) => setFormDescripcion(e.target.value)}
+                  placeholder="Ej: Publicidad, limpieza, seguro..."
+                  disabled={saving}
+                  autoFocus
+                  className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
+              </div>
+
+              {/* Quién pagó */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="ng-origen" className="text-sm font-medium text-zinc-700">
+                  Quién pagó
+                </label>
+                <select
+                  id="ng-origen"
+                  value={formOrigenId}
+                  onChange={(e) => setFormOrigenId(e.target.value)}
+                  disabled={saving}
+                  className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                >
+                  <option value="">Seleccionar...</option>
+                  {origins.map((o) => (
+                    <option key={o.id} value={o.id}>{o.nombre}</option>
+                  ))}
+                </select>
+                {showOrigenInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={nuevoOrigenNombre}
+                      onChange={(e) => setNuevoOrigenNombre(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearOrigen(); } }}
+                      placeholder="Nombre del pagador..."
+                      disabled={saving || creatingOrigen}
+                      autoFocus
+                      className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCrearOrigen}
+                      disabled={!nuevoOrigenNombre.trim() || saving || creatingOrigen}
+                      className="flex h-8 items-center gap-1 rounded-md bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40"
+                    >
+                      {creatingOrigen ? (
+                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      ) : (
+                        <span className="material-symbols-outlined text-sm">check</span>
+                      )}
+                      Agregar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowOrigenInput(false); setNuevoOrigenNombre(""); }}
+                      disabled={saving || creatingOrigen}
+                      aria-label="Cancelar"
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowOrigenInput(true)}
+                    disabled={saving}
+                    className="flex h-8 w-fit items-center gap-1 rounded-md border border-dashed border-zinc-300 px-3 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Agregar nuevo
+                  </button>
+                )}
+              </div>
+
+              {/* Categoría */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="ng-categoria" className="text-sm font-medium text-zinc-700">
+                  Categoría
+                </label>
+                <select
+                  id="ng-categoria"
+                  value={formCategoriaId}
+                  onChange={(e) => setFormCategoriaId(e.target.value)}
+                  disabled={saving}
+                  className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                >
+                  <option value="">Seleccionar...</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+                {showCatInput ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={nuevaCatNombre}
+                      onChange={(e) => setNuevaCatNombre(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearCategoria(); } }}
+                      placeholder="Nombre de la categoría..."
+                      disabled={saving || creatingCat}
+                      autoFocus
+                      className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCrearCategoria}
+                      disabled={!nuevaCatNombre.trim() || saving || creatingCat}
+                      className="flex h-8 items-center gap-1 rounded-md bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40"
+                    >
+                      {creatingCat ? (
+                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      ) : (
+                        <span className="material-symbols-outlined text-sm">check</span>
+                      )}
+                      Agregar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowCatInput(false); setNuevaCatNombre(""); }}
+                      disabled={saving || creatingCat}
+                      aria-label="Cancelar"
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowCatInput(true)}
+                    disabled={saving}
+                    className="flex h-8 w-fit items-center gap-1 rounded-md border border-dashed border-zinc-300 px-3 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                    Agregar nueva
+                  </button>
+                )}
+              </div>
+
+              {/* Monto */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="ng-monto" className="text-sm font-medium text-zinc-700">
+                  Monto
+                </label>
+                <input
+                  id="ng-monto"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formMonto}
+                  onChange={(e) => setFormMonto(e.target.value)}
+                  placeholder="0"
+                  disabled={saving}
+                  className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
+              </div>
+
+              {formError && (
+                <p role="alert" className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {formError}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleAgregarGasto}
+                disabled={saving || !formDescripcion.trim() || !formOrigenId || !formCategoriaId || !formMonto || parseFloat(formMonto) <= 0}
+                className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving && (
+                  <span className="material-symbols-outlined animate-spin text-lg" aria-hidden="true">
+                    progress_activity
+                  </span>
+                )}
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

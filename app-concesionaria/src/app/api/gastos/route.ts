@@ -82,3 +82,88 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+    const clienteId = session.user.clienteId;
+    if (!clienteId) {
+      return NextResponse.json(
+        { message: "Usuario sin cliente asociado" },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { descripcion, origenId, categoriaId, monto } = body;
+
+    const errors: string[] = [];
+    if (!descripcion || !String(descripcion).trim()) errors.push("descripcion es requerida");
+    if (!origenId) errors.push("origenId es requerido");
+    if (!categoriaId) errors.push("categoriaId es requerido");
+    if (monto === undefined || monto === null) errors.push("monto es requerido");
+    if (errors.length > 0) {
+      return NextResponse.json({ error: errors[0] }, { status: 400 });
+    }
+
+    const montoNum = parseFloat(monto);
+    if (isNaN(montoNum) || montoNum <= 0) {
+      return NextResponse.json(
+        { error: "monto debe ser un número mayor a 0" },
+        { status: 400 }
+      );
+    }
+
+    const [origen, categoria] = await Promise.all([
+      prisma.origin.findFirst({ where: { id: origenId, clienteId } }),
+      prisma.category.findFirst({ where: { id: categoriaId, clienteId } }),
+    ]);
+    if (!origen) {
+      return NextResponse.json(
+        { error: "origenId no existe o no pertenece al cliente" },
+        { status: 400 }
+      );
+    }
+    if (!categoria) {
+      return NextResponse.json(
+        { error: "categoriaId no existe o no pertenece al cliente" },
+        { status: 400 }
+      );
+    }
+
+    const expense = await prisma.expense.create({
+      data: {
+        id: crypto.randomUUID(),
+        clienteId,
+        descripcion: String(descripcion).trim(),
+        monto: montoNum,
+        origenId,
+        categoriaId,
+      },
+      include: {
+        Origin: { select: { nombre: true } },
+      },
+    });
+
+    return NextResponse.json(
+      {
+        id: expense.id,
+        operacionId: null,
+        descripcion: expense.descripcion,
+        quienPago: expense.Origin.nombre,
+        monto: expense.monto,
+        fecha: expense.fecha.toISOString(),
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error al crear gasto:", error);
+    return NextResponse.json(
+      { message: "Error al crear gasto" },
+      { status: 500 }
+    );
+  }
+}
