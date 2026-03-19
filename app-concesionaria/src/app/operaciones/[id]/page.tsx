@@ -51,6 +51,7 @@ interface OperationDetail {
   gastosAsociados: number;
   ingresosNetos: number;
   comision: number;
+  precioToma: number | null;
   estado: "abierta" | "cerrada" | "cancelada";
   diasVenta: number | null;
   marcaNombre: string;
@@ -407,6 +408,14 @@ export default function OperacionDetailPage() {
               </div>
               <div className="rounded-lg bg-zinc-50 p-4">
                 <dt className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                  Precio de Toma
+                </dt>
+                <dd className="mt-2 text-xl font-semibold text-zinc-900">
+                  {formatCurrency(operation.precioToma)}
+                </dd>
+              </div>
+              <div className="rounded-lg bg-zinc-50 p-4">
+                <dt className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                   Ingresos Brutos
                 </dt>
                 <dd className="mt-2 text-xl font-semibold text-zinc-900">
@@ -427,9 +436,9 @@ export default function OperacionDetailPage() {
                 </dt>
                 <dd className="mt-2 text-xl font-semibold text-green-700">
                   {formatCurrency(
-                    gastosTotal !== null
-                      ? operation.ingresosNetos - operation.gastosAsociados + gastosTotal
-                      : operation.ingresosNetos
+                    operation.precioVentaTotal -
+                      (operation.precioToma ?? 0) -
+                      (gastosTotal !== null ? gastosTotal : operation.gastosAsociados)
                   )}
                 </dd>
               </div>
