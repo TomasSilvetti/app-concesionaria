@@ -175,18 +175,21 @@ export default function OperacionEditPage() {
     }
   };
 
-  // Recalculate ingresosNetos and comision when ingresosBrutos or gastosAsociados change
+  // Recalculate ingresosBrutos, ingresosNetos and comision when precioVentaTotal, precioToma or gastosAsociados change
   useEffect(() => {
-    const ingresos = parseFloat(ingresosBrutos) || 0;
-    const gastos = gastosAsociados || 0;
     const precio = parseFloat(precioVentaTotal) || 0;
+    const toma = parseFloat(precioToma) || 0;
+    const gastos = gastosAsociados || 0;
+
+    const ingresos = precio - toma;
+    setIngresosBrutos(ingresos.toString());
 
     const netos = ingresos - gastos;
     setIngresosNetos(netos);
 
     const comisionCalculada = precio > 0 ? (netos / precio) * 100 : 0;
     setComision(comisionCalculada);
-  }, [ingresosBrutos, gastosAsociados, precioVentaTotal]);
+  }, [precioVentaTotal, precioToma, gastosAsociados]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
@@ -790,38 +793,6 @@ export default function OperacionEditPage() {
                 )}
               </div>
 
-              {/* Ingresos Brutos */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="ingresosBrutos" className="text-sm font-medium text-zinc-700">
-                  Ingresos Brutos
-                </label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    monetization_on
-                  </span>
-                  <input
-                    id="ingresosBrutos"
-                    type="number"
-                    step="0.01"
-                    value={ingresosBrutos}
-                    onChange={(e) => {
-                      setIngresosBrutos(e.target.value);
-                      handleInputChange("ingresosBrutos");
-                    }}
-                    placeholder="0.00"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.ingresosBrutos
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
-                  />
-                </div>
-                {fieldErrors.ingresosBrutos && (
-                  <span className="text-xs text-red-600">{fieldErrors.ingresosBrutos}</span>
-                )}
-              </div>
-
               {/* Precio de Toma */}
               <div className="flex flex-col gap-2">
                 <label htmlFor="precioToma" className="text-sm font-medium text-zinc-700">
@@ -847,6 +818,19 @@ export default function OperacionEditPage() {
                 </div>
                 <p className="text-xs text-zinc-500">
                   Precio al que la concesionaria compra el vehículo (opcional)
+                </p>
+              </div>
+
+              {/* Ingresos Brutos (calculado) */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">
+                  Ingresos Brutos
+                </label>
+                <div className="flex h-12 items-center rounded-lg border border-zinc-300 bg-zinc-100 px-4 text-sm font-medium text-zinc-900">
+                  {formatCurrency(parseFloat(ingresosBrutos) || 0)}
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Precio Venta Total - Precio de Toma
                 </p>
               </div>
 
