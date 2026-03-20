@@ -481,7 +481,7 @@ export function CreateOperationForm({
       if (res.status === 201) {
         setSuccessMessage("Operación creada exitosamente");
         // Reset operation fields
-        setTipoOperacionId("");
+        setTipoOperacion(OPERATION_TYPES[0].nombre);
         setFechaInicio("");
         setNombreComprador("");
         setPrecioVentaTotal("");
