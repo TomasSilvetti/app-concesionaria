@@ -25,6 +25,10 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [newClientNombre, setNewClientNombre] = useState("");
+  const [newClientLoading, setNewClientLoading] = useState(false);
+  const [newClientError, setNewClientError] = useState<string | null>(null);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -122,6 +126,35 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
 
   const handleInputChange = () => {
     if (error) setError(null);
+  };
+
+  const handleCreateClient = async () => {
+    const nombre = newClientNombre.trim();
+    if (!nombre) return;
+    setNewClientLoading(true);
+    setNewClientError(null);
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(`${baseUrl}/api/clients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 201) {
+        const created: Client = data.client;
+        setClients((prev) => [...prev, created].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+        setClienteId(created.id);
+        setShowNewClientForm(false);
+        setNewClientNombre("");
+      } else {
+        setNewClientError(data.error ?? "Error al crear el cliente");
+      }
+    } catch {
+      setNewClientError("No se pudo conectar con el servidor");
+    } finally {
+      setNewClientLoading(false);
+    }
   };
 
   return (
@@ -240,34 +273,91 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
 
       {rol === "usuario" && (
         <div className="flex flex-col gap-2">
-          <label htmlFor="cliente" className="text-sm font-medium text-zinc-700">
-            Cliente
-          </label>
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-              group
-            </span>
-            <select
-              id="cliente"
-              value={clienteId}
-              onChange={(e) => {
-                setClienteId(e.target.value);
-                handleInputChange();
-              }}
-              className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-              disabled={isLoading || clientsLoading}
-            >
-              <option value="">Seleccionar cliente</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-            <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-              expand_more
-            </span>
+          <div className="flex items-center justify-between">
+            <label htmlFor="cliente" className="text-sm font-medium text-zinc-700">
+              Cliente
+            </label>
+            {!showNewClientForm && (
+              <button
+                type="button"
+                onClick={() => { setShowNewClientForm(true); setNewClientError(null); }}
+                className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 focus:outline-none"
+                disabled={isLoading}
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                Agregar cliente
+              </button>
+            )}
           </div>
+
+          {showNewClientForm ? (
+            <div className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <p className="text-xs font-medium text-blue-700">Nuevo cliente (concesionaria)</p>
+              <input
+                type="text"
+                value={newClientNombre}
+                onChange={(e) => { setNewClientNombre(e.target.value); setNewClientError(null); }}
+                placeholder="Nombre de la concesionaria"
+                className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                disabled={newClientLoading}
+                autoFocus
+              />
+              {newClientError && (
+                <p className="text-xs text-red-600">{newClientError}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleCreateClient}
+                  disabled={newClientLoading || !newClientNombre.trim()}
+                  className="flex h-9 flex-1 items-center justify-center gap-1 rounded-lg bg-blue-600 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {newClientLoading ? (
+                    <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-base">save</span>
+                      Guardar
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowNewClientForm(false); setNewClientNombre(""); setNewClientError(null); }}
+                  disabled={newClientLoading}
+                  className="flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                group
+              </span>
+              <select
+                id="cliente"
+                value={clienteId}
+                onChange={(e) => {
+                  setClienteId(e.target.value);
+                  handleInputChange();
+                }}
+                className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                disabled={isLoading || clientsLoading}
+              >
+                <option value="">Seleccionar cliente</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                expand_more
+              </span>
+            </div>
+          )}
         </div>
       )}
 

@@ -42,10 +42,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const secureCookie = request.nextUrl.protocol === "https:";
+  const cookieName = secureCookie
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
-    salt: "authjs.session-token",
+    cookieName,
+    salt: cookieName,
   });
 
   if (!token) {
