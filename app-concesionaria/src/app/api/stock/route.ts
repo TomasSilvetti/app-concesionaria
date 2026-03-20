@@ -94,7 +94,7 @@ function buildWhereClause(clienteId: string, filters: StockFilters) {
 function buildOrderByClause(orderBy: OrderByField | null, order: Order) {
   if (!orderBy) {
     return {
-      creadoEn: "desc",
+      creadoEn: "desc" as const,
     };
   }
 
