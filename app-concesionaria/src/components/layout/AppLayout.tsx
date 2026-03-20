@@ -195,13 +195,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Sidebar */}
         <aside
           className={`
-            fixed inset-y-0 left-0 top-16 z-40 flex flex-col border-r border-zinc-200 bg-white transition-all duration-300 ease-in-out overflow-hidden
-            ${isOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full"}
+            fixed inset-y-0 left-0 top-16 z-40 flex flex-col border-r border-zinc-200 bg-white transition-transform duration-300 ease-in-out w-64
+            ${isOpen ? "translate-x-0" : "-translate-x-full"}
             md:relative md:top-0 md:translate-x-0
           `}
         >
           {/* Sidebar Menu */}
-          <nav className="flex-1 overflow-y-auto p-4 w-64">
+          <nav className="flex-1 overflow-y-auto p-4">
             <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
               Main Menu
             </div>

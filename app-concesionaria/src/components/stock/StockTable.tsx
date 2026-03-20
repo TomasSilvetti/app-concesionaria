@@ -501,36 +501,36 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                     </div>
                   </div>
 
-                  <div className="mt-3 flex justify-end gap-2 border-t border-zinc-200 pt-3">
+                  <div className="mt-3 flex justify-end gap-1 border-t border-zinc-200 pt-3">
                     <button
                       onClick={() => handleViewDetails(vehicle.id)}
-                      className="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       aria-label={`Ver detalles del vehículo ${vehicle.marca} ${vehicle.modelo}`}
+                      title="Ver detalles"
                     >
-                      <span className="material-symbols-outlined text-base">
+                      <span className="material-symbols-outlined text-lg">
                         visibility
                       </span>
-                      Ver detalles
                     </button>
                     <button
                       onClick={(e) => handleEdit(e, vehicle.id)}
-                      className="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       aria-label={`Editar vehículo ${vehicle.marca} ${vehicle.modelo}`}
+                      title="Editar"
                     >
-                      <span className="material-symbols-outlined text-base">
+                      <span className="material-symbols-outlined text-lg">
                         edit
                       </span>
-                      Editar
                     </button>
                     <button
                       onClick={(e) => handleDeleteClick(e, vehicle)}
-                      className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                       aria-label={`Eliminar vehículo ${vehicle.marca} ${vehicle.modelo}`}
+                      title="Eliminar"
                     >
-                      <span className="material-symbols-outlined text-base">
+                      <span className="material-symbols-outlined text-lg">
                         delete
                       </span>
-                      Eliminar
                     </button>
                   </div>
                 </div>
