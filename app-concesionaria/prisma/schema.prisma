@@ -30,7 +30,6 @@ model Client {
   Category        Category[]
   Expense         Expense[]
   Operation       Operation[]
-  OperationType   OperationType[]
   Origin          Origin[]
   Pago            Pago[]
   PaymentMethod   PaymentMethod[]
@@ -78,7 +77,7 @@ model Operation {
   actualizadoEn                                DateTime
   marcaId                                      String
   categoriaId                                  String
-  tipoOperacionId                              String
+  tipoOperacion                                String
   diasVenta                                    Int?
   vehiculoVendidoId                            String
   precioToma                                   Float?
@@ -87,7 +86,6 @@ model Operation {
   VehicleCategory                              VehicleCategory     @relation(fields: [categoriaId], references: [id])
   Client                                       Client              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   VehicleBrand                                 VehicleBrand        @relation(fields: [marcaId], references: [id])
-  OperationType                                OperationType       @relation(fields: [tipoOperacionId], references: [id])
   VehiculoVendido                              Vehicle             @relation("VehiculosVendidos", fields: [vehiculoVendidoId], references: [id], onDelete: Cascade)
   OperationDocument                            OperationDocument?
   OperationExchange                            OperationExchange[]
@@ -99,7 +97,7 @@ model Operation {
   @@index([clienteId])
   @@index([estado])
   @@index([marcaId])
-  @@index([tipoOperacionId])
+  @@index([tipoOperacion])
   @@index([vehiculoVendidoId])
 }
 
@@ -129,17 +127,6 @@ model OperationExchange {
   @@index([stockId])
 }
 
-model OperationType {
-  id        String      @id
-  clienteId String
-  nombre    String
-  creadoEn  DateTime    @default(now())
-  Operation Operation[]
-  Client    Client      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-
-  @@unique([clienteId, nombre])
-  @@index([clienteId])
-}
 
 model Origin {
   id        String    @id

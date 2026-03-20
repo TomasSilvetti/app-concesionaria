@@ -28,7 +28,7 @@ export interface OperationFilters {
   fechaDesde?: string;
   fechaHasta?: string;
   marcaId?: string;
-  tipoOperacionId?: string;
+  tipoOperacion?: string;
 }
 
 interface OperationsTableProps {
@@ -81,8 +81,8 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
       if (filters?.marcaId) {
         url += `&marcaId=${filters.marcaId}`;
       }
-      if (filters?.tipoOperacionId) {
-        url += `&tipoOperacionId=${filters.tipoOperacionId}`;
+      if (filters?.tipoOperacion) {
+        url += `&tipoOperacion=${encodeURIComponent(filters.tipoOperacion)}`;
       }
 
       const res = await fetch(url);

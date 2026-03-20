@@ -87,19 +87,10 @@ async function main() {
 
   console.log("✅ Categorías de vehículos creadas");
 
-  // === TIPOS DE OPERACIÓN → capturamos IDs reales ===
-  const tipoVentaStock = await prisma.operationType.upsert({
-    where: { clienteId_nombre: { clienteId: CLIENTE_ID, nombre: "Venta desde stock" } },
-    update: {},
-    create: { id: "tipo-venta-stock-001", clienteId: CLIENTE_ID, nombre: "Venta desde stock" },
-  });
-  const tipoVenta0km = await prisma.operationType.upsert({
-    where: { clienteId_nombre: { clienteId: CLIENTE_ID, nombre: "Venta 0km" } },
-    update: {},
-    create: { id: "tipo-venta-0km-001", clienteId: CLIENTE_ID, nombre: "Venta 0km" },
-  });
+  const TIPO_VENTA_STOCK = "Venta desde stock";
+  const TIPO_VENTA_0KM = "Venta 0km";
 
-  console.log("✅ Tipos de operación creados");
+  console.log("✅ Tipos de operación (hardcodeados)");
 
   // === ORÍGENES DE GASTOS → capturamos IDs reales ===
   const origenNombres = ["Caja chica", "Transferencia bancaria", "Tarjeta de crédito"];
@@ -202,7 +193,7 @@ async function main() {
       estado: "cerrada",
       marcaId: marcaId["Chevrolet"],
       categoriaId: catVId["Sedan"],
-      tipoOperacionId: tipoVentaStock.id,
+      tipoOperacion: TIPO_VENTA_STOCK,
       diasVenta: 15,
       actualizadoEn: new Date("2025-12-16"),
     },
@@ -229,7 +220,7 @@ async function main() {
       estado: "cerrada",
       marcaId: marcaId["Renault"],
       categoriaId: catVId["Hatchback"],
-      tipoOperacionId: tipoVentaStock.id,
+      tipoOperacion: TIPO_VENTA_STOCK,
       diasVenta: 15,
       actualizadoEn: new Date("2026-01-20"),
     },
@@ -256,7 +247,7 @@ async function main() {
       estado: "cerrada",
       marcaId: marcaId["Toyota"],
       categoriaId: catVId["Pickup"],
-      tipoOperacionId: tipoVentaStock.id,
+      tipoOperacion: TIPO_VENTA_STOCK,
       diasVenta: 27,
       actualizadoEn: new Date("2026-02-28"),
     },
@@ -283,7 +274,7 @@ async function main() {
       estado: "abierta",
       marcaId: marcaId["Toyota"],
       categoriaId: catVId["Sedan"],
-      tipoOperacionId: tipoVentaStock.id,
+      tipoOperacion: TIPO_VENTA_STOCK,
       diasVenta: null,
       actualizadoEn: new Date("2026-03-01"),
     },
@@ -310,7 +301,7 @@ async function main() {
       estado: "abierta",
       marcaId: marcaId["Volkswagen"],
       categoriaId: catVId["Hatchback"],
-      tipoOperacionId: tipoVenta0km.id,
+      tipoOperacion: TIPO_VENTA_0KM,
       diasVenta: null,
       actualizadoEn: new Date("2026-03-10"),
     },
