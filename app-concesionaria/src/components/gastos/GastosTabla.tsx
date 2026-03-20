@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import "material-symbols/outlined.css";
@@ -8,12 +9,21 @@ import "material-symbols/outlined.css";
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 interface Gasto {
-  id: number;
-  operacionId: number | null;
+  id: string;
+  operacionId: string | null;
   descripcion: string;
   quienPago: string;
   monto: number;
   fecha: string;
+  vehiculoFotoId: string | null;
+}
+
+interface GrupoOperacion {
+  operacionId: string | null;
+  gastos: Gasto[];
+  totalGastado: number;
+  fechaUltimoGasto: string;
+  vehiculoFotoId: string | null;
 }
 
 interface GastosTablaProps {
@@ -84,9 +94,11 @@ function exportarCSV(gastos: Gasto[]) {
 // ─── Componente principal ────────────────────────────────────────────────────
 
 export function GastosTabla({ desde, hasta }: GastosTablaProps) {
+  const router = useRouter();
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const [filtroOperacion, setFiltroOperacion] = useState("");
   const [filtroQuienPago, setFiltroQuienPago] = useState("");
@@ -131,27 +143,66 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
     fetchGastos(desde, hasta);
   }, [fetchGastos, desde, hasta]);
 
+  const toggleExpand = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
   // Valores únicos de quienPago para el selector
   const opcionesQuienPago = useMemo(() => {
     const set = new Set(gastos.map((g) => g.quienPago));
     return Array.from(set).sort();
   }, [gastos]);
 
-  // Filtrado
-  const gastosFiltrados = useMemo(() => {
-    return gastos.filter((g) => {
+  // Agrupar gastos por operacionId
+  const grupos = useMemo(() => {
+    const mapa = new Map<string, GrupoOperacion>();
+
+    gastos.forEach((g) => {
+      const key = g.operacionId ?? "__sin_operacion__";
+      if (!mapa.has(key)) {
+        mapa.set(key, {
+          operacionId: g.operacionId,
+          gastos: [],
+          totalGastado: 0,
+          fechaUltimoGasto: g.fecha,
+          vehiculoFotoId: g.vehiculoFotoId,
+        });
+      }
+      const grupo = mapa.get(key)!;
+      grupo.gastos.push(g);
+      grupo.totalGastado += g.monto;
+      if (g.fecha > grupo.fechaUltimoGasto) {
+        grupo.fechaUltimoGasto = g.fecha;
+      }
+    });
+
+    return Array.from(mapa.values());
+  }, [gastos]);
+
+  // Filtrado sobre grupos
+  const gruposFiltrados = useMemo(() => {
+    return grupos.filter((gr) => {
       const matchOp =
         filtroOperacion.trim() === "" ||
-        String(g.operacionId).includes(filtroOperacion.trim());
+        (gr.operacionId ?? "").toLowerCase().includes(filtroOperacion.trim().toLowerCase());
       const matchQuien =
-        filtroQuienPago === "" || g.quienPago === filtroQuienPago;
+        filtroQuienPago === "" ||
+        gr.gastos.some((g) => g.quienPago === filtroQuienPago);
       return matchOp && matchQuien;
     });
-  }, [gastos, filtroOperacion, filtroQuienPago]);
+  }, [grupos, filtroOperacion, filtroQuienPago]);
 
-  // Paginación
-  const totalPaginas = Math.max(1, Math.ceil(gastosFiltrados.length / PAGE_SIZE));
-  const gastosPagina = gastosFiltrados.slice(
+  // Paginación sobre grupos
+  const totalPaginas = Math.max(1, Math.ceil(gruposFiltrados.length / PAGE_SIZE));
+  const gruposPagina = gruposFiltrados.slice(
     (pagina - 1) * PAGE_SIZE,
     pagina * PAGE_SIZE
   );
@@ -160,6 +211,11 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   useEffect(() => {
     setPagina(1);
   }, [filtroOperacion, filtroQuienPago]);
+
+  const gastosFiltradosFlat = useMemo(
+    () => gruposFiltrados.flatMap((gr) => gr.gastos),
+    [gruposFiltrados]
+  );
 
   const fetchOrigins = useCallback(async () => {
     try {
@@ -361,8 +417,8 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
           {/* Exportar CSV */}
           <button
             type="button"
-            onClick={() => exportarCSV(gastosFiltrados)}
-            disabled={gastosFiltrados.length === 0}
+            onClick={() => exportarCSV(gastosFiltradosFlat)}
+            disabled={gastosFiltradosFlat.length === 0}
             aria-label="Exportar gastos a CSV"
             className="h-9 rounded-lg px-3 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
           >
@@ -400,42 +456,35 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-zinc-100 bg-zinc-50">
+                  <th className="w-10 px-4 py-3" />
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
                     ID Operación
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Descripción
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Quién pagó
+                    Vehículo
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Monto
+                    Total gastado
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Fecha
-                  </th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Acciones
+                    Último gasto
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  // Skeleton
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-zinc-100" aria-hidden="true">
-                      {Array.from({ length: 6 }).map((_, j) => (
+                      {Array.from({ length: 5 }).map((_, j) => (
                         <td key={j} className="px-5 py-4">
                           <div className="h-4 animate-pulse rounded bg-zinc-200" />
                         </td>
                       ))}
                     </tr>
                   ))
-                ) : gastosPagina.length === 0 ? (
-                  // Estado vacío
+                ) : gruposPagina.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={5}>
                       <div
                         className="flex flex-col items-center justify-center gap-2 py-14 text-zinc-400"
                         role="status"
@@ -453,45 +502,126 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                     </td>
                   </tr>
                 ) : (
-                  gastosPagina.map((gasto) => {
-                    const colorQuien = getQuienPagoColor(gasto.quienPago);
+                  gruposPagina.map((grupo) => {
+                    const key = grupo.operacionId ?? "__sin_operacion__";
+                    const isExpanded = expanded.has(key);
+                    const gastosVisibles = filtroQuienPago
+                      ? grupo.gastos.filter((g) => g.quienPago === filtroQuienPago)
+                      : grupo.gastos;
+
                     return (
-                      <tr
-                        key={gasto.id}
-                        className="border-b border-zinc-100 transition-colors hover:bg-zinc-50"
-                      >
-                        <td className="px-5 py-4">
-                          {gasto.operacionId != null ? (
-                            <span className="font-medium text-blue-600">
-                              #OP-{gasto.operacionId}
+                      <React.Fragment key={key}>
+                        {/* Fila padre */}
+                        <tr
+                          className={`cursor-pointer border-b border-zinc-100 transition-colors hover:bg-zinc-50 ${
+                            isExpanded ? "bg-blue-50/40" : ""
+                          }`}
+                          onClick={() => toggleExpand(key)}
+                        >
+                          <td className="px-4 py-4 text-center">
+                            <span
+                              className={`material-symbols-outlined text-lg text-zinc-400 transition-transform duration-200 ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            >
+                              expand_more
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
-                              <span className="material-symbols-outlined text-xs" aria-hidden="true">link_off</span>
-                              Sin operación
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 text-zinc-700">
-                          {gasto.descripcion}
-                        </td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${colorQuien.bg} ${colorQuien.text}`}
-                          >
-                            {gasto.quienPago}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-right font-semibold text-zinc-900">
-                          {formatPesos(gasto.monto)}
-                        </td>
-                        <td className="px-5 py-4 text-zinc-500">
-                          {formatFecha(gasto.fecha)}
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <AccionesMenu gastoId={gasto.id} />
-                        </td>
-                      </tr>
+                          </td>
+                          <td className="px-5 py-4">
+                            {grupo.operacionId != null ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/operaciones/${grupo.operacionId}`);
+                                }}
+                                className="text-sm font-semibold text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                              >
+                                #OP-{grupo.operacionId}
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+                                <span className="material-symbols-outlined text-xs" aria-hidden="true">link_off</span>
+                                Sin operación
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            {grupo.vehiculoFotoId ? (
+                              <img
+                                src={`/api/photos/${grupo.vehiculoFotoId}`}
+                                alt="Miniatura del vehículo"
+                                className="h-10 w-14 rounded-md object-cover border border-zinc-200"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-14 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100">
+                                <span className="material-symbols-outlined text-base text-zinc-300">
+                                  directions_car
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-right font-semibold text-red-800">
+                            {formatPesos(grupo.totalGastado)}
+                          </td>
+                          <td className="px-5 py-4 text-zinc-500">
+                            {formatFecha(grupo.fechaUltimoGasto)}
+                          </td>
+                        </tr>
+
+                        {/* Filas hijas */}
+                        {isExpanded && (
+                          <>
+                            {/* Sub-encabezado */}
+                            <tr className="bg-zinc-50/80">
+                              <td />
+                              <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                Descripción
+                              </td>
+                              <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                Quién pagó
+                              </td>
+                              <td className="px-5 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                Monto
+                              </td>
+                              <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                Fecha
+                              </td>
+                            </tr>
+                            {gastosVisibles.map((gasto) => {
+                              const colorQuien = getQuienPagoColor(gasto.quienPago);
+                              return (
+                                <tr
+                                  key={gasto.id}
+                                  className="border-t border-zinc-100 bg-blue-50/20"
+                                >
+                                  <td className="px-4 py-3">
+                                    <div className="flex justify-center">
+                                      <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
+                                    </div>
+                                  </td>
+                                  <td className="px-5 py-3 text-sm text-zinc-700">
+                                    {gasto.descripcion}
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${colorQuien.bg} ${colorQuien.text}`}
+                                    >
+                                      {gasto.quienPago}
+                                    </span>
+                                  </td>
+                                  <td className="px-5 py-3 text-right text-sm font-medium text-red-500">
+                                    {formatPesos(gasto.monto)}
+                                  </td>
+                                  <td className="px-5 py-3 text-sm text-zinc-500">
+                                    {formatFecha(gasto.fecha)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </>
+                        )}
+                      </React.Fragment>
                     );
                   })
                 )}
@@ -503,15 +633,15 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
           {!loading && (
             <div className="flex flex-col items-center justify-between gap-3 border-t border-zinc-100 px-5 py-3 sm:flex-row">
               <p className="text-sm text-zinc-500">
-                {gastosFiltrados.length === 0
+                {gruposFiltrados.length === 0
                   ? "Sin registros"
                   : `Mostrando ${Math.min(
                       (pagina - 1) * PAGE_SIZE + 1,
-                      gastosFiltrados.length
+                      gruposFiltrados.length
                     )}–${Math.min(
                       pagina * PAGE_SIZE,
-                      gastosFiltrados.length
-                    )} de ${gastosFiltrados.length} registros`}
+                      gruposFiltrados.length
+                    )} de ${gruposFiltrados.length} operaciones`}
               </p>
               {totalPaginas > 1 && (
                 <div className="flex items-center gap-2">
@@ -771,67 +901,6 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Menú de acciones ─────────────────────────────────────────────────────────
-
-function AccionesMenu({ gastoId }: { gastoId: number }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="relative inline-block">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={`Acciones para gasto ${gastoId}`}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-      >
-        <span className="material-symbols-outlined text-xl" aria-hidden="true">
-          more_vert
-        </span>
-      </button>
-
-      {open && (
-        <>
-          {/* Overlay para cerrar */}
-          <div
-            className="fixed inset-0 z-10"
-            aria-hidden="true"
-            onClick={() => setOpen(false)}
-          />
-          <div
-            role="menu"
-            className="absolute right-0 z-20 mt-1 w-36 origin-top-right rounded-xl border border-zinc-200 bg-white py-1 shadow-lg"
-          >
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none"
-            >
-              <span className="material-symbols-outlined text-base text-zinc-400" aria-hidden="true">
-                edit
-              </span>
-              Editar
-            </button>
-            <button
-              role="menuitem"
-              type="button"
-              onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 focus:bg-red-50 focus:outline-none"
-            >
-              <span className="material-symbols-outlined text-base text-red-400" aria-hidden="true">
-                delete
-              </span>
-              Eliminar
-            </button>
-          </div>
-        </>
       )}
     </div>
   );

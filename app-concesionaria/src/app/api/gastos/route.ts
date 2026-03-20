@@ -59,7 +59,20 @@ export async function GET(req: NextRequest) {
       },
       include: {
         Origin: { select: { nombre: true } },
-        Operation: { select: { idOperacion: true } },
+        Operation: {
+          select: {
+            idOperacion: true,
+            VehiculoVendido: {
+              select: {
+                VehiclePhoto: {
+                  select: { id: true },
+                  orderBy: { orden: "asc" },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { fecha: "desc" },
     });
@@ -71,6 +84,7 @@ export async function GET(req: NextRequest) {
       quienPago: e.Origin.nombre,
       monto: e.monto,
       fecha: e.fecha.toISOString(),
+      vehiculoFotoId: e.Operation?.VehiculoVendido?.VehiclePhoto?.[0]?.id ?? null,
     }));
 
     return NextResponse.json(result);
