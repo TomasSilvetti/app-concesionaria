@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidOperationTypeName } from "@/lib/operation-types";
 
 export async function GET(
   req: NextRequest,
@@ -46,11 +47,6 @@ export async function GET(
           },
         },
         VehicleCategory: {
-          select: {
-            nombre: true,
-          },
-        },
-        OperationType: {
           select: {
             nombre: true,
           },
@@ -138,10 +134,10 @@ export async function GET(
       estado: operation.estado,
       marcaNombre: operation.VehicleBrand.nombre,
       categoriaNombre: operation.VehicleCategory.nombre,
-      tipoOperacionNombre: operation.OperationType.nombre,
+      tipoOperacionNombre: operation.tipoOperacion,
       marcaId: operation.marcaId,
       categoriaId: operation.categoriaId,
-      tipoOperacionId: operation.tipoOperacionId,
+      tipoOperacion: operation.tipoOperacion,
       documentoDetalle: operation.OperationDocument
         ? { id: operation.OperationDocument.id, nombreArchivo: operation.OperationDocument.nombreArchivo }
         : null,
@@ -249,7 +245,7 @@ export async function PATCH(
       "ingresosBrutos",
       "precioToma",
       "estado",
-      "tipoOperacionId",
+      "tipoOperacion",
     ] as const;
 
     for (const field of editableFields) {
@@ -326,11 +322,11 @@ export async function PATCH(
             errors.push(`estado debe ser uno de: ${ALLOWED_ESTADOS.join(", ")}`);
           }
           break;
-        case "tipoOperacionId":
-          if (typeof value === "string" && value.trim()) {
+        case "tipoOperacion":
+          if (typeof value === "string" && isValidOperationTypeName(value.trim())) {
             updateData[field] = value.trim();
           } else if (value !== undefined && value !== null) {
-            errors.push(`${field} debe ser un ID válido`);
+            errors.push("tipoOperacion debe ser 'Venta 0km' o 'Venta desde stock'");
           }
           break;
       }
@@ -353,18 +349,6 @@ export async function PATCH(
         { message: "fechaVenta no puede ser anterior a fechaInicio" },
         { status: 400 }
       );
-    }
-
-    if (updateData.tipoOperacionId) {
-      const tipoOp = await prisma.operationType.findFirst({
-        where: { id: updateData.tipoOperacionId as string, clienteId },
-      });
-      if (!tipoOp) {
-        return NextResponse.json(
-          { message: "tipoOperacionId no existe o no pertenece al cliente" },
-          { status: 400 }
-        );
-      }
     }
 
     if (updateData.estado === "cerrada") {
@@ -404,7 +388,6 @@ export async function PATCH(
       include: {
         VehicleBrand: { select: { nombre: true } },
         VehicleCategory: { select: { nombre: true } },
-        OperationType: { select: { nombre: true } },
         VehiculoVendido: {
           include: {
             VehicleBrand: true,
@@ -443,7 +426,6 @@ export async function PATCH(
       include: {
         VehicleBrand: { select: { nombre: true } },
         VehicleCategory: { select: { nombre: true } },
-        OperationType: { select: { nombre: true } },
         VehiculoVendido: {
           include: {
             VehicleBrand: true,
@@ -515,10 +497,10 @@ export async function PATCH(
       estado: updatedWithVehicle.estado,
       marcaNombre: updatedWithVehicle.VehicleBrand.nombre,
       categoriaNombre: updatedWithVehicle.VehicleCategory.nombre,
-      tipoOperacionNombre: updatedWithVehicle.OperationType.nombre,
+      tipoOperacionNombre: updatedWithVehicle.tipoOperacion,
       marcaId: updatedWithVehicle.marcaId,
       categoriaId: updatedWithVehicle.categoriaId,
-      tipoOperacionId: updatedWithVehicle.tipoOperacionId,
+      tipoOperacion: updatedWithVehicle.tipoOperacion,
       documentoDetalle: updatedWithVehicle.OperationDocument
         ? { id: updatedWithVehicle.OperationDocument.id, nombreArchivo: updatedWithVehicle.OperationDocument.nombreArchivo }
         : null,

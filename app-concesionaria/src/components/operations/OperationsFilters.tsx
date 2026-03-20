@@ -2,13 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import "material-symbols/outlined.css";
+import { OPERATION_TYPES } from "@/lib/operation-types";
 
 interface VehicleBrand {
-  id: string;
-  nombre: string;
-}
-
-interface OperationType {
   id: string;
   nombre: string;
 }
@@ -18,7 +14,7 @@ export interface OperationFilters {
   fechaDesde?: string;
   fechaHasta?: string;
   marcaId?: string;
-  tipoOperacionId?: string;
+  tipoOperacion?: string;
 }
 
 interface OperationsFiltersProps {
@@ -34,12 +30,10 @@ export function OperationsFilters({
   const [fechaDesde, setFechaDesde] = useState<string>("");
   const [fechaHasta, setFechaHasta] = useState<string>("");
   const [marcaId, setMarcaId] = useState<string>("");
-  const [tipoOperacionId, setTipoOperacionId] = useState<string>("");
-  
+  const [tipoOperacion, setTipoOperacion] = useState<string>("");
+
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
-  const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(true);
-  const [typesLoading, setTypesLoading] = useState(true);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -60,26 +54,7 @@ export function OperationsFilters({
       }
     };
 
-    const fetchOperationTypes = async () => {
-      try {
-        const baseUrl =
-          typeof window !== "undefined" ? window.location.origin : "";
-        const res = await fetch(`${baseUrl}/api/operation-types`);
-        if (res.ok) {
-          const data = await res.json();
-          setOperationTypes(data.types ?? data ?? []);
-        } else {
-          setOperationTypes([]);
-        }
-      } catch {
-        setOperationTypes([]);
-      } finally {
-        setTypesLoading(false);
-      }
-    };
-
     fetchBrands();
-    fetchOperationTypes();
   }, []);
 
   const hasActiveFilters =
@@ -87,16 +62,16 @@ export function OperationsFilters({
     fechaDesde !== "" ||
     fechaHasta !== "" ||
     marcaId !== "" ||
-    tipoOperacionId !== "";
+    tipoOperacion !== "";
 
   const handleApplyFilters = () => {
     const filters: OperationFilters = {};
-    
+
     if (estado) filters.estado = estado;
     if (fechaDesde) filters.fechaDesde = fechaDesde;
     if (fechaHasta) filters.fechaHasta = fechaHasta;
     if (marcaId) filters.marcaId = marcaId;
-    if (tipoOperacionId) filters.tipoOperacionId = tipoOperacionId;
+    if (tipoOperacion) filters.tipoOperacion = tipoOperacion;
 
     onApplyFilters(filters);
   };
@@ -106,7 +81,7 @@ export function OperationsFilters({
     setFechaDesde("");
     setFechaHasta("");
     setMarcaId("");
-    setTipoOperacionId("");
+    setTipoOperacion("");
     onClearFilters();
   };
 
@@ -115,7 +90,7 @@ export function OperationsFilters({
     if (estado) count++;
     if (fechaDesde || fechaHasta) count++;
     if (marcaId) count++;
-    if (tipoOperacionId) count++;
+    if (tipoOperacion) count++;
     return count;
   };
 
@@ -223,14 +198,13 @@ export function OperationsFilters({
             </span>
             <select
               id="tipoOperacion"
-              value={tipoOperacionId}
-              onChange={(e) => setTipoOperacionId(e.target.value)}
-              className="h-11 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-              disabled={typesLoading}
+              value={tipoOperacion}
+              onChange={(e) => setTipoOperacion(e.target.value)}
+              className="h-11 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="">Todos los tipos</option>
-              {operationTypes.map((type) => (
-                <option key={type.id} value={type.id}>
+              {OPERATION_TYPES.map((type) => (
+                <option key={type.id} value={type.nombre}>
                   {type.nombre}
                 </option>
               ))}
@@ -277,12 +251,12 @@ export function OperationsFilters({
                   {brands.find((b) => b.id === marcaId)?.nombre ?? "Marca"}
                 </span>
               )}
-              {tipoOperacionId && (
+              {tipoOperacion && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
                   <span className="material-symbols-outlined text-sm">
                     category
                   </span>
-                  {operationTypes.find((t) => t.id === tipoOperacionId)?.nombre ?? "Tipo"}
+                  {tipoOperacion}
                 </span>
               )}
             </>

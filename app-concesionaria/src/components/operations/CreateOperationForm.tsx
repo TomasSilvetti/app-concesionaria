@@ -8,6 +8,7 @@ import {
   VehicleFieldsHandlers,
   PhotoFile,
 } from "../stock/VehicleFieldsForm";
+import { OPERATION_TYPES } from "@/lib/operation-types";
 
 interface VehicleBrand {
   id: string;
@@ -15,11 +16,6 @@ interface VehicleBrand {
 }
 
 interface VehicleCategory {
-  id: string;
-  nombre: string;
-}
-
-interface OperationType {
   id: string;
   nombre: string;
 }
@@ -67,7 +63,7 @@ export function CreateOperationForm({
   onCancel,
 }: CreateOperationFormProps) {
   // Operation-specific fields
-  const [tipoOperacionId, setTipoOperacionId] = useState("");
+  const [tipoOperacion, setTipoOperacion] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
   const [nombreComprador, setNombreComprador] = useState("");
   const [precioVentaTotal, setPrecioVentaTotal] = useState("");
@@ -121,12 +117,10 @@ export function CreateOperationForm({
   // Data for selectors
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
-  const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
 
   // Loading states
   const [brandsLoading, setBrandsLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [typesLoading, setTypesLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // UI states
@@ -138,7 +132,6 @@ export function CreateOperationForm({
   useEffect(() => {
     fetchBrands();
     fetchCategories();
-    fetchOperationTypes();
   }, []);
 
   // Auto-calcular ingreso bruto como diferencia entre precio venta estimado y precio de toma
@@ -185,24 +178,6 @@ export function CreateOperationForm({
       setCategories([]);
     } finally {
       setCategoriesLoading(false);
-    }
-  };
-
-  const fetchOperationTypes = async () => {
-    try {
-      const baseUrl =
-        typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(`${baseUrl}/api/operation-types`);
-      if (res.ok) {
-        const data = await res.json();
-        setOperationTypes(data.types ?? []);
-      } else {
-        setOperationTypes([]);
-      }
-    } catch {
-      setOperationTypes([]);
-    } finally {
-      setTypesLoading(false);
     }
   };
 
@@ -395,7 +370,7 @@ export function CreateOperationForm({
     const errors: Record<string, string> = {};
 
     // Operation fields validation
-    if (!tipoOperacionId) errors.tipoOperacionId = "Seleccioná un tipo de operación";
+    if (!tipoOperacion) errors.tipoOperacion = "Seleccioná un tipo de operación";
     if (!fechaInicio) errors.fechaInicio = "La fecha de inicio es requerida";
     if (!nombreComprador.trim()) errors.nombreComprador = "El nombre del comprador es obligatorio";
     if (!precioVentaTotal) {
@@ -471,7 +446,7 @@ export function CreateOperationForm({
         formData.append("notasGenerales", notasGenerales.trim());
       }
 
-      formData.append("tipoOperacionId", tipoOperacionId);
+      formData.append("tipoOperacion", tipoOperacion);
       formData.append("fechaInicio", fechaInicio);
       formData.append("nombreComprador", nombreComprador.trim());
       formData.append("precioVentaTotal", precioVentaTotal);
@@ -480,8 +455,7 @@ export function CreateOperationForm({
       if (precioToma) {
         formData.append("precioToma", precioToma);
       }
-      const tipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
-      if (stockAutofillId && tipoNombre === "Venta desde stock") {
+      if (stockAutofillId && tipoOperacion === "Venta desde stock") {
         formData.append("stockVehicleId", stockAutofillId);
       }
 
@@ -558,7 +532,7 @@ export function CreateOperationForm({
   };
 
   const handleAutofill = () => {
-    if (operationTypes.length > 0) setTipoOperacionId(operationTypes[0].id);
+    setTipoOperacion(OPERATION_TYPES[0].nombre);
     const today = new Date().toISOString().split('T')[0];
     setFechaInicio(today);
     setNombreComprador("Juan Pérez");
@@ -580,11 +554,10 @@ export function CreateOperationForm({
     setFieldErrors({});
   };
 
-  const selectedTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
-  const isVentaDesdeStock = selectedTipoNombre === "Venta desde stock";
+  const isVentaDesdeStock = tipoOperacion === "Venta desde stock";
 
   const isFormValid =
-    tipoOperacionId &&
+    tipoOperacion &&
     fechaInicio &&
     nombreComprador.trim() &&
     marcaId &&
@@ -688,16 +661,16 @@ export function CreateOperationForm({
               </span>
               <select
                 id="tipoOperacion"
-                value={tipoOperacionId}
+                value={tipoOperacion}
                 onChange={(e) => {
-                  const prevTipoNombre = operationTypes.find((t) => t.id === tipoOperacionId)?.nombre;
-                  const newTipoNombre = operationTypes.find((t) => t.id === e.target.value)?.nombre;
-                  setTipoOperacionId(e.target.value);
-                  handleInputChange("tipoOperacionId");
+                  const prevTipo = tipoOperacion;
+                  const newTipo = e.target.value;
+                  setTipoOperacion(newTipo);
+                  handleInputChange("tipoOperacion");
                   handleInputChange("vehiculoUsado");
                   if (
-                    prevTipoNombre === "Venta desde stock" &&
-                    newTipoNombre !== "Venta desde stock" &&
+                    prevTipo === "Venta desde stock" &&
+                    newTipo !== "Venta desde stock" &&
                     stockAutofillId
                   ) {
                     setMarcaId("");
@@ -712,15 +685,15 @@ export function CreateOperationForm({
                   }
                 }}
                 className={`h-12 w-full appearance-none rounded-lg border ${
-                  fieldErrors.tipoOperacionId
+                  fieldErrors.tipoOperacion
                     ? "border-red-300 bg-red-50"
                     : "border-zinc-300 bg-zinc-50"
                 } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={isSubmitting || typesLoading}
+                disabled={isSubmitting}
               >
                 <option value="">Seleccionar tipo de operación...</option>
-                {operationTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
+                {OPERATION_TYPES.map((type) => (
+                  <option key={type.id} value={type.nombre}>
                     {type.nombre}
                   </option>
                 ))}
@@ -729,9 +702,9 @@ export function CreateOperationForm({
                 expand_more
               </span>
             </div>
-            {fieldErrors.tipoOperacionId && (
+            {fieldErrors.tipoOperacion && (
               <span className="text-xs text-red-600">
-                {fieldErrors.tipoOperacionId}
+                {fieldErrors.tipoOperacion}
               </span>
             )}
           </div>

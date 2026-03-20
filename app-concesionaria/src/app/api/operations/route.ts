@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
+import { isValidOperationTypeName } from "@/lib/operation-types";
 
 const ALLOWED_SORT_FIELDS = [
   "fechaInicio",
@@ -12,11 +13,6 @@ const ALLOWED_SORT_FIELDS = [
   "estado",
   "precioVentaTotal",
   "ingresosNetos",
-] as const;
-
-const VALID_OPERATION_TYPES = [
-  "Venta desde stock",
-  "Venta 0km",
 ] as const;
 
 type SortField = typeof ALLOWED_SORT_FIELDS[number];
@@ -52,7 +48,7 @@ export async function GET(req: NextRequest) {
     const fechaDesde = searchParams.get("fechaDesde");
     const fechaHasta = searchParams.get("fechaHasta");
     const marcaId = searchParams.get("marcaId");
-    const tipoOperacionId = searchParams.get("tipoOperacionId");
+    const tipoOperacion = searchParams.get("tipoOperacion");
 
     if (sortBy && !ALLOWED_SORT_FIELDS.includes(sortBy)) {
       return NextResponse.json(
@@ -166,8 +162,8 @@ export async function GET(req: NextRequest) {
       where.marcaId = marcaId;
     }
 
-    if (tipoOperacionId) {
-      where.tipoOperacionId = tipoOperacionId;
+    if (tipoOperacion) {
+      where.tipoOperacion = tipoOperacion;
     }
 
     const operations = await prisma.operation.findMany({
@@ -179,11 +175,6 @@ export async function GET(req: NextRequest) {
           },
         },
         VehicleCategory: {
-          select: {
-            nombre: true,
-          },
-        },
-        OperationType: {
           select: {
             nombre: true,
           },
@@ -231,7 +222,7 @@ export async function GET(req: NextRequest) {
         estado: op.estado,
         marcaNombre: op.VehicleBrand.nombre,
         categoriaNombre: op.VehicleCategory.nombre,
-        tipoOperacionNombre: op.OperationType.nombre,
+        tipoOperacionNombre: op.tipoOperacion,
         vehiculoId: op.vehiculoVendidoId,
         vehiculoFotoId: op.VehiculoVendido.VehiclePhoto[0]?.id ?? null,
       };
@@ -288,7 +279,7 @@ export async function POST(req: NextRequest) {
     
     const nombreComprador = formData.get("nombreComprador") as string;
 
-    const tipoOperacionId = formData.get("tipoOperacionId") as string;
+    const tipoOperacion = formData.get("tipoOperacion") as string;
     const fechaInicioStr = formData.get("fechaInicio") as string;
     const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
     const ingresosBrutosStr = formData.get("ingresosBrutos") as string;
@@ -309,7 +300,7 @@ export async function POST(req: NextRequest) {
     if (!precioRevistaStr) errors.push("precioRevista es requerido");
     
     if (!nombreComprador || !nombreComprador.trim()) errors.push("nombreComprador es requerido");
-    if (!tipoOperacionId) errors.push("tipoOperacionId es requerido");
+    if (!tipoOperacion) errors.push("tipoOperacion es requerido");
     if (!fechaInicioStr) errors.push("fechaInicio es requerido");
     if (!precioVentaTotalStr) errors.push("precioVentaTotal es requerido");
     if (!ingresosBrutosStr) errors.push("ingresosBrutos es requerido");
@@ -380,15 +371,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [marca, categoria, tipoOperacion] = await Promise.all([
+    if (!isValidOperationTypeName(tipoOperacion)) {
+      return NextResponse.json(
+        { message: "Tipo de operación inválido" },
+        { status: 400 }
+      );
+    }
+
+    const [marca, categoria] = await Promise.all([
       prisma.vehicleBrand.findFirst({
         where: { id: marcaId, clienteId },
       }),
       prisma.vehicleCategory.findFirst({
         where: { id: categoriaId, clienteId },
-      }),
-      prisma.operationType.findFirst({
-        where: { id: tipoOperacionId, clienteId },
       }),
     ]);
 
@@ -402,20 +397,6 @@ export async function POST(req: NextRequest) {
     if (!categoria) {
       return NextResponse.json(
         { message: "categoriaId no existe o no pertenece al cliente" },
-        { status: 400 }
-      );
-    }
-
-    if (!tipoOperacion) {
-      return NextResponse.json(
-        { message: "tipoOperacionId no existe o no pertenece al cliente" },
-        { status: 400 }
-      );
-    }
-
-    if (!VALID_OPERATION_TYPES.includes(tipoOperacion.nombre as any)) {
-      return NextResponse.json(
-        { message: "Tipo de operación inválido" },
         { status: 400 }
       );
     }
@@ -621,7 +602,7 @@ export async function POST(req: NextRequest) {
           estado: "abierta",
           marcaId,
           categoriaId,
-          tipoOperacionId,
+          tipoOperacion,
           actualizadoEn: now,
         },
         include: {
@@ -631,11 +612,6 @@ export async function POST(req: NextRequest) {
             },
           },
           VehicleCategory: {
-            select: {
-              nombre: true,
-            },
-          },
-          OperationType: {
             select: {
               nombre: true,
             },
@@ -768,7 +744,7 @@ export async function POST(req: NextRequest) {
           estado: newOperation.estado,
           marcaNombre: newOperation.VehicleBrand.nombre,
           categoriaNombre: newOperation.VehicleCategory.nombre,
-          tipoOperacionNombre: newOperation.OperationType.nombre,
+          tipoOperacionNombre: newOperation.tipoOperacion,
         },
       },
       { status: 201 }
