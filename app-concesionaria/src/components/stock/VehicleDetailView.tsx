@@ -22,6 +22,10 @@ interface Operacion {
   vehiculoVendido: OperacionVehiculoVendido | null;
 }
 
+interface OperacionDeVenta {
+  idOperacion: string;
+}
+
 interface Vehicle {
   id: string;
   marcaId: string;
@@ -36,6 +40,7 @@ interface Vehicle {
   notasGenerales: string | null;
   precioRevista: number | null;
   precioOferta: number | null;
+  precioToma: number | null;
   estado: string | null;
   operacionId: string | null;
   creadoEn: string;
@@ -44,6 +49,7 @@ interface Vehicle {
   VehicleCategory: { nombre: string };
   VehiclePhoto: VehiclePhoto[];
   operacion?: Operacion | null;
+  operacionDeVenta?: OperacionDeVenta | null;
 }
 
 interface VehicleDetailViewProps {
@@ -179,20 +185,30 @@ export function VehicleDetailView({ vehicleId }: VehicleDetailViewProps) {
           Precios
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-lg bg-zinc-50 p-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              Precio Revista
-            </p>
-            <p className="mt-1 text-xl font-semibold text-zinc-900">
-              {formatCurrency(vehicle.precioRevista)}
-            </p>
-          </div>
+          {vehicle.precioToma != null && (
+            <div className="rounded-lg bg-orange-50 p-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-orange-600">
+                Precio de Toma
+              </p>
+              <p className="mt-1 text-xl font-semibold text-orange-700">
+                {formatCurrency(vehicle.precioToma)}
+              </p>
+            </div>
+          )}
           <div className="rounded-lg bg-green-50 p-4">
             <p className="text-xs font-medium uppercase tracking-wider text-green-600">
               Precio Oferta
             </p>
             <p className="mt-1 text-xl font-semibold text-green-700">
               {formatCurrency(vehicle.precioOferta)}
+            </p>
+          </div>
+          <div className="rounded-lg bg-zinc-50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Precio Revista
+            </p>
+            <p className="mt-1 text-xl font-semibold text-zinc-900">
+              {formatCurrency(vehicle.precioRevista)}
             </p>
           </div>
         </div>
@@ -381,6 +397,23 @@ export function VehicleDetailView({ vehicleId }: VehicleDetailViewProps) {
                 {vehicle.operacionId}
               </span>
             </p>
+          </div>
+        ) : vehicle.operacionDeVenta ? (
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
+                ID de Operación
+              </p>
+              <div className="mt-1">
+                <Link
+                  href={`/operaciones/${vehicle.operacionDeVenta.idOperacion}`}
+                  className="inline-flex items-center gap-1 font-mono text-sm font-medium text-blue-600 underline-offset-2 hover:underline"
+                >
+                  {vehicle.operacionDeVenta.idOperacion}
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                </Link>
+              </div>
+            </div>
           </div>
         ) : (
           <p className="text-sm italic text-zinc-400">Sin operación asociada</p>

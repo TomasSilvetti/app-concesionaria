@@ -8,8 +8,9 @@ generator erd {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Category {
@@ -36,6 +37,9 @@ model Client {
   Operation       Operation[]
   OperationType   OperationType[]
   Origin          Origin[]
+  Pago            Pago[]
+  PaymentMethod   PaymentMethod[]
+  Pendiente       Pendiente[]
   User            User[]
   VehicleBrand    VehicleBrand[]
   VehicleCategory VehicleCategory[]
@@ -45,12 +49,10 @@ model Expense {
   id            String     @id
   clienteId     String
   operacionId   String?
-  fecha         DateTime
+  fecha         DateTime   @default(now())
   descripcion   String
   categoriaId   String
-  tipo          String
   monto         Float
-  estado        String
   origenId      String
   creadoEn      DateTime   @default(now())
   actualizadoEn DateTime
@@ -66,32 +68,36 @@ model Expense {
 }
 
 model Operation {
-  id                String              @id
-  idOperacion       String
-  clienteId         String
-  fechaInicio       DateTime
-  fechaVenta        DateTime?
-  vehiculoVendidoId String
-  precioVentaTotal  Float
-  ingresosBrutos    Float
-  comision          Float
-  gastosAsociados   Float               @default(0)
-  ingresosNetos     Float
-  estado            String              @default("open")
-  creadoEn          DateTime            @default(now())
-  actualizadoEn     DateTime
-  marcaId           String
-  categoriaId       String
-  tipoOperacionId   String
-  diasVenta         Int?
-  Expense           Expense[]
-  VehicleCategory   VehicleCategory     @relation(fields: [categoriaId], references: [id])
-  Client            Client              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
-  OperationType     OperationType       @relation(fields: [tipoOperacionId], references: [id])
-  VehiculoVendido   Vehicle             @relation("VehiculosVendidos", fields: [vehiculoVendidoId], references: [id], onDelete: Cascade)
-  OperationExchange OperationExchange[]
-  Vehicle           Vehicle[]
+  id                                           String              @id
+  idOperacion                                  String
+  clienteId                                    String
+  fechaInicio                                  DateTime
+  fechaVenta                                   DateTime?
+  precioVentaTotal                             Float
+  ingresosBrutos                               Float
+  comision                                     Float
+  gastosAsociados                              Float               @default(0)
+  ingresosNetos                                Float
+  estado                                       String              @default("open")
+  creadoEn                                     DateTime            @default(now())
+  actualizadoEn                                DateTime
+  marcaId                                      String
+  categoriaId                                  String
+  tipoOperacionId                              String
+  diasVenta                                    Int?
+  vehiculoVendidoId                            String
+  precioToma                                   Float?
+  nombreComprador                              String
+  Expense                                      Expense[]
+  VehicleCategory                              VehicleCategory     @relation(fields: [categoriaId], references: [id])
+  Client                                       Client              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  VehicleBrand                                 VehicleBrand        @relation(fields: [marcaId], references: [id])
+  OperationType                                OperationType       @relation(fields: [tipoOperacionId], references: [id])
+  VehiculoVendido                              Vehicle             @relation("VehiculosVendidos", fields: [vehiculoVendidoId], references: [id], onDelete: Cascade)
+  OperationDocument                            OperationDocument?
+  OperationExchange                            OperationExchange[]
+  Pago                                         Pago[]
+  VehicleStock                                 Vehicle[]           @relation("VehicleOperation")
 
   @@unique([clienteId, idOperacion])
   @@index([categoriaId])
@@ -100,6 +106,17 @@ model Operation {
   @@index([marcaId])
   @@index([tipoOperacionId])
   @@index([vehiculoVendidoId])
+}
+
+model OperationDocument {
+  id            String    @id
+  operacionId   String    @unique
+  nombreArchivo String
+  mimeType      String
+  datos         Bytes
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime
+  Operation     Operation @relation(fields: [operacionId], references: [id], onDelete: Cascade)
 }
 
 model OperationExchange {
@@ -141,6 +158,50 @@ model Origin {
   @@index([clienteId])
 }
 
+model Pago {
+  id            String        @id
+  operacionId   String
+  clienteId     String
+  fecha         DateTime
+  metodoPagoId  String
+  monto         Float
+  nota          String?
+  creadoEn      DateTime      @default(now())
+  actualizadoEn DateTime
+  Client        Client        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  PaymentMethod PaymentMethod @relation(fields: [metodoPagoId], references: [id])
+  Operation     Operation     @relation(fields: [operacionId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
+  @@index([metodoPagoId])
+  @@index([operacionId])
+}
+
+model PaymentMethod {
+  id        String   @id
+  clienteId String
+  nombre    String
+  creadoEn  DateTime @default(now())
+  Pago      Pago[]
+  Client    Client   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, nombre])
+  @@index([clienteId])
+}
+
+model Pendiente {
+  id            String   @id
+  clienteId     String
+  nombreCliente String
+  detalle       String
+  completado    Boolean  @default(false)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime
+  Client        Client   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
+}
+
 model User {
   id            String   @id
   username      String   @unique
@@ -160,30 +221,31 @@ model User {
 }
 
 model Vehicle {
-  id                String              @id
-  operacionId       String?
-  clienteId         String
-  marcaId           String
-  modelo            String
-  anio              Int
-  categoriaId       String
-  patente           String?
-  version           String?
-  color             String?
-  kilometros        Int?
-  notasMecanicas    String?
-  notasGenerales    String?
-  precioRevista     Float?
-  precioOferta      Float?
-  estado            String              @default("disponible")
-  creadoEn          DateTime            @default(now())
-  actualizadoEn     DateTime
-  OperationExchange OperationExchange[]
-  VehicleCategory   VehicleCategory     @relation(fields: [categoriaId], references: [id])
-  VehicleBrand      VehicleBrand        @relation(fields: [marcaId], references: [id])
-  Operation         Operation?          @relation(fields: [operacionId], references: [id], onDelete: Cascade)
-  VehiclePhoto      VehiclePhoto[]
-  OperacionesVenta  Operation[]         @relation("VehiculosVendidos")
+  id                                             String              @id
+  operacionId                                    String?
+  clienteId                                      String
+  version                                        String?
+  color                                          String?
+  kilometros                                     Int?
+  notasMecanicas                                 String?
+  notasGenerales                                 String?
+  precioRevista                                  Float?
+  precioOferta                                   Float?
+  creadoEn                                       DateTime            @default(now())
+  actualizadoEn                                  DateTime
+  anio                                           Int
+  categoriaId                                    String
+  marcaId                                        String
+  modelo                                         String
+  patente                                        String?
+  estado                                         String              @default("disponible")
+  precioToma                                     Float?
+  OperacionesVenta                               Operation[]         @relation("VehiculosVendidos")
+  OperationExchange                              OperationExchange[]
+  VehicleCategory                                VehicleCategory     @relation(fields: [categoriaId], references: [id])
+  VehicleBrand                                   VehicleBrand        @relation(fields: [marcaId], references: [id])
+  Operation                                      Operation?          @relation("VehicleOperation", fields: [operacionId], references: [id], onDelete: Cascade)
+  VehiclePhoto                                   VehiclePhoto[]
 
   @@index([categoriaId])
   @@index([clienteId])

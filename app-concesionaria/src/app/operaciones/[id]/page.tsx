@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
+import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -49,6 +51,7 @@ interface OperationDetail {
   gastosAsociados: number;
   ingresosNetos: number;
   comision: number;
+  precioToma: number | null;
   estado: "abierta" | "cerrada" | "cancelada";
   diasVenta: number | null;
   marcaNombre: string;
@@ -66,6 +69,7 @@ export default function OperacionDetailPage() {
   const [operation, setOperation] = useState<OperationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [gastosTotal, setGastosTotal] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchOperation = async () => {
@@ -221,9 +225,17 @@ export default function OperacionDetailPage() {
               </span>
             </div>
             <div>
-              <h1 className="text-3xl font-semibold text-zinc-900">
-                Operación #{operation.idOperacion}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-semibold text-zinc-900">
+                  Operación #{operation.idOperacion}
+                </h1>
+                {(operation.estado === "cerrada" || operation.estado === "closed" as string) && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-widest text-green-700 border border-green-300">
+                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                    Operación Terminada
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-zinc-500">
                 Detalle completo de la operación
               </p>
@@ -253,7 +265,7 @@ export default function OperacionDetailPage() {
         {/* Contenido principal en grid */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Sección: Datos del vehículo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-1">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 directions_car
@@ -339,35 +351,49 @@ export default function OperacionDetailPage() {
             </dl>
           </div>
 
+          {/* Sección: Módulo de Gastos */}
+          <div className="lg:col-span-1 lg:row-span-3 lg:row-start-1">
+            <OperationExpensesSection
+            operacionId={operation.idOperacion}
+            onTotalChange={setGastosTotal}
+          />
+          </div>
+
           {/* Sección: Fechas */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-2">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 calendar_today
               </span>
               <h2 className="text-lg font-semibold text-zinc-900">Fechas</h2>
             </div>
-            <dl className="space-y-3">
-              <div className="flex justify-between border-b border-zinc-100 pb-2">
-                <dt className="text-sm text-zinc-500">Fecha Inicio</dt>
-                <dd className="text-sm font-medium text-zinc-900">
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="flex flex-col gap-1 border-b border-zinc-100 pb-2 sm:border-b-0">
+                <dt className="text-xs font-medium uppercase tracking-wider text-zinc-500">Fecha Inicio</dt>
+                <dd className="text-sm font-semibold text-zinc-900">
                   {formatDate(operation.fechaInicio)}
                 </dd>
               </div>
-              <div className="flex justify-between border-b border-zinc-100 pb-2">
-                <dt className="text-sm text-zinc-500">Fecha Venta</dt>
-                <dd className="text-sm font-medium text-zinc-900">
+              <div className="flex flex-col gap-1 border-b border-zinc-100 pb-2 sm:border-b-0">
+                <dt className="text-xs font-medium uppercase tracking-wider text-zinc-500">Fecha Venta</dt>
+                <dd className="text-sm font-semibold text-zinc-900">
                   {formatDate(operation.fechaVenta)}
                 </dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-zinc-500">Días de Venta</dt>
-                <dd className="text-sm font-medium text-zinc-900">
+              <div className="flex flex-col gap-1">
+                <dt className="text-xs font-medium uppercase tracking-wider text-zinc-500">Días de Venta</dt>
+                <dd className="text-sm font-semibold text-zinc-900">
                   {operation.diasVenta !== null ? `${operation.diasVenta} días` : "—"}
                 </dd>
               </div>
             </dl>
           </div>
+
+          {/* Sección: Cobranzas */}
+          <OperationCobranzasSection
+            operacionId={operation.idOperacion}
+            precioVentaTotal={operation.precioVentaTotal}
+          />
 
           {/* Sección: Información financiera */}
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
@@ -390,6 +416,14 @@ export default function OperacionDetailPage() {
               </div>
               <div className="rounded-lg bg-zinc-50 p-4">
                 <dt className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                  Precio de Toma
+                </dt>
+                <dd className="mt-2 text-xl font-semibold text-zinc-900">
+                  {formatCurrency(operation.precioToma)}
+                </dd>
+              </div>
+              <div className="rounded-lg bg-zinc-50 p-4">
+                <dt className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                   Ingresos Brutos
                 </dt>
                 <dd className="mt-2 text-xl font-semibold text-zinc-900">
@@ -401,7 +435,7 @@ export default function OperacionDetailPage() {
                   Gastos Asociados
                 </dt>
                 <dd className="mt-2 text-xl font-semibold text-red-600">
-                  {formatCurrency(operation.gastosAsociados)}
+                  {formatCurrency(gastosTotal ?? operation.gastosAsociados)}
                 </dd>
               </div>
               <div className="rounded-lg bg-green-50 p-4">
@@ -409,7 +443,11 @@ export default function OperacionDetailPage() {
                   Ganancia Neta
                 </dt>
                 <dd className="mt-2 text-xl font-semibold text-green-700">
-                  {formatCurrency(operation.ingresosNetos)}
+                  {formatCurrency(
+                    operation.precioVentaTotal -
+                      (operation.precioToma ?? 0) -
+                      (gastosTotal !== null ? gastosTotal : operation.gastosAsociados)
+                  )}
                 </dd>
               </div>
               <div className="rounded-lg bg-zinc-50 p-4">
@@ -530,69 +568,6 @@ export default function OperacionDetailPage() {
             )}
           </div>
 
-          {/* Sección: Gastos asociados */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-blue-600">
-                receipt_long
-              </span>
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Gastos Asociados
-              </h2>
-            </div>
-
-            {operation.gastos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
-                  <span className="material-symbols-outlined text-2xl text-zinc-400">
-                    receipt_long
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-zinc-600">
-                  Sin gastos asociados
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Fecha
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Descripción
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Categoría
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Monto
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 bg-white">
-                    {operation.gastos.map((gasto, index) => (
-                      <tr key={index} className="transition-colors hover:bg-zinc-50">
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {formatDate(gasto.fecha)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.descripcion}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.categoria}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-red-600">
-                          {formatCurrency(gasto.monto)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </AppLayout>

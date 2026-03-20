@@ -40,6 +40,9 @@ Cuando una operación es de tipo "venta con intercambio", el sistema permite reg
 - [ ] Las operaciones se crean con estado "abierta" por defecto
 - [ ] El usuario puede cambiar el estado de una operación a: abierta, cerrada, cancelada
 - [ ] Los gastos asociados a una operación se actualizan automáticamente cuando se crea un gasto vinculado a esa operación desde el módulo de Gastos
+- [ ] Una operación solo puede ser cerrada (estado "cerrada") cuando todos sus pagos están completos (monto pendiente = 0)
+- [ ] Al registrar el último pago que completa el total, el sistema cierra la operación automáticamente
+- [ ] El detalle de una operación terminada muestra un badge "OPERACION TERMINADA" en verde junto al título cuando el estado es "cerrada"
 
 ## Flujos
 
@@ -142,6 +145,16 @@ Cuando una operación es de tipo "venta con intercambio", el sistema permite reg
 5. El sistema muestra mensajes de error específicos junto a cada campo inválido
 6. El usuario completa los campos faltantes
 7. El usuario guarda nuevamente y la operación se crea correctamente
+
+### Flujo alternativo 9 — Cierre de operación con pagos pendientes
+
+1. El usuario está en el modo edición de una operación
+2. El usuario intenta cambiar el estado a "cerrada"
+3. La operación tiene pagos pendientes (monto saldado < precioVentaTotal)
+4. El sistema rechaza el cambio con un error: "No se puede cerrar la operación: hay pagos pendientes"
+5. El usuario primero registra los pagos faltantes en la sección de Cobranzas
+6. Al completar el último pago, el sistema cierra la operación automáticamente (estado "cerrada")
+7. El detalle muestra el badge "OPERACION TERMINADA" en verde junto al título
 
 ### Flujo alternativo 8 — Operación sin resultados en filtros
 

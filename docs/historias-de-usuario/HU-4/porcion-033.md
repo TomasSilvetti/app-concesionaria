@@ -3,7 +3,7 @@
 **Historia de usuario:** HU-4: Gestión de Stock de Vehículos
 **Par:** porcion-034
 **Tipo:** FRONT
-**Estado:** 🔄 En progreso
+**Estado:** completada
 **Prerequisitos:** porcion-018, formulario de creación de operación
 
 ## Descripción

@@ -7,7 +7,7 @@
 */
 
 -- DropForeignKey
-ALTER TABLE "OperationPhoto" DROP CONSTRAINT "OperationPhoto_operationId_fkey";
+ALTER TABLE IF EXISTS "OperationPhoto" DROP CONSTRAINT IF EXISTS "OperationPhoto_operationId_fkey";
 
 -- DropTable
-DROP TABLE "OperationPhoto";
+DROP TABLE IF EXISTS "OperationPhoto";

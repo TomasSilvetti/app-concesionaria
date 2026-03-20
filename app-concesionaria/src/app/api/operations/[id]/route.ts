@@ -88,6 +88,12 @@ export async function GET(
             },
           },
         },
+        OperationDocument: {
+          select: {
+            id: true,
+            nombreArchivo: true,
+          },
+        },
       },
     });
 
@@ -104,6 +110,7 @@ export async function GET(
 
     const operationFormatted = {
       idOperacion: operation.idOperacion,
+      nombreComprador: operation.nombreComprador,
       fechaInicio: operation.fechaInicio,
       fechaVenta: operation.fechaVenta,
       diasVenta: diasVenta,
@@ -127,6 +134,7 @@ export async function GET(
       gastosAsociados: operation.gastosAsociados,
       ingresosNetos: operation.ingresosNetos,
       comision: operation.comision,
+      precioToma: operation.precioToma,
       estado: operation.estado,
       marcaNombre: operation.VehicleBrand.nombre,
       categoriaNombre: operation.VehicleCategory.nombre,
@@ -134,6 +142,9 @@ export async function GET(
       marcaId: operation.marcaId,
       categoriaId: operation.categoriaId,
       tipoOperacionId: operation.tipoOperacionId,
+      documentoDetalle: operation.OperationDocument
+        ? { id: operation.OperationDocument.id, nombreArchivo: operation.OperationDocument.nombreArchivo }
+        : null,
       vehiculosIntercambiados: operation.OperationExchange.map((exchange) => ({
         marca: exchange.Vehicle.VehicleBrand.nombre,
         modelo: exchange.Vehicle.modelo,
@@ -231,10 +242,12 @@ export async function PATCH(
     const updateData: Record<string, unknown> = {};
 
     const editableFields = [
+      "nombreComprador",
       "fechaInicio",
       "fechaVenta",
       "precioVentaTotal",
       "ingresosBrutos",
+      "precioToma",
       "estado",
       "tipoOperacionId",
     ] as const;
@@ -245,6 +258,13 @@ export async function PATCH(
       const value = body[field];
 
       switch (field) {
+        case "nombreComprador":
+          if (typeof value === "string" && value.trim()) {
+            updateData.nombreComprador = value.trim();
+          } else if (value !== undefined && value !== null) {
+            errors.push("nombreComprador debe ser un texto no vacío");
+          }
+          break;
         case "fechaInicio": {
           if (value === null || value === undefined || value === "") continue;
           const parsed = new Date(value as string);
@@ -283,6 +303,19 @@ export async function PATCH(
             errors.push("ingresosBrutos debe ser un número positivo");
           } else {
             updateData.ingresosBrutos = num;
+          }
+          break;
+        }
+        case "precioToma": {
+          if (value === null || value === "") {
+            updateData.precioToma = null;
+          } else {
+            const num = typeof value === "string" ? parseFloat(value) : value;
+            if (typeof num !== "number" || isNaN(num) || num <= 0) {
+              errors.push("precioToma debe ser un número positivo");
+            } else {
+              updateData.precioToma = num;
+            }
           }
           break;
         }
@@ -329,6 +362,21 @@ export async function PATCH(
       if (!tipoOp) {
         return NextResponse.json(
           { message: "tipoOperacionId no existe o no pertenece al cliente" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (updateData.estado === "cerrada") {
+      const aggregate = await prisma.pago.aggregate({
+        where: { operacionId: existingOperation.id },
+        _sum: { monto: true },
+      });
+      const saldado = aggregate._sum.monto ?? 0;
+      const pendiente = existingOperation.precioVentaTotal - saldado;
+      if (pendiente > 0) {
+        return NextResponse.json(
+          { message: "No se puede cerrar la operación: hay pagos pendientes por $" + pendiente.toFixed(2) },
           { status: 400 }
         );
       }
@@ -421,6 +469,12 @@ export async function PATCH(
             Category: { select: { nombre: true } },
           },
         },
+        OperationDocument: {
+          select: {
+            id: true,
+            nombreArchivo: true,
+          },
+        },
       },
     });
 
@@ -433,6 +487,7 @@ export async function PATCH(
 
     const operationFormatted = {
       idOperacion: updatedWithVehicle.idOperacion,
+      nombreComprador: updatedWithVehicle.nombreComprador,
       fechaInicio: updatedWithVehicle.fechaInicio,
       fechaVenta: updatedWithVehicle.fechaVenta,
       diasVenta,
@@ -456,6 +511,7 @@ export async function PATCH(
       gastosAsociados: updatedWithVehicle.gastosAsociados,
       ingresosNetos: updatedWithVehicle.ingresosNetos,
       comision: updatedWithVehicle.comision,
+      precioToma: updatedWithVehicle.precioToma,
       estado: updatedWithVehicle.estado,
       marcaNombre: updatedWithVehicle.VehicleBrand.nombre,
       categoriaNombre: updatedWithVehicle.VehicleCategory.nombre,
@@ -463,6 +519,9 @@ export async function PATCH(
       marcaId: updatedWithVehicle.marcaId,
       categoriaId: updatedWithVehicle.categoriaId,
       tipoOperacionId: updatedWithVehicle.tipoOperacionId,
+      documentoDetalle: updatedWithVehicle.OperationDocument
+        ? { id: updatedWithVehicle.OperationDocument.id, nombreArchivo: updatedWithVehicle.OperationDocument.nombreArchivo }
+        : null,
       vehiculosIntercambiados: updatedWithVehicle.OperationExchange.map((ex) => ({
         marca: ex.Vehicle.VehicleBrand.nombre,
         modelo: ex.Vehicle.modelo,

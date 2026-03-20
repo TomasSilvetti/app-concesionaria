@@ -42,7 +42,9 @@ export function EditVehicleForm({
   const [notasGenerales, setNotasGenerales] = useState("");
   const [precioRevista, setPrecioRevista] = useState("");
   const [precioOferta, setPrecioOferta] = useState("");
+  const [precioToma, setPrecioToma] = useState("");
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
+  const [existingPhotoIds, setExistingPhotoIds] = useState<string[]>([]);
 
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
   const [categories, setCategories] = useState<VehicleCategory[]>([]);
@@ -124,6 +126,10 @@ export function EditVehicleForm({
         setNotasGenerales(vehicle.notasGenerales ?? "");
         setPrecioRevista(vehicle.precioRevista?.toString() ?? "");
         setPrecioOferta(vehicle.precioOferta?.toString() ?? "");
+        setPrecioToma(vehicle.precioToma?.toString() ?? "");
+        setExistingPhotoIds(
+          (vehicle.VehiclePhoto ?? []).map((p: { id: string }) => p.id)
+        );
       } else if (res.status === 404) {
         setError("Vehículo no encontrado.");
       } else {
@@ -165,6 +171,9 @@ export function EditVehicleForm({
     if (precioOferta && parseFloat(precioOferta) <= 0) {
       errors.precioOferta = "El precio debe ser mayor a 0";
     }
+    if (precioToma && parseFloat(precioToma) <= 0) {
+      errors.precioToma = "El precio debe ser mayor a 0";
+    }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -200,6 +209,9 @@ export function EditVehicleForm({
       }
       if (precioOferta) {
         formData.append("precioOferta", precioOferta);
+      }
+      if (precioToma) {
+        formData.append("precioToma", precioToma);
       }
       if (notasMecanicas.trim()) {
         formData.append("notasMecanicas", notasMecanicas.trim());
@@ -240,6 +252,22 @@ export function EditVehicleForm({
     }
   };
 
+  const handleDeleteExistingPhoto = async (photoId: string) => {
+    try {
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(
+        `${baseUrl}/api/stock/${vehicleId}/photos/${photoId}`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        setExistingPhotoIds((prev) => prev.filter((id) => id !== photoId));
+      }
+    } catch {
+      // silently ignore
+    }
+  };
+
   const handleInputChange = (field: string) => {
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
@@ -264,6 +292,7 @@ export function EditVehicleForm({
     notasGenerales,
     precioRevista,
     precioOferta,
+    precioToma,
     photos,
   };
 
@@ -280,6 +309,7 @@ export function EditVehicleForm({
     setNotasGenerales,
     setPrecioRevista,
     setPrecioOferta,
+    setPrecioToma,
     setPhotos,
   };
 
@@ -333,6 +363,9 @@ export function EditVehicleForm({
         disabled={isSubmitting}
         isDragging={isDragging}
         onDragStateChange={setIsDragging}
+        stockPhotoIds={existingPhotoIds}
+        stockVehicleId={vehicleId}
+        onDeleteExistingPhoto={handleDeleteExistingPhoto}
       />
 
       {/* Botones de acción */}

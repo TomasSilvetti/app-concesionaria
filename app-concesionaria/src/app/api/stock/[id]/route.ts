@@ -26,6 +26,10 @@ const vehicleInclude = {
       },
     },
   },
+  OperacionesVenta: {
+    select: { idOperacion: true },
+    take: 1,
+  },
 };
 
 export async function GET(
@@ -65,7 +69,7 @@ export async function GET(
       return NextResponse.json({ message: "Acceso denegado" }, { status: 403 });
     }
 
-    const { Operation, ...vehicleRest } = vehicle;
+    const { Operation, OperacionesVenta, ...vehicleRest } = vehicle;
     const response = {
       ...vehicleRest,
       operacion: Operation
@@ -79,6 +83,9 @@ export async function GET(
                 }
               : null,
           }
+        : null,
+      operacionDeVenta: OperacionesVenta[0]
+        ? { idOperacion: OperacionesVenta[0].idOperacion }
         : null,
     };
 
@@ -205,6 +212,7 @@ export async function PUT(
     const kilometrosStr = formData.get("kilometros") as string;
     const precioRevistaStr = formData.get("precioRevista") as string;
     const precioOfertaStr = formData.get("precioOferta") as string | null;
+    const precioTomaStr = formData.get("precioToma") as string | null;
     const notasMecanicas = formData.get("notasMecanicas") as string | null;
     const notasGenerales = formData.get("notasGenerales") as string | null;
     const patente = formData.get("patente") as string | null;
@@ -231,6 +239,7 @@ export async function PUT(
     const kilometros = parseInt(kilometrosStr, 10);
     const precioRevista = parseFloat(precioRevistaStr);
     const precioOferta = precioOfertaStr ? parseFloat(precioOfertaStr) : null;
+    const precioToma = precioTomaStr ? parseFloat(precioTomaStr) : null;
 
     if (isNaN(anio) || anio < 1900 || anio > 2100) {
       return NextResponse.json(
@@ -260,6 +269,13 @@ export async function PUT(
       );
     }
 
+    if (precioToma !== null && (isNaN(precioToma) || precioToma <= 0)) {
+      return NextResponse.json(
+        { message: "precioToma debe ser un número positivo" },
+        { status: 400 }
+      );
+    }
+
     const now = new Date();
 
     const vehicle = await prisma.vehicle.update({
@@ -277,6 +293,7 @@ export async function PUT(
         notasGenerales: notasGenerales || null,
         precioRevista,
         precioOferta,
+        precioToma,
         actualizadoEn: now,
       },
       include: vehicleInclude,

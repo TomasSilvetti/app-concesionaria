@@ -25,13 +25,19 @@ interface StockFilters {
   precioMax?: string;
   anio?: string;
   kilometrosMax?: string;
+  mostrarConOperacion?: boolean;
 }
 
 function buildWhereClause(clienteId: string, filters: StockFilters) {
   const where: any = {
     clienteId: clienteId,
-    estado: "disponible",
   };
+
+  if (filters.mostrarConOperacion) {
+    where.estado = { in: ["disponible", "en_proceso"] };
+  } else {
+    where.estado = "disponible";
+  }
 
   if (filters.precioMin || filters.precioMax) {
     where.OR = [
@@ -144,6 +150,7 @@ export async function GET(req: NextRequest) {
       precioMax: searchParams.get("precioMax") || undefined,
       anio: searchParams.get("anio") || undefined,
       kilometrosMax: searchParams.get("kilometrosMax") || undefined,
+      mostrarConOperacion: searchParams.get("mostrarConOperacion") === "true",
     };
 
     if (orderBy && !ALLOWED_ORDER_BY_FIELDS.includes(orderBy)) {
@@ -217,6 +224,15 @@ export async function GET(req: NextRequest) {
             idOperacion: true,
           },
         },
+        VehiclePhoto: {
+          select: {
+            id: true,
+          },
+          orderBy: {
+            orden: "asc",
+          },
+          take: 1,
+        },
       },
       orderBy: orderByClause,
     });
@@ -235,6 +251,7 @@ export async function GET(req: NextRequest) {
       operacionId: vehicle.operacionId,
       idOperacion: vehicle.Operation?.idOperacion ?? null,
       estado: vehicle.estado,
+      fotoId: vehicle.VehiclePhoto[0]?.id ?? null,
     }));
 
     return NextResponse.json({ 
@@ -280,6 +297,7 @@ export async function POST(req: NextRequest) {
     const kilometrosStr = formData.get("kilometros") as string;
     const precioRevistaStr = formData.get("precioRevista") as string;
     const precioOfertaStr = formData.get("precioOferta") as string | null;
+    const precioTomaStr = formData.get("precioToma") as string | null;
     const notasMecanicas = formData.get("notasMecanicas") as string | null;
     const notasGenerales = formData.get("notasGenerales") as string | null;
     const patente = formData.get("patente") as string | null;
@@ -306,6 +324,7 @@ export async function POST(req: NextRequest) {
     const kilometros = parseInt(kilometrosStr, 10);
     const precioRevista = parseFloat(precioRevistaStr);
     const precioOferta = precioOfertaStr ? parseFloat(precioOfertaStr) : null;
+    const precioToma = precioTomaStr ? parseFloat(precioTomaStr) : null;
 
     if (isNaN(anio) || anio < 1900 || anio > 2100) {
       return NextResponse.json(
@@ -335,6 +354,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (precioToma !== null && (isNaN(precioToma) || precioToma <= 0)) {
+      return NextResponse.json(
+        { message: "precioToma debe ser un número positivo" },
+        { status: 400 }
+      );
+    }
+
     const vehicleId = randomUUID();
     const now = new Date();
 
@@ -355,6 +381,7 @@ export async function POST(req: NextRequest) {
         notasGenerales: notasGenerales || null,
         precioRevista,
         precioOferta,
+        precioToma,
         estado: "disponible",
         creadoEn: now,
         actualizadoEn: now,

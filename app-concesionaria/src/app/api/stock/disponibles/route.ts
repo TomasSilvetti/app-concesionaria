@@ -25,13 +25,20 @@ export async function GET() {
     const vehicles = await prisma.vehicle.findMany({
       where: {
         clienteId,
-        operacionId: null,
         estado: "disponible",
       },
       include: {
         VehicleBrand: {
           select: {
             nombre: true,
+          },
+        },
+        VehiclePhoto: {
+          select: {
+            id: true,
+          },
+          orderBy: {
+            orden: "asc",
           },
         },
       },
@@ -54,6 +61,7 @@ export async function GET() {
       notasGenerales: vehicle.notasGenerales,
       precioRevista: vehicle.precioRevista,
       precioOferta: vehicle.precioOferta,
+      fotos: vehicle.VehiclePhoto.map((p) => ({ id: p.id })),
     }));
 
     return NextResponse.json({ vehicles: vehiclesFormatted }, { status: 200 });

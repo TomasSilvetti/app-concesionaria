@@ -18,6 +18,7 @@ interface StockVehicle {
   precioOferta: number | null;
   operacionId: string | null;
   idOperacion: string | null;
+  fotoId: string | null;
 }
 
 interface StockFilters {
@@ -27,6 +28,7 @@ interface StockFilters {
   precioMax?: number;
   anio?: number;
   kilometrosMax?: number;
+  mostrarConOperacion?: boolean;
 }
 
 interface StockTableProps {
@@ -94,6 +96,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
       if (filters.precioMax !== undefined) params.append("precioMax", filters.precioMax.toString());
       if (filters.anio !== undefined) params.append("anio", filters.anio.toString());
       if (filters.kilometrosMax !== undefined) params.append("kilometrosMax", filters.kilometrosMax.toString());
+      if (filters.mostrarConOperacion) params.append("mostrarConOperacion", "true");
 
       const url = `${baseUrl}/api/stock?${params.toString()}`;
 
@@ -209,6 +212,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                   aria-label="Seleccionar todos los vehículos"
                 />
               </th>
+              <th className="px-4 py-3 w-16" />
               <th className="px-6 py-3 text-left">
                 <button
                   onClick={() => handleSort("marca")}
@@ -288,7 +292,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
           <tbody className="divide-y divide-zinc-200 bg-white">
             {vehicles.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-16">
+                <td colSpan={10} className="px-6 py-16">
                   <div className="flex flex-col items-center justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
                       <span className="material-symbols-outlined text-4xl text-zinc-400">
@@ -319,6 +323,21 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                       className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                       aria-label={`Seleccionar ${vehicle.marca} ${vehicle.modelo}`}
                     />
+                  </td>
+                  <td className="px-4 py-3">
+                    {vehicle.fotoId ? (
+                      <img
+                        src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}`}
+                        alt={`${vehicle.marca} ${vehicle.modelo}`}
+                        className="h-10 w-14 rounded object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-14 items-center justify-center rounded bg-zinc-100">
+                        <span className="material-symbols-outlined text-lg text-zinc-400">
+                          directions_car
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm font-medium text-zinc-900">
@@ -419,11 +438,19 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
               className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${selectedIds.has(vehicle.id) ? "border-blue-300 bg-blue-50" : "border-zinc-200 bg-white"}`}
             >
               <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100">
-                  <span className="material-symbols-outlined text-3xl text-zinc-400">
-                    directions_car
-                  </span>
-                </div>
+                {vehicle.fotoId ? (
+                  <img
+                    src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}`}
+                    alt={`${vehicle.marca} ${vehicle.modelo}`}
+                    className="h-16 w-16 flex-shrink-0 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100">
+                    <span className="material-symbols-outlined text-3xl text-zinc-400">
+                      directions_car
+                    </span>
+                  </div>
+                )}
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -474,36 +501,36 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                     </div>
                   </div>
 
-                  <div className="mt-3 flex justify-end gap-2 border-t border-zinc-200 pt-3">
+                  <div className="mt-3 flex justify-end gap-1 border-t border-zinc-200 pt-3">
                     <button
                       onClick={() => handleViewDetails(vehicle.id)}
-                      className="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       aria-label={`Ver detalles del vehículo ${vehicle.marca} ${vehicle.modelo}`}
+                      title="Ver detalles"
                     >
-                      <span className="material-symbols-outlined text-base">
+                      <span className="material-symbols-outlined text-lg">
                         visibility
                       </span>
-                      Ver detalles
                     </button>
                     <button
                       onClick={(e) => handleEdit(e, vehicle.id)}
-                      className="flex items-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       aria-label={`Editar vehículo ${vehicle.marca} ${vehicle.modelo}`}
+                      title="Editar"
                     >
-                      <span className="material-symbols-outlined text-base">
+                      <span className="material-symbols-outlined text-lg">
                         edit
                       </span>
-                      Editar
                     </button>
                     <button
                       onClick={(e) => handleDeleteClick(e, vehicle)}
-                      className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                       aria-label={`Eliminar vehículo ${vehicle.marca} ${vehicle.modelo}`}
+                      title="Eliminar"
                     >
-                      <span className="material-symbols-outlined text-base">
+                      <span className="material-symbols-outlined text-lg">
                         delete
                       </span>
-                      Eliminar
                     </button>
                   </div>
                 </div>

@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 
 const VALID_OPERATION_TYPES = [
   "Venta desde stock",
-  "Venta con toma de usado",
   "Venta 0km",
   "A conseguir",
 ] as const;
@@ -32,7 +31,7 @@ export async function GET() {
     where: {
       clienteId,
       nombre: {
-        in: VALID_OPERATION_TYPES,
+        in: [...VALID_OPERATION_TYPES],
       },
     },
     select: {

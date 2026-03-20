@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "material-symbols/outlined.css";
 
 interface VehicleBrand {
@@ -35,6 +35,7 @@ export interface VehicleFieldsData {
   photos: PhotoFile[];
   precioVentaTotal?: string;
   ingresosBrutos?: string;
+  precioToma?: string;
 }
 
 export interface VehicleFieldsHandlers {
@@ -53,6 +54,7 @@ export interface VehicleFieldsHandlers {
   setPhotos: React.Dispatch<React.SetStateAction<PhotoFile[]>>;
   setPrecioVentaTotal?: (value: string) => void;
   setIngresosBrutos?: (value: string) => void;
+  setPrecioToma?: (value: string) => void;
 }
 
 interface VehicleFieldsFormProps {
@@ -68,6 +70,9 @@ interface VehicleFieldsFormProps {
   isDragging?: boolean;
   onDragStateChange?: (isDragging: boolean) => void;
   showOperationFields?: boolean;
+  stockPhotoIds?: string[];
+  stockVehicleId?: string;
+  onDeleteExistingPhoto?: (photoId: string) => void;
 }
 
 export function VehicleFieldsForm({
@@ -83,8 +88,76 @@ export function VehicleFieldsForm({
   isDragging = false,
   onDragStateChange,
   showOperationFields = false,
+  stockPhotoIds,
+  stockVehicleId,
+  onDeleteExistingPhoto,
 }: VehicleFieldsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [showAddBrand, setShowAddBrand] = useState(false);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [localBrands, setLocalBrands] = useState<VehicleBrand[]>([]);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
+
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [localCategories, setLocalCategories] = useState<VehicleCategory[]>([]);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+
+  const allBrands = [...brands, ...localBrands];
+  const allCategories = [...categories, ...localCategories];
+
+  const handleAddBrandClick = async () => {
+    if (!showAddBrand) {
+      setShowAddBrand(true);
+      return;
+    }
+    if (!newBrandName.trim()) return;
+    setIsSavingBrand(true);
+    try {
+      const res = await fetch("/api/vehicle-brands", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: newBrandName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLocalBrands((prev) => [...prev, data.brand]);
+        handlers.setMarcaId(data.brand.id);
+        handleInputChange("marcaId");
+        setNewBrandName("");
+        setShowAddBrand(false);
+      }
+    } finally {
+      setIsSavingBrand(false);
+    }
+  };
+
+  const handleAddCategoryClick = async () => {
+    if (!showAddCategory) {
+      setShowAddCategory(true);
+      return;
+    }
+    if (!newCategoryName.trim()) return;
+    setIsSavingCategory(true);
+    try {
+      const res = await fetch("/api/vehicle-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: newCategoryName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLocalCategories((prev) => [...prev, data.category]);
+        handlers.setCategoriaId(data.category.id);
+        handleInputChange("categoriaId");
+        setNewCategoryName("");
+        setShowAddCategory(false);
+      }
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
 
   const handlePhotoSelect = (files: FileList | null) => {
     if (!files) return;
@@ -154,9 +227,21 @@ export function VehicleFieldsForm({
 
           {/* Marca */}
           <div className="flex flex-col gap-2">
-            <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
-              Marca <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
+                Marca <span className="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAddBrandClick}
+                disabled={disabled || isSavingBrand || (showAddBrand && !newBrandName.trim())}
+                className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-40 focus:outline-none"
+                aria-label={showAddBrand ? "Confirmar nueva marca" : "Agregar nueva marca"}
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                {showAddBrand ? "Confirmar" : "Agregar"}
+              </button>
+            </div>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                 branding_watermark
@@ -176,7 +261,7 @@ export function VehicleFieldsForm({
                 disabled={disabled || brandsLoading}
               >
                 <option value="">Seleccionar marca...</option>
-                {brands.map((brand) => (
+                {allBrands.map((brand) => (
                   <option key={brand.id} value={brand.id}>
                     {brand.nombre}
                   </option>
@@ -186,6 +271,19 @@ export function VehicleFieldsForm({
                 expand_more
               </span>
             </div>
+            {showAddBrand && (
+              <input
+                type="text"
+                value={newBrandName}
+                onChange={(e) => setNewBrandName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddBrandClick()}
+                placeholder="Nombre de la nueva marca..."
+                autoFocus
+                className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                disabled={isSavingBrand}
+                aria-label="Nombre de la nueva marca"
+              />
+            )}
             {fieldErrors.marcaId && (
               <span className="text-xs text-red-600">
                 {fieldErrors.marcaId}
@@ -290,12 +388,24 @@ export function VehicleFieldsForm({
 
           {/* Categoría */}
           <div className="flex flex-col gap-2">
-            <label
-              htmlFor="categoria"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Categoría <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="categoria"
+                className="text-sm font-medium text-zinc-700"
+              >
+                Categoría <span className="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAddCategoryClick}
+                disabled={disabled || isSavingCategory || (showAddCategory && !newCategoryName.trim())}
+                className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-40 focus:outline-none"
+                aria-label={showAddCategory ? "Confirmar nueva categoría" : "Agregar nueva categoría"}
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                {showAddCategory ? "Confirmar" : "Agregar"}
+              </button>
+            </div>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                 label
@@ -315,7 +425,7 @@ export function VehicleFieldsForm({
                 disabled={disabled || categoriesLoading}
               >
                 <option value="">Seleccionar categoría...</option>
-                {categories.map((category) => (
+                {allCategories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.nombre}
                   </option>
@@ -325,6 +435,19 @@ export function VehicleFieldsForm({
                 expand_more
               </span>
             </div>
+            {showAddCategory && (
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddCategoryClick()}
+                placeholder="Nombre de la nueva categoría..."
+                autoFocus
+                className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                disabled={isSavingCategory}
+                aria-label="Nombre de la nueva categoría"
+              />
+            )}
             {fieldErrors.categoriaId && (
               <span className="text-xs text-red-600">
                 {fieldErrors.categoriaId}
@@ -498,134 +621,123 @@ export function VehicleFieldsForm({
             </h2>
           </div>
 
-          {/* Precio Revista */}
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="precioRevista"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Precio Revista <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                attach_money
-              </span>
-              <input
-                id="precioRevista"
-                type="number"
-                step="0.01"
-                value={data.precioRevista}
-                onChange={(e) => {
-                  handlers.setPrecioRevista(e.target.value);
-                  handleInputChange("precioRevista");
-                }}
-                placeholder="0.00"
-                className={`h-12 w-full rounded-lg border ${
-                  fieldErrors.precioRevista
-                    ? "border-red-300 bg-red-50"
-                    : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={disabled}
-              />
-            </div>
-            {fieldErrors.precioRevista && (
-              <span className="text-xs text-red-600">
-                {fieldErrors.precioRevista}
-              </span>
-            )}
-          </div>
-
-          {/* Precio Oferta (solo en Stock) o Precio Venta Total (en Operaciones) */}
-          {!showOperationFields ? (
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="precioOferta"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Precio Oferta
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  local_offer
-                </span>
-                <input
-                  id="precioOferta"
-                  type="number"
-                  step="0.01"
-                  value={data.precioOferta}
-                  onChange={(e) => {
-                    handlers.setPrecioOferta(e.target.value);
-                    handleInputChange("precioOferta");
-                  }}
-                  placeholder="0.00"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.precioOferta
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={disabled}
-                />
-              </div>
-              {fieldErrors.precioOferta && (
-                <span className="text-xs text-red-600">
-                  {fieldErrors.precioOferta}
-                </span>
-              )}
-              <p className="text-xs text-zinc-500">
-                Precio especial de venta (opcional)
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="precioVentaTotal"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Precio de Venta Total <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                  local_offer
-                </span>
-                <input
-                  id="precioVentaTotal"
-                  type="number"
-                  step="0.01"
-                  value={data.precioVentaTotal || ""}
-                  onChange={(e) => {
-                    handlers.setPrecioVentaTotal?.(e.target.value);
-                    handleInputChange("precioVentaTotal");
-                  }}
-                  placeholder="0.00"
-                  className={`h-12 w-full rounded-lg border ${
-                    fieldErrors.precioVentaTotal
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-300 bg-zinc-50"
-                  } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                  disabled={disabled}
-                />
-              </div>
-              {fieldErrors.precioVentaTotal && (
-                <span className="text-xs text-red-600">
-                  {fieldErrors.precioVentaTotal}
-                </span>
-              )}
-              <p className="text-xs text-zinc-500">
-                Precio pactado de la operación
-              </p>
-            </div>
-          )}
-
-          {/* Campos adicionales solo para operaciones */}
-          {showOperationFields && (
+          {showOperationFields ? (
             <>
-              {/* Ingreso Bruto */}
+              {/* 1. Precio de Toma */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioToma"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio de Toma
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    handshake
+                  </span>
+                  <input
+                    id="precioToma"
+                    type="number"
+                    step="0.01"
+                    value={data.precioToma || ""}
+                    onChange={(e) => {
+                      handlers.setPrecioToma?.(e.target.value);
+                      handleInputChange("precioToma");
+                    }}
+                    placeholder="0.00"
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                    disabled={disabled}
+                  />
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Precio al que la concesionaria compra el vehículo (opcional)
+                </p>
+              </div>
+
+              {/* 2. Precio de Venta Total (estimado) */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioVentaTotal"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio de Venta Estimado <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    local_offer
+                  </span>
+                  <input
+                    id="precioVentaTotal"
+                    type="number"
+                    step="0.01"
+                    value={data.precioVentaTotal || ""}
+                    onChange={(e) => {
+                      handlers.setPrecioVentaTotal?.(e.target.value);
+                      handleInputChange("precioVentaTotal");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioVentaTotal
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioVentaTotal && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioVentaTotal}
+                  </span>
+                )}
+                <p className="text-xs text-zinc-500">
+                  Precio pactado de la operación
+                </p>
+              </div>
+
+              {/* 3. Precio Revista */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioRevista"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio Revista <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    attach_money
+                  </span>
+                  <input
+                    id="precioRevista"
+                    type="number"
+                    step="0.01"
+                    value={data.precioRevista}
+                    onChange={(e) => {
+                      handlers.setPrecioRevista(e.target.value);
+                      handleInputChange("precioRevista");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioRevista
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioRevista && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioRevista}
+                  </span>
+                )}
+              </div>
+
+              {/* 4. Ingreso Bruto (auto-calculado) */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="ingresosBrutos"
                   className="text-sm font-medium text-zinc-700"
                 >
-                  Ingreso Bruto <span className="text-red-500">*</span>
+                  Ingreso Bruto
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
@@ -633,30 +745,23 @@ export function VehicleFieldsForm({
                   </span>
                   <input
                     id="ingresosBrutos"
-                    type="number"
-                    step="0.01"
-                    value={data.ingresosBrutos || ""}
-                    onChange={(e) => {
-                      handlers.setIngresosBrutos?.(e.target.value);
-                      handleInputChange("ingresosBrutos");
-                    }}
-                    placeholder="0.00"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.ingresosBrutos
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={disabled}
+                    type="text"
+                    value={
+                      data.precioVentaTotal
+                        ? `$${(parseFloat(data.precioVentaTotal) - parseFloat(data.precioToma || "0")).toFixed(2)}`
+                        : "$0.00"
+                    }
+                    readOnly
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700 transition-colors focus:outline-none"
+                    disabled
                   />
                 </div>
-                {fieldErrors.ingresosBrutos && (
-                  <span className="text-xs text-red-600">
-                    {fieldErrors.ingresosBrutos}
-                  </span>
-                )}
+                <p className="text-xs text-zinc-500">
+                  Se calcula automáticamente: precio venta estimado − precio de toma
+                </p>
               </div>
 
-              {/* Comisión Calculada */}
+              {/* 5. Comisión Calculada */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="comisionCalculada"
@@ -671,11 +776,12 @@ export function VehicleFieldsForm({
                   <input
                     id="comisionCalculada"
                     type="text"
-                    value={
-                      data.ingresosBrutos && data.precioVentaTotal
-                        ? `${(((parseFloat(data.ingresosBrutos) - 0) / parseFloat(data.precioVentaTotal)) * 100).toFixed(2)}%`
-                        : "0.00%"
-                    }
+                    value={(() => {
+                      const venta = parseFloat(data.precioVentaTotal || "0");
+                      const toma = parseFloat(data.precioToma || "0");
+                      if (!venta) return "0.00%";
+                      return `${(((venta - toma) / venta) * 100).toFixed(2)}%`;
+                    })()}
                     readOnly
                     className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700 transition-colors focus:outline-none"
                     disabled
@@ -684,6 +790,125 @@ export function VehicleFieldsForm({
                 <p className="text-xs text-zinc-500">
                   Se calcula automáticamente según ingreso bruto / precio venta
                 </p>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Precio de Toma */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioToma"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio de Toma
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    handshake
+                  </span>
+                  <input
+                    id="precioToma"
+                    type="number"
+                    step="0.01"
+                    value={data.precioToma || ""}
+                    onChange={(e) => {
+                      handlers.setPrecioToma?.(e.target.value);
+                      handleInputChange("precioToma");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioToma
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioToma && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioToma}
+                  </span>
+                )}
+                <p className="text-xs text-zinc-500">
+                  Precio al que la concesionaria compra el vehículo (opcional)
+                </p>
+              </div>
+
+              {/* Precio Oferta */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioOferta"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio Oferta
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    local_offer
+                  </span>
+                  <input
+                    id="precioOferta"
+                    type="number"
+                    step="0.01"
+                    value={data.precioOferta}
+                    onChange={(e) => {
+                      handlers.setPrecioOferta(e.target.value);
+                      handleInputChange("precioOferta");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioOferta
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioOferta && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioOferta}
+                  </span>
+                )}
+                <p className="text-xs text-zinc-500">
+                  Precio especial de venta (opcional)
+                </p>
+              </div>
+
+              {/* Precio Revista */}
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="precioRevista"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  Precio Revista <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    attach_money
+                  </span>
+                  <input
+                    id="precioRevista"
+                    type="number"
+                    step="0.01"
+                    value={data.precioRevista}
+                    onChange={(e) => {
+                      handlers.setPrecioRevista(e.target.value);
+                      handleInputChange("precioRevista");
+                    }}
+                    placeholder="0.00"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioRevista
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    disabled={disabled}
+                  />
+                </div>
+                {fieldErrors.precioRevista && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioRevista}
+                  </span>
+                )}
               </div>
             </>
           )}
@@ -736,6 +961,48 @@ export function VehicleFieldsForm({
             disabled={disabled}
           />
         </div>
+
+        {/* Fotos existentes del vehículo de stock */}
+        {stockPhotoIds && stockPhotoIds.length > 0 && stockVehicleId && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-green-600">check_circle</span>
+              <p className="text-sm font-medium text-zinc-700">
+                Fotos del vehículo ({stockPhotoIds.length})
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {stockPhotoIds.map((photoId) => (
+                <div
+                  key={photoId}
+                  className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
+                >
+                  <img
+                    src={`/api/stock/${stockVehicleId}/photos/${photoId}`}
+                    alt="Foto del vehículo"
+                    className="h-full w-full object-cover"
+                  />
+                  {onDeleteExistingPhoto && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteExistingPhoto(photoId);
+                      }}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow-lg transition-opacity hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 group-hover:opacity-100"
+                      disabled={disabled}
+                      aria-label="Eliminar foto"
+                    >
+                      <span className="material-symbols-outlined text-lg">
+                        close
+                      </span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Galería de fotos seleccionadas */}
         {data.photos.length > 0 && (

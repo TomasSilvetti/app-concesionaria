@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import "material-symbols/outlined.css";
+import { PaymentModal } from "@/components/operations/PaymentModal";
 
 interface Operation {
   idOperacion: number;
@@ -12,11 +13,14 @@ interface Operation {
   anio: number;
   patente: string;
   precioVentaTotal: number | null;
+  saldado: number;
   ingresosNetos: number | null;
   estado: "abierta" | "cerrada" | "cancelada";
   marcaNombre: string;
   categoriaNombre: string;
   tipoOperacionNombre: string;
+  vehiculoId: string | null;
+  vehiculoFotoId: string | null;
 }
 
 export interface OperationFilters {
@@ -43,6 +47,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [paymentOp, setPaymentOp] = useState<Operation | null>(null);
   const router = useRouter();
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -214,6 +219,35 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
     router.push(`/operaciones/${idOperacion}/edit`);
   };
 
+  const handlePayClick = (e: React.MouseEvent, operation: Operation) => {
+    e.stopPropagation();
+    setPaymentOp(operation);
+  };
+
+  const handlePaymentSave = async (data: {
+    fecha: string;
+    metodoPagoId: string;
+    monto: number;
+    nota?: string;
+  }) => {
+    if (!paymentOp) return;
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const res = await fetch(
+      `${baseUrl}/api/operations/${paymentOp.idOperacion}/pagos`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message ?? "Error al registrar el pago");
+    }
+    setPaymentOp(null);
+    fetchOperations();
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -227,6 +261,18 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
 
   return (
     <>
+      {paymentOp && (
+        <PaymentModal
+          operacionId={String(paymentOp.idOperacion)}
+          pendiente={
+            paymentOp.precioVentaTotal !== null
+              ? Math.max(paymentOp.precioVentaTotal - paymentOp.saldado, 0)
+              : 0
+          }
+          onSave={handlePaymentSave}
+          onClose={() => setPaymentOp(null)}
+        />
+      )}
       <div className="hidden overflow-hidden rounded-lg border border-zinc-200 lg:block">
         <table className="w-full">
           <thead className="bg-zinc-50">
@@ -367,13 +413,28 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-zinc-900">
-                            {operation.marcaNombre} {operation.modelo}
-                          </span>
-                          <span className="text-xs text-zinc-500">
-                            {operation.anio}
-                          </span>
+                        <div className="flex items-center gap-3">
+                          {operation.vehiculoId && operation.vehiculoFotoId ? (
+                            <img
+                              src={`/api/stock/${operation.vehiculoId}/photos/${operation.vehiculoFotoId}`}
+                              alt={`${operation.marcaNombre} ${operation.modelo}`}
+                              className="h-10 w-14 flex-shrink-0 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-14 flex-shrink-0 items-center justify-center rounded bg-zinc-100">
+                              <span className="material-symbols-outlined text-lg text-zinc-400">
+                                directions_car
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-zinc-900">
+                              {operation.marcaNombre} {operation.modelo}
+                            </span>
+                            <span className="text-xs text-zinc-500">
+                              {operation.anio}
+                            </span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -408,7 +469,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex justify-center">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={(e) =>
                               handleEditClick(e, operation.idOperacion)
@@ -418,6 +479,15 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                           >
                             <span className="material-symbols-outlined text-lg">
                               edit
+                            </span>
+                          </button>
+                          <button
+                            onClick={(e) => handlePayClick(e, operation)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                            aria-label={`Registrar pago operación ${operation.idOperacion}`}
+                          >
+                            <span className="material-symbols-outlined text-lg">
+                              attach_money
                             </span>
                           </button>
                         </div>
@@ -471,11 +541,19 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                   className="rounded-xl border border-zinc-200 bg-white p-4 transition-shadow hover:shadow-md"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100">
-                      <span className="material-symbols-outlined text-3xl text-zinc-400">
-                        directions_car
-                      </span>
-                    </div>
+                    {operation.vehiculoId && operation.vehiculoFotoId ? (
+                      <img
+                        src={`/api/stock/${operation.vehiculoId}/photos/${operation.vehiculoFotoId}`}
+                        alt={`${operation.marcaNombre} ${operation.modelo}`}
+                        className="h-16 w-16 flex-shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100">
+                        <span className="material-symbols-outlined text-3xl text-zinc-400">
+                          directions_car
+                        </span>
+                      </div>
+                    )}
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -543,7 +621,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                         </div>
                       </div>
 
-                      <div className="mt-3 flex justify-end border-t border-zinc-200 pt-3">
+                      <div className="mt-3 flex justify-end gap-2 border-t border-zinc-200 pt-3">
                         <button
                           onClick={(e) =>
                             handleEditClick(e, operation.idOperacion)
@@ -555,6 +633,16 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                             edit
                           </span>
                           Editar
+                        </button>
+                        <button
+                          onClick={(e) => handlePayClick(e, operation)}
+                          className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                          aria-label={`Registrar pago operación ${operation.idOperacion}`}
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            attach_money
+                          </span>
+                          Pago
                         </button>
                       </div>
                     </div>

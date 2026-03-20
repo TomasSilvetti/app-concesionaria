@@ -8,7 +8,7 @@ import { CreateOperationForm } from "@/components/operations/CreateOperationForm
 import "material-symbols/outlined.css";
 
 export default function OperacionesPage() {
-  const [filters, setFilters] = useState<OperationFilters>({});
+  const [filters, setFilters] = useState<OperationFilters>({ estado: "abierta" });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
 

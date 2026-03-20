@@ -16,9 +16,7 @@ const ALLOWED_SORT_FIELDS = [
 
 const VALID_OPERATION_TYPES = [
   "Venta desde stock",
-  "Venta con toma de usado",
   "Venta 0km",
-  "A conseguir",
 ] as const;
 
 type SortField = typeof ALLOWED_SORT_FIELDS[number];
@@ -201,6 +199,11 @@ export async function GET(req: NextRequest) {
             },
           },
         },
+        Pago: {
+          select: {
+            monto: true,
+          },
+        },
       },
       orderBy,
       take: limit + 1,
@@ -212,20 +215,27 @@ export async function GET(req: NextRequest) {
       ? operationsToReturn[operationsToReturn.length - 1].idOperacion
       : null;
 
-    const operationsFormatted = operationsToReturn.map((op) => ({
-      idOperacion: op.idOperacion,
-      fechaInicio: op.fechaInicio,
-      fechaVenta: op.fechaVenta,
-      modelo: op.VehiculoVendido.modelo,
-      anio: op.VehiculoVendido.anio,
-      patente: op.VehiculoVendido.patente,
-      precioVentaTotal: op.precioVentaTotal,
-      ingresosNetos: op.ingresosNetos,
-      estado: op.estado,
-      marcaNombre: op.VehicleBrand.nombre,
-      categoriaNombre: op.VehicleCategory.nombre,
-      tipoOperacionNombre: op.OperationType.nombre,
-    }));
+    const operationsFormatted = operationsToReturn.map((op) => {
+      const saldado = op.Pago.reduce((sum, p) => sum + p.monto, 0);
+      return {
+        idOperacion: op.idOperacion,
+        nombreComprador: op.nombreComprador,
+        fechaInicio: op.fechaInicio,
+        fechaVenta: op.fechaVenta,
+        modelo: op.VehiculoVendido.modelo,
+        anio: op.VehiculoVendido.anio,
+        patente: op.VehiculoVendido.patente,
+        precioVentaTotal: op.precioVentaTotal,
+        saldado,
+        ingresosNetos: op.ingresosNetos,
+        estado: op.estado,
+        marcaNombre: op.VehicleBrand.nombre,
+        categoriaNombre: op.VehicleCategory.nombre,
+        tipoOperacionNombre: op.OperationType.nombre,
+        vehiculoId: op.vehiculoVendidoId,
+        vehiculoFotoId: op.VehiculoVendido.VehiclePhoto[0]?.id ?? null,
+      };
+    });
 
     return NextResponse.json({ 
       operations: operationsFormatted,
@@ -276,12 +286,16 @@ export async function POST(req: NextRequest) {
     const notasGenerales = formData.get("notasGenerales") as string | null;
     const patente = formData.get("patente") as string | null;
     
+    const nombreComprador = formData.get("nombreComprador") as string;
+
     const tipoOperacionId = formData.get("tipoOperacionId") as string;
     const fechaInicioStr = formData.get("fechaInicio") as string;
     const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
     const ingresosBrutosStr = formData.get("ingresosBrutos") as string;
+    const precioTomaStr = formData.get("precioToma") as string | null;
     const vehiculoUsadoStr = formData.get("vehiculoUsado") as string | null;
     const stockVehicleId = formData.get("stockVehicleId") as string | null;
+    const documentoDetalle = formData.get("documentoDetalle") as File | null;
 
     const errors: string[] = [];
 
@@ -294,6 +308,7 @@ export async function POST(req: NextRequest) {
     if (!kilometrosStr) errors.push("kilometros es requerido");
     if (!precioRevistaStr) errors.push("precioRevista es requerido");
     
+    if (!nombreComprador || !nombreComprador.trim()) errors.push("nombreComprador es requerido");
     if (!tipoOperacionId) errors.push("tipoOperacionId es requerido");
     if (!fechaInicioStr) errors.push("fechaInicio es requerido");
     if (!precioVentaTotalStr) errors.push("precioVentaTotal es requerido");
@@ -312,6 +327,7 @@ export async function POST(req: NextRequest) {
     const precioOferta = precioOfertaStr ? parseFloat(precioOfertaStr) : null;
     const precioVentaTotal = parseFloat(precioVentaTotalStr);
     const ingresosBrutos = parseFloat(ingresosBrutosStr);
+    const precioToma = precioTomaStr ? parseFloat(precioTomaStr) : null;
 
     const parsedFechaInicio = new Date(fechaInicioStr);
     if (isNaN(parsedFechaInicio.getTime())) {
@@ -406,7 +422,7 @@ export async function POST(req: NextRequest) {
 
     if (stockVehicleId) {
       const stockVehicle = await prisma.vehicle.findFirst({
-        where: { id: stockVehicleId, clienteId, estado: "disponible", operacionId: null },
+        where: { id: stockVehicleId, clienteId, estado: "disponible" },
       });
       if (!stockVehicle) {
         return NextResponse.json(
@@ -414,13 +430,6 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-    }
-
-    if (tipoOperacion.nombre === "Venta con toma de usado" && !vehiculoUsadoStr) {
-      return NextResponse.json(
-        { message: "Debés añadir el vehículo usado antes de guardar esta operación" },
-        { status: 400 }
-      );
     }
 
     let vehiculoUsado: Record<string, string> | null = null;
@@ -474,12 +483,53 @@ export async function POST(req: NextRequest) {
     const now = new Date();
 
     const fotos = formData.getAll("fotos") as File[];
-    
-    if (fotos.length > 0) {
-      const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-      const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const vehiculoUsadoFotos = formData.getAll("vehiculoUsadoFotos") as File[];
 
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    const ALLOWED_DOC_MIME_TYPES = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    const MAX_DOC_SIZE = 20 * 1024 * 1024;
+
+    if (documentoDetalle && documentoDetalle.size > 0) {
+      if (!ALLOWED_DOC_MIME_TYPES.includes(documentoDetalle.type)) {
+        return NextResponse.json(
+          { message: "Tipo de documento no permitido. Solo se permiten PDF, DOC y DOCX" },
+          { status: 400 }
+        );
+      }
+      if (documentoDetalle.size > MAX_DOC_SIZE) {
+        return NextResponse.json(
+          { message: "El documento excede el tamaño máximo permitido de 20MB" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (fotos.length > 0) {
       for (const foto of fotos) {
+        if (!ALLOWED_MIME_TYPES.includes(foto.type)) {
+          return NextResponse.json(
+            { message: `Tipo de archivo no permitido: ${foto.type}. Solo se permiten imágenes JPEG, PNG y WebP` },
+            { status: 400 }
+          );
+        }
+
+        if (foto.size > MAX_FILE_SIZE) {
+          return NextResponse.json(
+            { message: `El archivo ${foto.name} excede el tamaño máximo permitido de 10MB` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    if (vehiculoUsadoFotos.length > 0) {
+      for (const foto of vehiculoUsadoFotos) {
         if (!ALLOWED_MIME_TYPES.includes(foto.type)) {
           return NextResponse.json(
             { message: `Tipo de archivo no permitido: ${foto.type}. Solo se permiten imágenes JPEG, PNG y WebP` },
@@ -559,6 +609,7 @@ export async function POST(req: NextRequest) {
           id: operationId,
           idOperacion: nextIdOperacion,
           clienteId,
+          nombreComprador: nombreComprador.trim(),
           fechaInicio: parsedFechaInicio,
           vehiculoVendidoId: resolvedVehicleId,
           precioVentaTotal,
@@ -566,6 +617,7 @@ export async function POST(req: NextRequest) {
           gastosAsociados,
           ingresosNetos,
           comision,
+          precioToma: precioToma ?? null,
           estado: "abierta",
           marcaId,
           categoriaId,
@@ -605,6 +657,21 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      if (documentoDetalle && documentoDetalle.size > 0) {
+        const docBuffer = await documentoDetalle.arrayBuffer();
+        const docBytes = Buffer.from(docBuffer);
+        await tx.operationDocument.create({
+          data: {
+            id: randomUUID(),
+            operacionId: operationId,
+            nombreArchivo: documentoDetalle.name,
+            mimeType: documentoDetalle.type,
+            datos: docBytes,
+            actualizadoEn: now,
+          },
+        });
+      }
+
       if (vehiculoUsado) {
         const usedVehicleId = randomUUID();
         const usedVehicleAnio = parseInt(vehiculoUsado.anio, 10);
@@ -639,6 +706,29 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        if (vehiculoUsadoFotos.length > 0) {
+          const usedPhotosData = await Promise.all(
+            vehiculoUsadoFotos.map(async (foto, index) => {
+              const buffer = await foto.arrayBuffer();
+              const bytes = Buffer.from(buffer);
+
+              return {
+                id: randomUUID(),
+                stockId: usedVehicleId,
+                nombreArchivo: foto.name,
+                mimeType: foto.type,
+                datos: bytes,
+                orden: index,
+                creadoEn: now,
+              };
+            })
+          );
+
+          await tx.vehiclePhoto.createMany({
+            data: usedPhotosData,
+          });
+        }
+
         await tx.operationExchange.create({
           data: {
             id: randomUUID(),
@@ -658,6 +748,7 @@ export async function POST(req: NextRequest) {
         operation: {
           id: newOperation.id,
           idOperacion: newOperation.idOperacion,
+          nombreComprador: newOperation.nombreComprador,
           fechaInicio: newOperation.fechaInicio,
           modelo: newOperation.VehiculoVendido.modelo,
           anio: newOperation.VehiculoVendido.anio,

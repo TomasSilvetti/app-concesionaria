@@ -54,6 +54,7 @@ interface OperationDetail {
   gastosAsociados: number;
   ingresosNetos: number;
   comision: number;
+  precioToma: number | null;
   estado: "abierta" | "cerrada" | "cancelada";
   diasVenta: number | null;
   marcaNombre: string;
@@ -64,6 +65,7 @@ interface OperationDetail {
   tipoOperacionId: string;
   vehiculosIntercambiados: VehicleExchange[];
   gastos: Expense[];
+  nombreComprador: string | null;
 }
 
 export default function OperacionEditPage() {
@@ -81,6 +83,7 @@ export default function OperacionEditPage() {
   const [fechaVenta, setFechaVenta] = useState("");
   const [precioVentaTotal, setPrecioVentaTotal] = useState("");
   const [ingresosBrutos, setIngresosBrutos] = useState("");
+  const [precioToma, setPrecioToma] = useState("");
   const [estado, setEstado] = useState<"abierta" | "cerrada" | "cancelada">("abierta");
   const [tipoOperacionId, setTipoOperacionId] = useState("");
 
@@ -116,10 +119,10 @@ export default function OperacionEditPage() {
           setFechaVenta(data.fechaVenta ? data.fechaVenta.split('T')[0] : "");
           setPrecioVentaTotal(data.precioVentaTotal?.toString() || "");
           setIngresosBrutos(data.ingresosBrutos?.toString() || "");
+          setPrecioToma(data.precioToma != null ? data.precioToma.toString() : "");
           setEstado(data.estado || "abierta");
           setTipoOperacionId(data.tipoOperacionId || "");
           setGastosAsociados(data.gastosAsociados || 0);
-          
           // Recalculate ingresosNetos and comision with correct formula
           const ingresosCalculados = (data.ingresosBrutos || 0) - (data.gastosAsociados || 0);
           const comisionCalculada = data.precioVentaTotal > 0 
@@ -134,6 +137,7 @@ export default function OperacionEditPage() {
             fechaVenta: data.fechaVenta ? data.fechaVenta.split('T')[0] : "",
             precioVentaTotal: data.precioVentaTotal?.toString() || "",
             ingresosBrutos: data.ingresosBrutos?.toString() || "",
+            precioToma: data.precioToma != null ? data.precioToma.toString() : "",
             estado: data.estado || "abierta",
             tipoOperacionId: data.tipoOperacionId || "",
           });
@@ -171,18 +175,21 @@ export default function OperacionEditPage() {
     }
   };
 
-  // Recalculate ingresosNetos and comision when ingresosBrutos or gastosAsociados change
+  // Recalculate ingresosBrutos, ingresosNetos and comision when precioVentaTotal, precioToma or gastosAsociados change
   useEffect(() => {
-    const ingresos = parseFloat(ingresosBrutos) || 0;
-    const gastos = gastosAsociados || 0;
     const precio = parseFloat(precioVentaTotal) || 0;
+    const toma = parseFloat(precioToma) || 0;
+    const gastos = gastosAsociados || 0;
+
+    const ingresos = precio - toma;
+    setIngresosBrutos(ingresos.toString());
 
     const netos = ingresos - gastos;
     setIngresosNetos(netos);
 
     const comisionCalculada = precio > 0 ? (netos / precio) * 100 : 0;
     setComision(comisionCalculada);
-  }, [ingresosBrutos, gastosAsociados, precioVentaTotal]);
+  }, [precioVentaTotal, precioToma, gastosAsociados]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
@@ -287,6 +294,9 @@ export default function OperacionEditPage() {
     }
     if (ingresosBrutos !== originalValues.ingresosBrutos) {
       modified.ingresosBrutos = parseFloat(ingresosBrutos);
+    }
+    if (precioToma !== originalValues.precioToma) {
+      modified.precioToma = precioToma ? parseFloat(precioToma) : null;
     }
     if (estado !== originalValues.estado) {
       modified.estado = estado;
@@ -560,6 +570,12 @@ export default function OperacionEditPage() {
                 <dt className="text-sm text-zinc-600">Precio Oferta</dt>
                 <dd className="text-sm font-semibold text-green-600">{formatCurrency(operation?.precioOferta || null)}</dd>
               </div>
+              {operation?.nombreComprador && (
+                <div className="flex justify-between border-b border-zinc-200 pb-2 sm:col-span-2">
+                  <dt className="text-sm text-zinc-600">Comprador</dt>
+                  <dd className="text-sm font-medium text-zinc-900">{operation.nombreComprador}</dd>
+                </div>
+              )}
               {operation?.notasMecanicas && (
                 <div className="flex flex-col gap-1 border-b border-zinc-200 pb-2 sm:col-span-2">
                   <dt className="text-sm text-zinc-600">Notas Mecánicas</dt>
@@ -667,6 +683,73 @@ export default function OperacionEditPage() {
             </div>
           </div>
 
+          {/* Sección: Gastos asociados (solo lectura) - al lado de Fechas */}
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-2xl text-zinc-400">
+                receipt_long
+              </span>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Gastos Asociados
+              </h2>
+              <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                Solo lectura
+              </span>
+            </div>
+
+            {operation && operation.gastos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
+                  <span className="material-symbols-outlined text-2xl text-zinc-400">
+                    receipt_long
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-zinc-600">
+                  Sin gastos asociados
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-zinc-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Fecha
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Descripción
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Categoría
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Monto
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 bg-white">
+                    {operation?.gastos.map((gasto, index) => (
+                      <tr key={index} className="transition-colors hover:bg-zinc-50">
+                        <td className="px-4 py-3 text-sm text-zinc-900">
+                          {formatDate(gasto.fecha)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-zinc-900">
+                          {gasto.descripcion}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-zinc-900">
+                          {gasto.categoria}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-red-600">
+                          {formatCurrency(gasto.monto)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
           {/* Sección: Información financiera */}
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="mb-4 flex items-center gap-2">
@@ -710,36 +793,45 @@ export default function OperacionEditPage() {
                 )}
               </div>
 
-              {/* Ingresos Brutos */}
+              {/* Precio de Toma */}
               <div className="flex flex-col gap-2">
-                <label htmlFor="ingresosBrutos" className="text-sm font-medium text-zinc-700">
-                  Ingresos Brutos
+                <label htmlFor="precioToma" className="text-sm font-medium text-zinc-700">
+                  Precio de Toma
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    monetization_on
+                    handshake
                   </span>
                   <input
-                    id="ingresosBrutos"
+                    id="precioToma"
                     type="number"
                     step="0.01"
-                    value={ingresosBrutos}
+                    value={precioToma}
                     onChange={(e) => {
-                      setIngresosBrutos(e.target.value);
-                      handleInputChange("ingresosBrutos");
+                      setPrecioToma(e.target.value);
+                      handleInputChange("precioToma");
                     }}
                     placeholder="0.00"
-                    className={`h-12 w-full rounded-lg border ${
-                      fieldErrors.ingresosBrutos
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                     disabled={isSaving}
                   />
                 </div>
-                {fieldErrors.ingresosBrutos && (
-                  <span className="text-xs text-red-600">{fieldErrors.ingresosBrutos}</span>
-                )}
+                <p className="text-xs text-zinc-500">
+                  Precio al que la concesionaria compra el vehículo (opcional)
+                </p>
+              </div>
+
+              {/* Ingresos Brutos (calculado) */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">
+                  Ingresos Brutos
+                </label>
+                <div className="flex h-12 items-center rounded-lg border border-zinc-300 bg-zinc-100 px-4 text-sm font-medium text-zinc-900">
+                  {formatCurrency(parseFloat(ingresosBrutos) || 0)}
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Precio Venta Total - Precio de Toma
+                </p>
               </div>
 
               {/* Gastos Asociados (solo lectura) */}
@@ -947,72 +1039,6 @@ export default function OperacionEditPage() {
             )}
           </div>
 
-          {/* Sección: Gastos asociados (solo lectura) */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-zinc-400">
-                receipt_long
-              </span>
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Gastos Asociados
-              </h2>
-              <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                Solo lectura
-              </span>
-            </div>
-
-            {operation && operation.gastos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
-                  <span className="material-symbols-outlined text-2xl text-zinc-400">
-                    receipt_long
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-zinc-600">
-                  Sin gastos asociados
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Fecha
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Descripción
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Categoría
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Monto
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 bg-white">
-                    {operation?.gastos.map((gasto, index) => (
-                      <tr key={index} className="transition-colors hover:bg-zinc-50">
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {formatDate(gasto.fecha)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.descripcion}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.categoria}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-red-600">
-                          {formatCurrency(gasto.monto)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </AppLayout>

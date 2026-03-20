@@ -3,7 +3,17 @@
     "allow": [
       "Bash(grep -h \"Estado\" c:UserstomasDocumentsProyectosApp-Concesionariadocshistorias-de-usuarioHU-6porcion-*.md)",
       "Bash(grep -l \"Estado\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-6/*.md)",
-      "Bash(grep \"Estado:\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-6/porcion-*.md)"
+      "Bash(grep \"Estado:\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-6/porcion-*.md)",
+      "Bash(ls tailwind*)",
+      "Bash(npx prisma:*)",
+      "Bash(grep -E \"\\(\\\\.ts|\\\\.js|\\\\.d\\\\.ts\\)$\")",
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrccomponents -type f -name *[Pp]ago* -o -name *[Pp]ayment*)",
+      "Bash(npx tsc:*)",
+      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/)",
+      "Bash(grep -n \"PUT\\\\|PUT\\\\|PATCH\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/api/operations/[id]/route.ts)",
+      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/edit/)",
+      "Bash(xargs grep:*)",
+      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/api/operations/[id]/)"
     ]
   },
   "outputStyle": "default"
