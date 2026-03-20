@@ -377,6 +377,7 @@ async function main() {
         monto: g.monto,
         origenId: origenId[g.origen],
         fecha: new Date(g.fecha),
+        actualizadoEn: new Date(),
       },
     });
   }
