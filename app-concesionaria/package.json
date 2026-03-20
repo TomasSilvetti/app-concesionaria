@@ -30,6 +30,7 @@
     "material-symbols": "^0.40.2",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
+    "openssl": "^2.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.8.0",
