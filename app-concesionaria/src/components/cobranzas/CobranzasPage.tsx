@@ -19,6 +19,8 @@ interface OperacionCobranza {
   saldado: number;
   pendiente: number;
   pagos: PagoCobranza[];
+  vehiculoId: string | null;
+  vehiculoFotoId: string | null;
 }
 
 const formatCurrency = (amount: number) =>
@@ -149,16 +151,16 @@ export function CobranzasPage() {
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     Comprador
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     Precio Total
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     Saldado
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     Pendiente
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     Estado
                   </th>
                 </tr>
@@ -207,33 +209,48 @@ export function CobranzasPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/operaciones/${op.idOperacion}`);
-                              }}
-                              className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                              aria-label={`Ver operación ${op.idOperacion}`}
-                            >
-                              #{op.idOperacion}
-                            </button>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/operaciones/${op.idOperacion}`);
+                                }}
+                                className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                                aria-label={`Ver operación ${op.idOperacion}`}
+                              >
+                                #{op.idOperacion}
+                              </button>
+                              {op.vehiculoId && op.vehiculoFotoId ? (
+                                <img
+                                  src={`/api/stock/${op.vehiculoId}/photos/${op.vehiculoFotoId}`}
+                                  alt=""
+                                  className="h-10 w-14 rounded-md object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-14 flex-shrink-0 items-center justify-center rounded-md bg-zinc-100">
+                                  <span className="material-symbols-outlined text-base text-zinc-400">
+                                    directions_car
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <span className="text-sm text-zinc-900">
                               {op.nombreComprador}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-3 py-4 text-right">
                             <span className="text-sm text-zinc-500">
                               {formatCurrency(op.precioVentaTotal)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-3 py-4 text-right">
                             <span className="text-sm font-medium text-green-600">
                               {formatCurrency(op.saldado)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-3 py-4 text-right">
                             <span
                               className={`text-sm font-semibold ${
                                 isSaldada ? "text-zinc-400" : "text-red-600"
@@ -242,7 +259,7 @@ export function CobranzasPage() {
                               {formatCurrency(op.pendiente)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-3 py-4 text-left">
                             {isSaldada ? (
                               <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
                                 <span className="material-symbols-outlined text-sm">
@@ -276,19 +293,18 @@ export function CobranzasPage() {
                                   <td className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
                                     Fecha
                                   </td>
-                                  <td className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td colSpan={2} className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
                                     Forma de pago
                                   </td>
-                                  <td className="px-6 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
                                     Monto
                                   </td>
-                                  <td className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                                    Nota
-                                  </td>
-                                  <td className="px-6 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
                                     Deuda tras pago
                                   </td>
-                                  <td />
+                                  <td className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                    Nota
+                                  </td>
                                 </tr>
                                 {op.pagos.map((pago, idx) => (
                                   <tr
@@ -303,18 +319,13 @@ export function CobranzasPage() {
                                     <td className="px-6 py-3 text-sm text-zinc-700">
                                       {formatDate(pago.fecha)}
                                     </td>
-                                    <td className="px-6 py-3 text-sm text-zinc-600">
+                                    <td colSpan={2} className="px-6 py-3 text-sm text-zinc-600">
                                       {pago.metodoPago}
                                     </td>
-                                    <td className="px-6 py-3 text-right text-sm font-medium text-zinc-900">
+                                    <td className="px-3 py-3 text-right text-sm font-medium text-zinc-900">
                                       {formatCurrency(pago.monto)}
                                     </td>
-                                    <td className="px-6 py-3 text-sm text-zinc-500">
-                                      {pago.nota ?? (
-                                        <span className="text-zinc-300">—</span>
-                                      )}
-                                    </td>
-                                    <td className="px-6 py-3 text-right">
+                                    <td className="px-3 py-3 text-right">
                                       <span
                                         className={`text-sm font-semibold ${
                                           pago.deuda === 0
@@ -325,7 +336,11 @@ export function CobranzasPage() {
                                         {formatCurrency(pago.deuda)}
                                       </span>
                                     </td>
-                                    <td />
+                                    <td className="px-3 py-3 text-left text-sm text-zinc-500">
+                                      {pago.nota ?? (
+                                        <span className="text-zinc-300">—</span>
+                                      )}
+                                    </td>
                                   </tr>
                                 ))}
                               </>
@@ -393,6 +408,19 @@ export function CobranzasPage() {
                             >
                               #{op.idOperacion}
                             </button>
+                            {op.vehiculoId && op.vehiculoFotoId ? (
+                              <img
+                                src={`/api/stock/${op.vehiculoId}/photos/${op.vehiculoFotoId}`}
+                                alt=""
+                                className="h-8 w-12 rounded-md object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="flex h-8 w-12 flex-shrink-0 items-center justify-center rounded-md bg-zinc-100">
+                                <span className="material-symbols-outlined text-sm text-zinc-400">
+                                  directions_car
+                                </span>
+                              </div>
+                            )}
                             <span className="text-sm text-zinc-700">
                               {op.nombreComprador}
                             </span>

@@ -36,6 +36,15 @@ export async function GET(req: NextRequest) {
         },
       },
       include: {
+        VehiculoVendido: {
+          include: {
+            VehiclePhoto: {
+              orderBy: { orden: "asc" },
+              take: 1,
+              select: { id: true },
+            },
+          },
+        },
         Pago: {
           orderBy: { fecha: "asc" },
           include: {
@@ -69,6 +78,8 @@ export async function GET(req: NextRequest) {
         };
       });
 
+      const vehiculoFotoId = op.VehiculoVendido?.VehiclePhoto[0]?.id ?? null;
+
       return {
         idOperacion: op.idOperacion,
         nombreComprador: op.nombreComprador,
@@ -76,6 +87,8 @@ export async function GET(req: NextRequest) {
         saldado,
         pendiente,
         pagos: pagosConDeuda,
+        vehiculoId: op.vehiculoVendidoId ?? null,
+        vehiculoFotoId,
       };
     });
 
