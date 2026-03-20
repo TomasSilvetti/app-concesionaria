@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "material-symbols/outlined.css";
 
 interface VehicleBrand {
@@ -94,6 +94,71 @@ export function VehicleFieldsForm({
 }: VehicleFieldsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [showAddBrand, setShowAddBrand] = useState(false);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [localBrands, setLocalBrands] = useState<VehicleBrand[]>([]);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
+
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [localCategories, setLocalCategories] = useState<VehicleCategory[]>([]);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+
+  const allBrands = [...brands, ...localBrands];
+  const allCategories = [...categories, ...localCategories];
+
+  const handleAddBrandClick = async () => {
+    if (!showAddBrand) {
+      setShowAddBrand(true);
+      return;
+    }
+    if (!newBrandName.trim()) return;
+    setIsSavingBrand(true);
+    try {
+      const res = await fetch("/api/vehicle-brands", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: newBrandName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLocalBrands((prev) => [...prev, data.brand]);
+        handlers.setMarcaId(data.brand.id);
+        handleInputChange("marcaId");
+        setNewBrandName("");
+        setShowAddBrand(false);
+      }
+    } finally {
+      setIsSavingBrand(false);
+    }
+  };
+
+  const handleAddCategoryClick = async () => {
+    if (!showAddCategory) {
+      setShowAddCategory(true);
+      return;
+    }
+    if (!newCategoryName.trim()) return;
+    setIsSavingCategory(true);
+    try {
+      const res = await fetch("/api/vehicle-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: newCategoryName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLocalCategories((prev) => [...prev, data.category]);
+        handlers.setCategoriaId(data.category.id);
+        handleInputChange("categoriaId");
+        setNewCategoryName("");
+        setShowAddCategory(false);
+      }
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
   const handlePhotoSelect = (files: FileList | null) => {
     if (!files) return;
 
@@ -162,9 +227,21 @@ export function VehicleFieldsForm({
 
           {/* Marca */}
           <div className="flex flex-col gap-2">
-            <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
-              Marca <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
+                Marca <span className="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAddBrandClick}
+                disabled={disabled || isSavingBrand || (showAddBrand && !newBrandName.trim())}
+                className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-40 focus:outline-none"
+                aria-label={showAddBrand ? "Confirmar nueva marca" : "Agregar nueva marca"}
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                {showAddBrand ? "Confirmar" : "Agregar"}
+              </button>
+            </div>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                 branding_watermark
@@ -184,7 +261,7 @@ export function VehicleFieldsForm({
                 disabled={disabled || brandsLoading}
               >
                 <option value="">Seleccionar marca...</option>
-                {brands.map((brand) => (
+                {allBrands.map((brand) => (
                   <option key={brand.id} value={brand.id}>
                     {brand.nombre}
                   </option>
@@ -194,6 +271,19 @@ export function VehicleFieldsForm({
                 expand_more
               </span>
             </div>
+            {showAddBrand && (
+              <input
+                type="text"
+                value={newBrandName}
+                onChange={(e) => setNewBrandName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddBrandClick()}
+                placeholder="Nombre de la nueva marca..."
+                autoFocus
+                className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                disabled={isSavingBrand}
+                aria-label="Nombre de la nueva marca"
+              />
+            )}
             {fieldErrors.marcaId && (
               <span className="text-xs text-red-600">
                 {fieldErrors.marcaId}
@@ -298,12 +388,24 @@ export function VehicleFieldsForm({
 
           {/* Categoría */}
           <div className="flex flex-col gap-2">
-            <label
-              htmlFor="categoria"
-              className="text-sm font-medium text-zinc-700"
-            >
-              Categoría <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="categoria"
+                className="text-sm font-medium text-zinc-700"
+              >
+                Categoría <span className="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAddCategoryClick}
+                disabled={disabled || isSavingCategory || (showAddCategory && !newCategoryName.trim())}
+                className="flex items-center gap-0.5 text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-40 focus:outline-none"
+                aria-label={showAddCategory ? "Confirmar nueva categoría" : "Agregar nueva categoría"}
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                {showAddCategory ? "Confirmar" : "Agregar"}
+              </button>
+            </div>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                 label
@@ -323,7 +425,7 @@ export function VehicleFieldsForm({
                 disabled={disabled || categoriesLoading}
               >
                 <option value="">Seleccionar categoría...</option>
-                {categories.map((category) => (
+                {allCategories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.nombre}
                   </option>
@@ -333,6 +435,19 @@ export function VehicleFieldsForm({
                 expand_more
               </span>
             </div>
+            {showAddCategory && (
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddCategoryClick()}
+                placeholder="Nombre de la nueva categoría..."
+                autoFocus
+                className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                disabled={isSavingCategory}
+                aria-label="Nombre de la nueva categoría"
+              />
+            )}
             {fieldErrors.categoriaId && (
               <span className="text-xs text-red-600">
                 {fieldErrors.categoriaId}
