@@ -530,7 +530,6 @@ export function CreateOperationForm({
         setFieldErrors({});
         setTradeInVehicles([]);
         setPrecioToma("");
-        setDocumentoDetalle(null);
         resetTradeInForm();
         onSuccess?.();
       } else if (res.status === 400) {

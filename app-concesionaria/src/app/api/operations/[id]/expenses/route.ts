@@ -122,6 +122,7 @@ export async function POST(
           monto: montoNum,
           origenId,
           categoriaId,
+          actualizadoEn: new Date(),
         },
         include: {
           Origin: { select: { nombre: true } },
