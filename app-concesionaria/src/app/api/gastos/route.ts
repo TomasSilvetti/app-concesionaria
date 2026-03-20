@@ -156,6 +156,7 @@ export async function POST(req: NextRequest) {
         monto: montoNum,
         origenId,
         categoriaId,
+        actualizadoEn: new Date(),
       },
       include: {
         Origin: { select: { nombre: true } },
