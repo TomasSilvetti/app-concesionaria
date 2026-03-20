@@ -31,6 +31,7 @@ export function PaymentModal({ pendiente, onSave, onClose }: PaymentModalProps) 
   const [nota, setNota] = useState("");
 
   const [nuevoMetodoNombre, setNuevoMetodoNombre] = useState("");
+  const [showAddMethodInput, setShowAddMethodInput] = useState(false);
   const [addingMethod, setAddingMethod] = useState(false);
   const [addMethodError, setAddMethodError] = useState("");
 
@@ -76,6 +77,7 @@ export function PaymentModal({ pendiente, onSave, onClose }: PaymentModalProps) 
       );
       setMetodoPagoId(data.paymentMethod.id);
       setNuevoMetodoNombre("");
+      setShowAddMethodInput(false);
     } finally {
       setAddingMethod(false);
     }
@@ -199,41 +201,54 @@ export function PaymentModal({ pendiente, onSave, onClose }: PaymentModalProps) 
             )}
 
             {/* Agregar nueva forma de pago */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={nuevoMetodoNombre}
-                onChange={(e) => {
-                  setNuevoMetodoNombre(e.target.value);
-                  setAddMethodError("");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddMethod();
-                  }
-                }}
-                placeholder="Agregar nueva..."
-                disabled={saving || addingMethod}
-                className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
-                aria-label="Nombre de nueva forma de pago"
-              />
+            {showAddMethodInput ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={nuevoMetodoNombre}
+                  onChange={(e) => {
+                    setNuevoMetodoNombre(e.target.value);
+                    setAddMethodError("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddMethod();
+                    }
+                  }}
+                  placeholder="Agregar nueva..."
+                  disabled={saving || addingMethod}
+                  autoFocus
+                  className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
+                  aria-label="Nombre de nueva forma de pago"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddMethod}
+                  disabled={!nuevoMetodoNombre.trim() || saving || addingMethod}
+                  className="flex h-8 items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                >
+                  {addingMethod ? (
+                    <span className="material-symbols-outlined animate-spin text-sm">
+                      progress_activity
+                    </span>
+                  ) : (
+                    <span className="material-symbols-outlined text-sm">add</span>
+                  )}
+                  Agregar
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={handleAddMethod}
-                disabled={!nuevoMetodoNombre.trim() || saving || addingMethod}
-                className="flex h-8 items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
+                onClick={() => setShowAddMethodInput(true)}
+                disabled={saving}
+                className="flex h-8 w-fit items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
               >
-                {addingMethod ? (
-                  <span className="material-symbols-outlined animate-spin text-sm">
-                    progress_activity
-                  </span>
-                ) : (
-                  <span className="material-symbols-outlined text-sm">add</span>
-                )}
+                <span className="material-symbols-outlined text-sm">add</span>
                 Agregar
               </button>
-            </div>
+            )}
             {addMethodError && (
               <p className="text-xs text-red-600">{addMethodError}</p>
             )}
