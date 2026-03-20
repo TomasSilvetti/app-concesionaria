@@ -48,7 +48,7 @@ export async function GET(
 
     const doc = operation.OperationDocument;
 
-    return new NextResponse(doc.datos, {
+    return new NextResponse(new Uint8Array(doc.datos), {
       status: 200,
       headers: {
         "Content-Type": doc.mimeType,

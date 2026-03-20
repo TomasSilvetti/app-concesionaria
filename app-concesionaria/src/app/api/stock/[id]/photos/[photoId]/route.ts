@@ -50,7 +50,7 @@ export async function GET(
       );
     }
 
-    return new NextResponse(photo.datos, {
+    return new NextResponse(new Uint8Array(photo.datos), {
       status: 200,
       headers: {
         "Content-Type": photo.mimeType,
