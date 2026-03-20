@@ -396,49 +396,36 @@ export function CobranzasPage() {
                       >
                         expand_more
                       </span>
-                      <div className="flex flex-1 flex-col gap-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/operaciones/${op.idOperacion}`);
-                              }}
-                              className="text-base font-semibold text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                            >
-                              #{op.idOperacion}
-                            </button>
-                            {op.vehiculoId && op.vehiculoFotoId ? (
-                              <img
-                                src={`/api/stock/${op.vehiculoId}/photos/${op.vehiculoFotoId}`}
-                                alt=""
-                                className="h-8 w-12 rounded-md object-cover flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="flex h-8 w-12 flex-shrink-0 items-center justify-center rounded-md bg-zinc-100">
-                                <span className="material-symbols-outlined text-sm text-zinc-400">
-                                  directions_car
-                                </span>
-                              </div>
-                            )}
-                            <span className="text-sm text-zinc-700">
-                              {op.nombreComprador}
-                            </span>
-                          </div>
-                          {isSaldada ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                              <span className="material-symbols-outlined text-xs">
-                                check_circle
-                              </span>
-                              Saldado
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                              Pendiente
-                            </span>
-                          )}
+
+                      {/* Thumbnail */}
+                      {op.vehiculoId && op.vehiculoFotoId ? (
+                        <img
+                          src={`/api/stock/${op.vehiculoId}/photos/${op.vehiculoFotoId}`}
+                          alt=""
+                          className="h-10 w-14 rounded-md object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-14 flex-shrink-0 items-center justify-center rounded-md bg-zinc-100">
+                          <span className="material-symbols-outlined text-sm text-zinc-400">
+                            directions_car
+                          </span>
                         </div>
+                      )}
+
+                      {/* Info column */}
+                      <div className="flex flex-1 flex-col gap-1 min-w-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/operaciones/${op.idOperacion}`);
+                          }}
+                          className="w-fit text-base font-semibold text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                        >
+                          #{op.idOperacion}
+                        </button>
+                        <span className="truncate text-sm text-zinc-700">
+                          {op.nombreComprador}
+                        </span>
                         <div className="flex items-center gap-4 text-xs">
                           <span className="text-zinc-500">
                             Saldado:{" "}
@@ -458,6 +445,21 @@ export function CobranzasPage() {
                           </span>
                         </div>
                       </div>
+
+                      {/* Status badge */}
+                      {isSaldada ? (
+                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                          <span className="material-symbols-outlined text-xs">
+                            check_circle
+                          </span>
+                          Saldado
+                        </span>
+                      ) : (
+                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                          Pendiente
+                        </span>
+                      )}
                     </button>
 
                     {/* Pagos expandidos */}
@@ -482,20 +484,11 @@ export function CobranzasPage() {
                                     {formatCurrency(pago.monto)}
                                   </span>
                                 </div>
-                                <div className="flex items-center justify-between">
+                                {pago.nota && (
                                   <span className="text-xs text-zinc-400">
-                                    {pago.nota ?? "Sin nota"}
+                                    {pago.nota}
                                   </span>
-                                  <span
-                                    className={`text-xs font-medium ${
-                                      pago.deuda === 0
-                                        ? "text-green-600"
-                                        : "text-red-500"
-                                    }`}
-                                  >
-                                    Deuda: {formatCurrency(pago.deuda)}
-                                  </span>
-                                </div>
+                                )}
                               </div>
                             ))}
                           </div>
