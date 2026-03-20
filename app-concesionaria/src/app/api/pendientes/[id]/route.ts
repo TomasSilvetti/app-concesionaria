@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -12,8 +12,10 @@ export async function PATCH(
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const existing = await prisma.pendiente.findFirst({
-      where: { id: params.id, clienteId: session.user.clienteId },
+      where: { id, clienteId: session.user.clienteId },
     });
     if (!existing) {
       return NextResponse.json(
@@ -39,7 +41,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.pendiente.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(nombreCliente !== undefined && { nombreCliente: nombreCliente.trim() }),
         ...(detalle !== undefined && { detalle: detalle.trim() }),
@@ -59,7 +61,7 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -67,8 +69,10 @@ export async function DELETE(
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const existing = await prisma.pendiente.findFirst({
-      where: { id: params.id, clienteId: session.user.clienteId },
+      where: { id, clienteId: session.user.clienteId },
     });
     if (!existing) {
       return NextResponse.json(
@@ -77,7 +81,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.pendiente.delete({ where: { id: params.id } });
+    await prisma.pendiente.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch {
