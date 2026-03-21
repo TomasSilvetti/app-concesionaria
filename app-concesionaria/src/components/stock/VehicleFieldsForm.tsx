@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import "material-symbols/outlined.css";
+import { NumericInput } from "@/components/ui/NumericInput";
 
 interface VehicleBrand {
   id: string;
@@ -536,16 +537,14 @@ export function VehicleFieldsForm({
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                 speed
               </span>
-              <input
+              <NumericInput
                 id="kilometros"
-                type="number"
                 value={data.kilometros}
-                onChange={(e) => {
-                  handlers.setKilometros(e.target.value);
+                onChange={(v) => {
+                  handlers.setKilometros(v);
                   handleInputChange("kilometros");
                 }}
                 placeholder="50000"
-                min="0"
                 className={`h-12 w-full rounded-lg border ${
                   fieldErrors.kilometros
                     ? "border-red-300 bg-red-50"
@@ -635,16 +634,14 @@ export function VehicleFieldsForm({
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                     handshake
                   </span>
-                  <input
+                  <NumericInput
                     id="precioToma"
-                    type="number"
-                    step="0.01"
                     value={data.precioToma || ""}
-                    onChange={(e) => {
-                      handlers.setPrecioToma?.(e.target.value);
+                    onChange={(v) => {
+                      handlers.setPrecioToma?.(v);
                       handleInputChange("precioToma");
                     }}
-                    placeholder="0.00"
+                    placeholder="0"
                     className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                     disabled={disabled}
                   />
@@ -666,16 +663,14 @@ export function VehicleFieldsForm({
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                     local_offer
                   </span>
-                  <input
+                  <NumericInput
                     id="precioVentaTotal"
-                    type="number"
-                    step="0.01"
                     value={data.precioVentaTotal || ""}
-                    onChange={(e) => {
-                      handlers.setPrecioVentaTotal?.(e.target.value);
+                    onChange={(v) => {
+                      handlers.setPrecioVentaTotal?.(v);
                       handleInputChange("precioVentaTotal");
                     }}
-                    placeholder="0.00"
+                    placeholder="0"
                     className={`h-12 w-full rounded-lg border ${
                       fieldErrors.precioVentaTotal
                         ? "border-red-300 bg-red-50"
@@ -706,16 +701,14 @@ export function VehicleFieldsForm({
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                     attach_money
                   </span>
-                  <input
+                  <NumericInput
                     id="precioRevista"
-                    type="number"
-                    step="0.01"
                     value={data.precioRevista}
-                    onChange={(e) => {
-                      handlers.setPrecioRevista(e.target.value);
+                    onChange={(v) => {
+                      handlers.setPrecioRevista(v);
                       handleInputChange("precioRevista");
                     }}
-                    placeholder="0.00"
+                    placeholder="0"
                     className={`h-12 w-full rounded-lg border ${
                       fieldErrors.precioRevista
                         ? "border-red-300 bg-red-50"
@@ -806,16 +799,14 @@ export function VehicleFieldsForm({
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                     handshake
                   </span>
-                  <input
+                  <NumericInput
                     id="precioToma"
-                    type="number"
-                    step="0.01"
                     value={data.precioToma || ""}
-                    onChange={(e) => {
-                      handlers.setPrecioToma?.(e.target.value);
+                    onChange={(v) => {
+                      handlers.setPrecioToma?.(v);
                       handleInputChange("precioToma");
                     }}
-                    placeholder="0.00"
+                    placeholder="0"
                     className={`h-12 w-full rounded-lg border ${
                       fieldErrors.precioToma
                         ? "border-red-300 bg-red-50"
@@ -846,16 +837,14 @@ export function VehicleFieldsForm({
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                     local_offer
                   </span>
-                  <input
+                  <NumericInput
                     id="precioOferta"
-                    type="number"
-                    step="0.01"
                     value={data.precioOferta}
-                    onChange={(e) => {
-                      handlers.setPrecioOferta(e.target.value);
+                    onChange={(v) => {
+                      handlers.setPrecioOferta(v);
                       handleInputChange("precioOferta");
                     }}
-                    placeholder="0.00"
+                    placeholder="0"
                     className={`h-12 w-full rounded-lg border ${
                       fieldErrors.precioOferta
                         ? "border-red-300 bg-red-50"
@@ -886,16 +875,14 @@ export function VehicleFieldsForm({
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                     attach_money
                   </span>
-                  <input
+                  <NumericInput
                     id="precioRevista"
-                    type="number"
-                    step="0.01"
                     value={data.precioRevista}
-                    onChange={(e) => {
-                      handlers.setPrecioRevista(e.target.value);
+                    onChange={(v) => {
+                      handlers.setPrecioRevista(v);
                       handleInputChange("precioRevista");
                     }}
-                    placeholder="0.00"
+                    placeholder="0"
                     className={`h-12 w-full rounded-lg border ${
                       fieldErrors.precioRevista
                         ? "border-red-300 bg-red-50"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NumericInput } from "@/components/ui/NumericInput";
 
 interface PaymentMethod {
   id: string;
@@ -270,13 +271,10 @@ export function PaymentModal({ pendiente, onSave, onClose }: PaymentModalProps) 
                 Pagó todo
               </button>
             </div>
-            <input
+            <NumericInput
               id="pago-monto"
-              type="number"
-              min="0"
-              step="1"
               value={monto}
-              onChange={(e) => handleMontoChange(e.target.value)}
+              onChange={handleMontoChange}
               placeholder="0"
               disabled={saving}
               className={`h-11 w-full rounded-lg border bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:bg-white focus:outline-none focus:ring-2 disabled:opacity-50 ${

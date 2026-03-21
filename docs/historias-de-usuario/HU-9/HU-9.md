@@ -87,3 +87,9 @@ La **segunda parte** es una nueva página accesible desde el sidebar, llamada "D
 **Ejemplo 2 (caso borde — campos sin datos):** Un administrativo genera un "Formulario de transferencia" para una operación donde el campo "número de escritura" no está cargado en el sistema. El campo aparece en blanco en la vista previa; el administrativo lo deja vacío, genera el documento igualmente y luego lo completa a mano antes de imprimirlo.
 
 **Ejemplo 3 (configuración de plantilla):** Un administrativo sube un nuevo formulario de transferencia en PDF a la página de Documentos. El sistema detecta 8 campos. El administrativo mapea 6 de ellos con datos de la operación (nombre, CUIT, dominio, marca, modelo, precio) y deja 2 sin mapear porque son datos que siempre se completan manualmente. Guarda la configuración y el documento queda disponible para todos los empleados.
+
+---
+
+## Notas técnicas
+
+- El componente de generación de documentos debe diseñarse de forma desacoplada del módulo de operaciones, ya que será reutilizado en otros módulos (ej. cobranzas para la generación de recibos).
