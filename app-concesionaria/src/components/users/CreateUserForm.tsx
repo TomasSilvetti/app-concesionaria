@@ -199,7 +199,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
             type="text"
             value={nombreCompleto}
             onChange={(e) => {
-              setNombreCompleto(e.target.value);
+              setNombreCompleto(e.target.value.toUpperCase());
               handleInputChange();
             }}
             placeholder="Juan Pérez"
@@ -296,7 +296,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
               <input
                 type="text"
                 value={newClientNombre}
-                onChange={(e) => { setNewClientNombre(e.target.value); setNewClientError(null); }}
+                onChange={(e) => { setNewClientNombre(e.target.value.toUpperCase()); setNewClientError(null); }}
                 placeholder="Nombre de la concesionaria"
                 className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 disabled={newClientLoading}

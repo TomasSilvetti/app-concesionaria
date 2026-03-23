@@ -762,7 +762,7 @@ export function CreateOperationForm({
                 type="text"
                 value={nombreComprador}
                 onChange={(e) => {
-                  setNombreComprador(e.target.value);
+                  setNombreComprador(e.target.value.toUpperCase());
                   handleInputChange("nombreComprador");
                 }}
                 placeholder="Nombre completo del comprador"
@@ -952,7 +952,7 @@ export function CreateOperationForm({
                       type="text"
                       value={tradeInModelo}
                       onChange={(e) => {
-                        setTradeInModelo(e.target.value);
+                        setTradeInModelo(e.target.value.toUpperCase());
                         handleTradeInInputChange("tradeInModelo");
                       }}
                       placeholder="Ej: Corolla"
@@ -1026,7 +1026,7 @@ export function CreateOperationForm({
                       type="text"
                       value={tradeInPatente}
                       onChange={(e) => {
-                        setTradeInPatente(e.target.value);
+                        setTradeInPatente(e.target.value.toUpperCase());
                         handleTradeInInputChange("tradeInPatente");
                       }}
                       placeholder="XYZ-456"
@@ -1061,7 +1061,7 @@ export function CreateOperationForm({
                       id="tradeInVersion"
                       type="text"
                       value={tradeInVersion}
-                      onChange={(e) => setTradeInVersion(e.target.value)}
+                      onChange={(e) => setTradeInVersion(e.target.value.toUpperCase())}
                       placeholder="Ej: XLE Premium"
                       className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50"
                       disabled={isSubmitting}
@@ -1085,7 +1085,7 @@ export function CreateOperationForm({
                       id="tradeInColor"
                       type="text"
                       value={tradeInColor}
-                      onChange={(e) => setTradeInColor(e.target.value)}
+                      onChange={(e) => setTradeInColor(e.target.value.toUpperCase())}
                       placeholder="Ej: Blanco"
                       className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50"
                       disabled={isSubmitting}
@@ -1356,11 +1356,11 @@ export function CreateOperationForm({
                             </p>
                             {vehicle.kilometros && (
                               <p className="text-sm text-zinc-600">
-                                Kilómetros: {parseInt(vehicle.kilometros).toLocaleString()} km
+                                Kilómetros: {parseInt(vehicle.kilometros).toLocaleString("es-AR")} km
                               </p>
                             )}
                             <p className="mt-1 text-sm text-zinc-600">
-                              Revista: ${parseFloat(vehicle.precioRevista).toLocaleString()} • Estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
+                              Revista: ${parseFloat(vehicle.precioRevista).toLocaleString("es-AR")} • Estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString("es-AR")}
                             </p>
                           </div>
                           <div className="flex gap-1">
@@ -1446,11 +1446,11 @@ export function CreateOperationForm({
                         </p>
                         {vehicle.kilometros && (
                           <p className="text-sm text-zinc-600">
-                            Kilómetros: {parseInt(vehicle.kilometros).toLocaleString()} km
+                            Kilómetros: {parseInt(vehicle.kilometros).toLocaleString("es-AR")} km
                           </p>
                         )}
                         <p className="mt-1 text-sm font-medium text-emerald-700">
-                          Precio estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString()}
+                          Precio estimado: ${parseFloat(vehicle.precioNegociado).toLocaleString("es-AR")}
                         </p>
                       </div>
                       <div className="flex gap-1">
@@ -1614,7 +1614,7 @@ export function CreateOperationForm({
                         </div>
                         {vehicle.precioRevista != null && (
                           <p className="shrink-0 text-sm font-medium text-zinc-700">
-                            ${vehicle.precioRevista.toLocaleString()}
+                            ${vehicle.precioRevista.toLocaleString("es-AR")}
                           </p>
                         )}
                       </div>

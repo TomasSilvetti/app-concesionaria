@@ -276,7 +276,7 @@ export function VehicleFieldsForm({
               <input
                 type="text"
                 value={newBrandName}
-                onChange={(e) => setNewBrandName(e.target.value)}
+                onChange={(e) => setNewBrandName(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && handleAddBrandClick()}
                 placeholder="Nombre de la nueva marca..."
                 autoFocus
@@ -310,7 +310,7 @@ export function VehicleFieldsForm({
                   type="text"
                   value={data.modelo}
                   onChange={(e) => {
-                    handlers.setModelo(e.target.value);
+                    handlers.setModelo(e.target.value.toUpperCase());
                     handleInputChange("modelo");
                   }}
                   placeholder="Ej: Corolla"
@@ -377,7 +377,7 @@ export function VehicleFieldsForm({
                 type="text"
                 value={data.patente}
                 onChange={(e) => {
-                  handlers.setPatente(e.target.value);
+                  handlers.setPatente(e.target.value.toUpperCase());
                   handleInputChange("patente");
                 }}
                 placeholder="ABC123"
@@ -440,7 +440,7 @@ export function VehicleFieldsForm({
               <input
                 type="text"
                 value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
+                onChange={(e) => setNewCategoryName(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && handleAddCategoryClick()}
                 placeholder="Nombre de la nueva categoría..."
                 autoFocus
@@ -474,7 +474,7 @@ export function VehicleFieldsForm({
                   type="text"
                   value={data.version}
                   onChange={(e) => {
-                    handlers.setVersion(e.target.value);
+                    handlers.setVersion(e.target.value.toUpperCase());
                     handleInputChange("version");
                   }}
                   placeholder="Ej: 1.8 XEi"
@@ -507,7 +507,7 @@ export function VehicleFieldsForm({
                   type="text"
                   value={data.color}
                   onChange={(e) => {
-                    handlers.setColor(e.target.value);
+                    handlers.setColor(e.target.value.toUpperCase());
                     handleInputChange("color");
                   }}
                   placeholder="Ej: Rojo"
@@ -741,8 +741,10 @@ export function VehicleFieldsForm({
                     type="text"
                     value={
                       data.precioVentaTotal
-                        ? `$${(parseFloat(data.precioVentaTotal) - parseFloat(data.precioToma || "0")).toFixed(2)}`
-                        : "$0.00"
+                        ? `$${new Intl.NumberFormat("es-AR").format(
+                            parseFloat(data.precioVentaTotal) - parseFloat(data.precioToma || "0")
+                          )}`
+                        : "$0"
                     }
                     readOnly
                     className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700 transition-colors focus:outline-none"

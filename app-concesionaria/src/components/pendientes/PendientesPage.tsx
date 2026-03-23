@@ -288,7 +288,7 @@ export function PendientesPage() {
                   <input
                     type="text"
                     value={nombreCliente}
-                    onChange={(e) => setNombreCliente(e.target.value)}
+                    onChange={(e) => setNombreCliente(e.target.value.toUpperCase())}
                     placeholder="Ej: Juan García"
                     disabled={saving}
                     className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"

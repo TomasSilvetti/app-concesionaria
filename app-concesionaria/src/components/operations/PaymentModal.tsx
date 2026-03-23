@@ -208,7 +208,7 @@ export function PaymentModal({ pendiente, onSave, onClose }: PaymentModalProps) 
                   type="text"
                   value={nuevoMetodoNombre}
                   onChange={(e) => {
-                    setNuevoMetodoNombre(e.target.value);
+                    setNuevoMetodoNombre(e.target.value.toUpperCase());
                     setAddMethodError("");
                   }}
                   onKeyDown={(e) => {

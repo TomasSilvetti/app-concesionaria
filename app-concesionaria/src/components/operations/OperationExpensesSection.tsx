@@ -473,7 +473,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
                   id="gasto-descripcion"
                   type="text"
                   value={formDescripcion}
-                  onChange={(e) => setFormDescripcion(e.target.value)}
+                  onChange={(e) => { const v = e.target.value; setFormDescripcion(v.charAt(0).toUpperCase() + v.slice(1)); }}
                   placeholder="Ej: Limpieza, service, patente..."
                   disabled={saving}
                   className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
@@ -504,7 +504,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
                     <input
                       type="text"
                       value={nuevoOrigenNombre}
-                      onChange={(e) => setNuevoOrigenNombre(e.target.value)}
+                      onChange={(e) => setNuevoOrigenNombre(e.target.value.toUpperCase())}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearOrigen(); } }}
                       placeholder="Nombre del pagador..."
                       disabled={saving || creatingOrigen}
@@ -571,7 +571,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
                     <input
                       type="text"
                       value={nuevaCatNombre}
-                      onChange={(e) => setNuevaCatNombre(e.target.value)}
+                      onChange={(e) => setNuevaCatNombre(e.target.value.toUpperCase())}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearCategoria(); } }}
                       placeholder="Nombre de la categoría..."
                       disabled={saving || creatingCat}
