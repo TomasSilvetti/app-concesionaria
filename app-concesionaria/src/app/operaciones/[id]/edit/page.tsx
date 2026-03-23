@@ -80,6 +80,7 @@ export default function OperacionEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showCerrarModal, setShowCerrarModal] = useState(false);
   const [savingCerrar, setSavingCerrar] = useState(false);
+  const [showOperacionCerradaModal, setShowOperacionCerradaModal] = useState(false);
 
   // Form fields (solo campos editables de la operación)
   const [fechaInicio, setFechaInicio] = useState("");
@@ -366,7 +367,13 @@ export default function OperacionEditPage() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error();
-      setShowCerrarModal(false);
+      const result = await res.json();
+      if (result.estado === "cerrada") {
+        setShowCerrarModal(false);
+        setShowOperacionCerradaModal(true);
+      } else {
+        setShowCerrarModal(false);
+      }
     } finally {
       setSavingCerrar(false);
     }
@@ -1095,6 +1102,36 @@ export default function OperacionEditPage() {
           onClose={() => !savingCerrar && setShowCerrarModal(false)}
           advertencia="Ingresa el pago final para cerrar la operación"
         />
+      )}
+
+      {showOperacionCerradaModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Operación cerrada"
+        >
+          <div className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl">
+            <div className="flex items-center gap-3 border-b border-zinc-200 px-6 py-4">
+              <span className="material-symbols-outlined text-2xl text-green-600">check_circle</span>
+              <h2 className="text-base font-semibold text-zinc-900">Operación cerrada</h2>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                La operación ha sido cerrada exitosamente. Todos los pagos han sido registrados.
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => router.push("/operaciones")}
+                className="flex h-10 items-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </AppLayout>
   );

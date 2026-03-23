@@ -74,6 +74,9 @@ export default function OperacionDetailPage() {
   const [pendienteReal, setPendienteReal] = useState<number | null>(null);
   const [showCerrarModal, setShowCerrarModal] = useState(false);
   const [savingCerrar, setSavingCerrar] = useState(false);
+  const [showConfirmCerrarModal, setShowConfirmCerrarModal] = useState(false);
+  const [confirmingCerrar, setConfirmingCerrar] = useState(false);
+  const [showOperacionCerradaModal, setShowOperacionCerradaModal] = useState(false);
 
   useEffect(() => {
     const fetchOperation = async () => {
@@ -164,6 +167,22 @@ export default function OperacionDetailPage() {
     router.push(`/operaciones/${id}/edit`);
   };
 
+  const handleConfirmCerrar = async () => {
+    setConfirmingCerrar(true);
+    try {
+      const res = await fetch(`/api/operations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: "cerrada" }),
+      });
+      if (!res.ok) throw new Error();
+      setOperation((prev) => prev ? { ...prev, estado: "cerrada" } : null);
+      setShowConfirmCerrarModal(false);
+    } finally {
+      setConfirmingCerrar(false);
+    }
+  };
+
   const handleCerrarSave = async (data: {
     fecha: string;
     metodoPagoId: string;
@@ -178,7 +197,14 @@ export default function OperacionDetailPage() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error();
-      setShowCerrarModal(false);
+      const result = await res.json();
+      if (result.estado === "cerrada") {
+        setOperation((prev) => prev ? { ...prev, estado: "cerrada" } : null);
+        setShowCerrarModal(false);
+        setShowOperacionCerradaModal(true);
+      } else {
+        setShowCerrarModal(false);
+      }
     } finally {
       setSavingCerrar(false);
     }
@@ -417,7 +443,12 @@ export default function OperacionDetailPage() {
           <OperationCobranzasSection
             operacionId={operation.idOperacion}
             precioVentaTotal={operation.precioVentaTotal}
+            estado={operation.estado}
             onPendienteChange={setPendienteReal}
+            onEstadoChange={(nuevoEstado) =>
+              setOperation((prev) => prev ? { ...prev, estado: nuevoEstado as typeof prev.estado } : null)
+            }
+            onOperacionCerrada={() => setShowOperacionCerradaModal(true)}
           />
 
           {/* Sección: Información financiera */}
@@ -608,9 +639,13 @@ export default function OperacionDetailPage() {
               <button
                 onClick={() => {
                   const saldo = pendienteReal ?? operation.precioVentaTotal;
-                  if (saldo > 0) setShowCerrarModal(true);
+                  if (saldo > 0) {
+                    setShowCerrarModal(true);
+                  } else {
+                    setShowConfirmCerrarModal(true);
+                  }
                 }}
-                disabled={(pendienteReal ?? operation.precioVentaTotal) === 0}
+                disabled={operation.estado === "cerrada"}
                 className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-xl">lock</span>
@@ -630,6 +665,78 @@ export default function OperacionDetailPage() {
           onClose={() => !savingCerrar && setShowCerrarModal(false)}
           advertencia="Ingresa el pago final para cerrar la operación"
         />
+      )}
+
+      {showOperacionCerradaModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Operación cerrada"
+        >
+          <div className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl">
+            <div className="flex items-center gap-3 border-b border-zinc-200 px-6 py-4">
+              <span className="material-symbols-outlined text-2xl text-green-600">check_circle</span>
+              <h2 className="text-base font-semibold text-zinc-900">Operación cerrada</h2>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                La operación ha sido cerrada exitosamente. Todos los pagos han sido registrados.
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => router.push("/operaciones")}
+                className="flex h-10 items-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConfirmCerrarModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirmar cierre de operación"
+        >
+          <div className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl">
+            <div className="flex items-center gap-3 border-b border-zinc-200 px-6 py-4">
+              <span className="material-symbols-outlined text-2xl text-amber-600">warning</span>
+              <h2 className="text-base font-semibold text-zinc-900">Cerrar operación</h2>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                ¿Estás seguro de cerrar la operación? El estado cambiará a <span className="font-medium">cerrada</span>.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowConfirmCerrarModal(false)}
+                disabled={confirmingCerrar}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCerrar}
+                disabled={confirmingCerrar}
+                className="flex h-10 items-center gap-2 rounded-lg bg-amber-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {confirmingCerrar && (
+                  <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                )}
+                Cerrar operación
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </AppLayout>
   );

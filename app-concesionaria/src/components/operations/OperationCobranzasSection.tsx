@@ -16,10 +16,13 @@ interface Pago {
 interface Props {
   operacionId: string;
   precioVentaTotal: number;
+  estado: string;
   onPendienteChange?: (pendiente: number) => void;
+  onEstadoChange?: (estado: string) => void;
+  onOperacionCerrada?: () => void;
 }
 
-export function OperationCobranzasSection({ operacionId, precioVentaTotal, onPendienteChange }: Props) {
+export function OperationCobranzasSection({ operacionId, precioVentaTotal, estado, onPendienteChange, onEstadoChange, onOperacionCerrada }: Props) {
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [saldado, setSaldado] = useState(0);
   const [pendiente, setPendiente] = useState(precioVentaTotal);
@@ -98,6 +101,10 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, onPen
       setPendiente(result.pendiente);
       onPendienteChange?.(result.pendiente);
       setShowModal(false);
+      if (result.estado === "cerrada") {
+        onEstadoChange?.("cerrada");
+        onOperacionCerrada?.();
+      }
     } finally {
       setSaving(false);
     }
@@ -114,15 +121,25 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, onPen
             </span>
             <h2 className="text-lg font-semibold text-zinc-900">Cobranzas</h2>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            aria-label="Agregar pago"
-          >
-            <span className="material-symbols-outlined text-base">add</span>
-            Agregar pago
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              disabled={estado === "cerrada"}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                estado === "cerrada"
+                  ? "cursor-not-allowed bg-zinc-200 text-zinc-400"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+              aria-label="Agregar pago"
+            >
+              <span className="material-symbols-outlined text-base">add</span>
+              Agregar pago
+            </button>
+            {estado === "cerrada" && (
+              <span className="text-xs text-zinc-500">La operación está cerrada</span>
+            )}
+          </div>
         </div>
 
         {/* Body */}
@@ -233,6 +250,7 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, onPen
           onClose={() => !saving && setShowModal(false)}
         />
       )}
+
     </>
   );
 }

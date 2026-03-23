@@ -3,6 +3,8 @@
 **Historia de usuario:** HU-10: Cierre y Reapertura de Operaciones con Validación de Pagos
 **Par:** —
 **Tipo:** FRONT
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-23
 **Prerequisitos:** porcion-001, porcion-002
 
 ## Descripción
