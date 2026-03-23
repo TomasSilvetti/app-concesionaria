@@ -230,16 +230,7 @@ export async function POST(
       const nuevoSaldado = saldadoPrevio + montoNum;
       const nuevoPendiente = operation.precioVentaTotal - nuevoSaldado;
 
-      let estadoFinal = operation.estado;
-      if (nuevoPendiente <= 0) {
-        await tx.operation.update({
-          where: { id: operation.id },
-          data: { estado: "cerrada", fechaVenta: now, actualizadoEn: now },
-        });
-        estadoFinal = "cerrada";
-      }
-
-      return { pago, saldado: nuevoSaldado, pendiente: Math.max(nuevoPendiente, 0), estado: estadoFinal };
+      return { pago, saldado: nuevoSaldado, pendiente: Math.max(nuevoPendiente, 0) };
     });
 
     return NextResponse.json(
@@ -255,7 +246,6 @@ export async function POST(
         },
         saldado: result.saldado,
         pendiente: result.pendiente,
-        estado: result.estado,
       },
       { status: 201 }
     );

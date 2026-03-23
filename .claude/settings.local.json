@@ -15,7 +15,9 @@
       "Bash(xargs grep:*)",
       "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/api/operations/[id]/)",
       "Bash(find c:UserstomasDocumentsProyectosApp-Concesionaria -type d -name *operacio* -o -type d -name *operation*)",
-      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionaria/app-concesionaria/src -path *operations* -type f -name *.tsx)"
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionaria/app-concesionaria/src -path *operations* -type f -name *.tsx)",
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionaria -type f -name *operacion*)",
+      "Bash(find c:/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/components -type f -name *.tsx -o -name *.ts)"
     ],
     "additionalDirectories": [
       "c:\\Users\\tomas\\Documents\\Proyectos\\App-Concesionaria\\docs\\historias-de-usuario"

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PaymentModal } from "@/components/operations/PaymentModal";
 import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
 import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
 import "material-symbols/outlined.css";
@@ -80,8 +79,8 @@ export default function OperacionEditPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showCerrarModal, setShowCerrarModal] = useState(false);
-  const [savingCerrar, setSavingCerrar] = useState(false);
+  const [showPagosIncompletosModal, setShowPagosIncompletosModal] = useState(false);
+  const [cerrandoOperacion, setCerrandoOperacion] = useState(false);
   const [showOperacionCerradaModal, setShowOperacionCerradaModal] = useState(false);
   const [reabriendo, setReabriendo] = useState(false);
 
@@ -357,29 +356,18 @@ export default function OperacionEditPage() {
     }
   };
 
-  const handleCerrarSave = async (data: {
-    fecha: string;
-    metodoPagoId: string;
-    monto: number;
-    nota?: string;
-  }) => {
-    setSavingCerrar(true);
+  const handleCerrarOperacion = async () => {
+    setCerrandoOperacion(true);
     try {
-      const res = await fetch(`/api/operations/${id}/pagos`, {
-        method: "POST",
+      const res = await fetch(`/api/operations/${id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ estado: "cerrada" }),
       });
       if (!res.ok) throw new Error();
-      const result = await res.json();
-      if (result.estado === "cerrada") {
-        setShowCerrarModal(false);
-        setShowOperacionCerradaModal(true);
-      } else {
-        setShowCerrarModal(false);
-      }
+      setShowOperacionCerradaModal(true);
     } finally {
-      setSavingCerrar(false);
+      setCerrandoOperacion(false);
     }
   };
 
@@ -1081,8 +1069,15 @@ export default function OperacionEditPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowCerrarModal(true)}
-                  className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                  onClick={() => {
+                    if (pendienteReal > 0) {
+                      setShowPagosIncompletosModal(true);
+                    } else {
+                      handleCerrarOperacion();
+                    }
+                  }}
+                  disabled={cerrandoOperacion}
+                  className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-xl">lock</span>
                   Cerrar operación
@@ -1094,14 +1089,34 @@ export default function OperacionEditPage() {
         </div>
       </div>
 
-      {showCerrarModal && (
-        <PaymentModal
-          operacionId={id}
-          pendiente={parseFloat(precioVentaTotal) || 0}
-          onSave={handleCerrarSave}
-          onClose={() => !savingCerrar && setShowCerrarModal(false)}
-          advertencia="Ingresa el pago final para cerrar la operación"
-        />
+      {showPagosIncompletosModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pagos incompletos"
+        >
+          <div className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl">
+            <div className="flex items-center gap-3 border-b border-zinc-200 px-6 py-4">
+              <span className="material-symbols-outlined text-2xl text-amber-600">warning</span>
+              <h2 className="text-base font-semibold text-zinc-900">No se puede cerrar la operación</h2>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                Debes completar todos los pagos antes de cerrar la operación.
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowPagosIncompletosModal(false)}
+                className="flex h-10 items-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showOperacionCerradaModal && (
