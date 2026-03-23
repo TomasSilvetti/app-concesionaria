@@ -35,6 +35,7 @@ interface StockVehicle {
   notasGenerales: string | null;
   precioRevista: number | null;
   precioOferta: number | null;
+  precioToma: number | null;
   fotos: { id: string }[];
 }
 
@@ -324,7 +325,8 @@ export function CreateOperationForm({
     setNotasGenerales(vehicle.notasGenerales ?? "");
     setPrecioRevista(vehicle.precioRevista != null ? String(vehicle.precioRevista) : "");
     setPrecioOferta(vehicle.precioOferta != null ? String(vehicle.precioOferta) : "");
-    setPrecioVentaTotal(vehicle.precioRevista != null ? String(vehicle.precioRevista) : "");
+    setPrecioVentaTotal(vehicle.precioOferta != null ? String(vehicle.precioOferta) : "");
+    setPrecioToma(vehicle.precioToma != null ? String(vehicle.precioToma) : "");
 
     ["marcaId", "modelo", "anio", "categoriaId", "color", "kilometros", "precioRevista", "precioVentaTotal"].forEach((f) =>
       handleInputChange(f)

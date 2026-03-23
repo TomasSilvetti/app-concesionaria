@@ -61,6 +61,7 @@ export async function GET() {
       notasGenerales: vehicle.notasGenerales,
       precioRevista: vehicle.precioRevista,
       precioOferta: vehicle.precioOferta,
+      precioToma: vehicle.precioToma,
       fotos: vehicle.VehiclePhoto.map((p) => ({ id: p.id })),
     }));
 
