@@ -110,6 +110,13 @@ export async function POST(
       );
     }
 
+    if (operation.estado === "cerrada" || operation.estado === "cancelada") {
+      return NextResponse.json(
+        { error: `No se pueden registrar pagos en una operación ${operation.estado}` },
+        { status: 400 }
+      );
+    }
+
     let body: Record<string, unknown>;
     try {
       body = await req.json();
@@ -178,6 +185,21 @@ export async function POST(
       );
     }
 
+    const pagosPrevios = await prisma.pago.aggregate({
+      where: { operacionId: operation.id },
+      _sum: { monto: true },
+    });
+
+    const saldadoPrevio = pagosPrevios._sum.monto ?? 0;
+    const pendiente = operation.precioVentaTotal - saldadoPrevio;
+
+    if (montoNum > pendiente) {
+      return NextResponse.json(
+        { error: "El monto supera el saldo pendiente" },
+        { status: 400 }
+      );
+    }
+
     const now = new Date();
 
     const result = await prisma.$transaction(async (tx) => {
@@ -205,22 +227,19 @@ export async function POST(
         },
       });
 
-      const aggregate = await tx.pago.aggregate({
-        where: { operacionId: operation.id },
-        _sum: { monto: true },
-      });
+      const nuevoSaldado = saldadoPrevio + montoNum;
+      const nuevoPendiente = operation.precioVentaTotal - nuevoSaldado;
 
-      const saldado = aggregate._sum.monto ?? 0;
-      const pendiente = operation.precioVentaTotal - saldado;
-
-      if (pendiente <= 0) {
+      let estadoFinal = operation.estado;
+      if (nuevoPendiente <= 0) {
         await tx.operation.update({
           where: { id: operation.id },
           data: { estado: "cerrada", fechaVenta: now, actualizadoEn: now },
         });
+        estadoFinal = "cerrada";
       }
 
-      return { pago, saldado, pendiente: Math.max(pendiente, 0) };
+      return { pago, saldado: nuevoSaldado, pendiente: Math.max(nuevoPendiente, 0), estado: estadoFinal };
     });
 
     return NextResponse.json(
@@ -236,6 +255,7 @@ export async function POST(
         },
         saldado: result.saldado,
         pendiente: result.pendiente,
+        estado: result.estado,
       },
       { status: 201 }
     );

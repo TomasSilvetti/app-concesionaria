@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
 import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
+import { PaymentModal } from "@/components/operations/PaymentModal";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -70,6 +71,9 @@ export default function OperacionDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gastosTotal, setGastosTotal] = useState<number | null>(null);
+  const [pendienteReal, setPendienteReal] = useState<number | null>(null);
+  const [showCerrarModal, setShowCerrarModal] = useState(false);
+  const [savingCerrar, setSavingCerrar] = useState(false);
 
   useEffect(() => {
     const fetchOperation = async () => {
@@ -158,6 +162,26 @@ export default function OperacionDetailPage() {
 
   const handleEditar = () => {
     router.push(`/operaciones/${id}/edit`);
+  };
+
+  const handleCerrarSave = async (data: {
+    fecha: string;
+    metodoPagoId: string;
+    monto: number;
+    nota?: string;
+  }) => {
+    setSavingCerrar(true);
+    try {
+      const res = await fetch(`/api/operations/${id}/pagos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error();
+      setShowCerrarModal(false);
+    } finally {
+      setSavingCerrar(false);
+    }
   };
 
   if (isLoading) {
@@ -393,6 +417,7 @@ export default function OperacionDetailPage() {
           <OperationCobranzasSection
             operacionId={operation.idOperacion}
             precioVentaTotal={operation.precioVentaTotal}
+            onPendienteChange={setPendienteReal}
           />
 
           {/* Sección: Información financiera */}
@@ -568,8 +593,44 @@ export default function OperacionDetailPage() {
             )}
           </div>
 
+          {/* Cerrar operación */}
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm lg:col-span-3">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-2xl text-amber-600">warning</span>
+                <div>
+                  <h2 className="text-base font-semibold text-amber-900">Cerrar operación</h2>
+                  <p className="mt-0.5 text-sm text-amber-700">
+                    Ingresa el pago final para cerrar la operación
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const saldo = pendienteReal ?? operation.precioVentaTotal;
+                  if (saldo > 0) setShowCerrarModal(true);
+                }}
+                disabled={(pendienteReal ?? operation.precioVentaTotal) === 0}
+                className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-xl">lock</span>
+                Cerrar operación
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
+
+      {showCerrarModal && (
+        <PaymentModal
+          operacionId={id}
+          pendiente={pendienteReal ?? operation.precioVentaTotal}
+          onSave={handleCerrarSave}
+          onClose={() => !savingCerrar && setShowCerrarModal(false)}
+          advertencia="Ingresa el pago final para cerrar la operación"
+        />
+      )}
     </AppLayout>
   );
 }

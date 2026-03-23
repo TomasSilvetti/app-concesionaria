@@ -20,9 +20,10 @@ interface PaymentModalProps {
   pendiente: number;
   onSave: (data: PaymentData) => void;
   onClose: () => void;
+  advertencia?: string;
 }
 
-export function PaymentModal({ pendiente, onSave, onClose }: PaymentModalProps) {
+export function PaymentModal({ pendiente, onSave, onClose, advertencia }: PaymentModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loadingMethods, setLoadingMethods] = useState(true);
 
@@ -154,6 +155,14 @@ export function PaymentModal({ pendiente, onSave, onClose }: PaymentModalProps) 
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
         </div>
+
+        {/* Advertencia */}
+        {advertencia && (
+          <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-6 py-3">
+            <span className="material-symbols-outlined text-xl text-amber-600">warning</span>
+            <p className="text-sm font-medium text-amber-800">{advertencia}</p>
+          </div>
+        )}
 
         {/* Body */}
         <div className="flex flex-col gap-4 px-6 py-5">

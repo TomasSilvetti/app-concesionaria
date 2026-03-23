@@ -16,9 +16,10 @@ interface Pago {
 interface Props {
   operacionId: string;
   precioVentaTotal: number;
+  onPendienteChange?: (pendiente: number) => void;
 }
 
-export function OperationCobranzasSection({ operacionId, precioVentaTotal }: Props) {
+export function OperationCobranzasSection({ operacionId, precioVentaTotal, onPendienteChange }: Props) {
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [saldado, setSaldado] = useState(0);
   const [pendiente, setPendiente] = useState(precioVentaTotal);
@@ -52,7 +53,9 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal }: Pro
       const data = await res.json();
       setPagos(data.pagos ?? []);
       setSaldado(data.saldado ?? 0);
-      setPendiente(data.pendiente ?? precioVentaTotal);
+      const p = data.pendiente ?? precioVentaTotal;
+      setPendiente(p);
+      onPendienteChange?.(p);
     } catch {
       setError("No se pudieron cargar los pagos");
     } finally {
@@ -93,6 +96,7 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal }: Pro
       ]);
       setSaldado(result.saldado);
       setPendiente(result.pendiente);
+      onPendienteChange?.(result.pendiente);
       setShowModal(false);
     } finally {
       setSaving(false);
