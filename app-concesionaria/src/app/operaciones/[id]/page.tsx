@@ -428,6 +428,7 @@ export default function OperacionDetailPage() {
             <OperationExpensesSection
             operacionId={operation.idOperacion}
             onTotalChange={setGastosTotal}
+            readOnly={true}
           />
           </div>
 
@@ -471,6 +472,7 @@ export default function OperacionDetailPage() {
               setOperation((prev) => prev ? { ...prev, estado: nuevoEstado as typeof prev.estado } : null)
             }
             onOperacionCerrada={() => setShowOperacionCerradaModal(true)}
+            readOnly={true}
           />
 
           {/* Sección: Información financiera */}

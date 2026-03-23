@@ -13,7 +13,12 @@
       "Bash(grep -n \"PUT\\\\|PUT\\\\|PATCH\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/api/operations/[id]/route.ts)",
       "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/edit/)",
       "Bash(xargs grep:*)",
-      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/api/operations/[id]/)"
+      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/api/operations/[id]/)",
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionaria -type d -name *operacio* -o -type d -name *operation*)",
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionaria/app-concesionaria/src -path *operations* -type f -name *.tsx)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\tomas\\Documents\\Proyectos\\App-Concesionaria\\docs\\historias-de-usuario"
     ]
   },
   "outputStyle": "default"

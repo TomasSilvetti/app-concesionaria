@@ -20,9 +20,10 @@ interface Props {
   onPendienteChange?: (pendiente: number) => void;
   onEstadoChange?: (estado: string) => void;
   onOperacionCerrada?: () => void;
+  readOnly?: boolean;
 }
 
-export function OperationCobranzasSection({ operacionId, precioVentaTotal, estado, onPendienteChange, onEstadoChange, onOperacionCerrada }: Props) {
+export function OperationCobranzasSection({ operacionId, precioVentaTotal, estado, onPendienteChange, onEstadoChange, onOperacionCerrada, readOnly = false }: Props) {
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [saldado, setSaldado] = useState(0);
   const [pendiente, setPendiente] = useState(precioVentaTotal);
@@ -122,31 +123,33 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
             </span>
             <h2 className="text-lg font-semibold text-zinc-900">Cobranzas</h2>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (saldado >= precioVentaTotal) {
-                  setShowAlreadyPaidModal(true);
-                } else {
-                  setShowModal(true);
-                }
-              }}
-              disabled={estado === "cerrada"}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                estado === "cerrada"
-                  ? "cursor-not-allowed bg-zinc-200 text-zinc-400"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
-              }`}
-              aria-label="Agregar pago"
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-              Agregar pago
-            </button>
-            {estado === "cerrada" && (
-              <span className="text-xs text-zinc-500">La operación está cerrada</span>
-            )}
-          </div>
+          {!readOnly && (
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (saldado >= precioVentaTotal) {
+                    setShowAlreadyPaidModal(true);
+                  } else {
+                    setShowModal(true);
+                  }
+                }}
+                disabled={estado === "cerrada"}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  estado === "cerrada"
+                    ? "cursor-not-allowed bg-zinc-200 text-zinc-400"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+                aria-label="Agregar pago"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                Agregar pago
+              </button>
+              {estado === "cerrada" && (
+                <span className="text-xs text-zinc-500">La operación está cerrada</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Body */}

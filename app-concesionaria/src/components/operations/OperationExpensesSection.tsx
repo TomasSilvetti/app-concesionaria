@@ -22,9 +22,10 @@ interface OpcionSelector {
 interface Props {
   operacionId: string;
   onTotalChange?: (total: number) => void;
+  readOnly?: boolean;
 }
 
-export function OperationExpensesSection({ operacionId, onTotalChange }: Props) {
+export function OperationExpensesSection({ operacionId, onTotalChange, readOnly = false }: Props) {
   const [gastos, setGastos] = useState<GastoOperacion[]>([]);
   const [origins, setOrigins] = useState<OpcionSelector[]>([]);
   const [categories, setCategories] = useState<OpcionSelector[]>([]);
@@ -295,15 +296,17 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
             </span>
             <h2 className="text-lg font-semibold text-zinc-900">Módulo de Gastos</h2>
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            aria-label="Agregar gasto"
-          >
-            <span className="material-symbols-outlined text-base">add</span>
-            Agregar
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="Agregar gasto"
+            >
+              <span className="material-symbols-outlined text-base">add</span>
+              Agregar
+            </button>
+          )}
         </div>
 
         {/* Body */}

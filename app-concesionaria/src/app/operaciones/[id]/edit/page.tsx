@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PaymentModal } from "@/components/operations/PaymentModal";
+import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
+import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -96,6 +98,7 @@ export default function OperacionEditPage() {
   const [ingresosNetos, setIngresosNetos] = useState(0);
   const [comision, setComision] = useState(0);
   const [gastosAsociados, setGastosAsociados] = useState(0);
+  const [pendienteReal, setPendienteReal] = useState(0);
 
   // Original values for change detection
   const [originalValues, setOriginalValues] = useState<any>(null);
@@ -562,9 +565,9 @@ export default function OperacionEditPage() {
         )}
 
         {/* Contenido principal en grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Sección: Datos del vehículo (solo lectura) */}
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm lg:col-span-2 lg:row-start-1">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-zinc-600">
                 directions_car
@@ -663,8 +666,17 @@ export default function OperacionEditPage() {
             </dl>
           </div>
 
+          {/* Sección: Módulo de Gastos */}
+          <div className="lg:col-span-1 lg:row-span-3 lg:row-start-1">
+            <OperationExpensesSection
+              operacionId={id}
+              onTotalChange={setGastosAsociados}
+              readOnly={false}
+            />
+          </div>
+
           {/* Sección: Fechas */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-2">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 calendar_today
@@ -755,75 +767,19 @@ export default function OperacionEditPage() {
             </div>
           </div>
 
-          {/* Sección: Gastos asociados (solo lectura) - al lado de Fechas */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-zinc-400">
-                receipt_long
-              </span>
-              <h2 className="text-lg font-semibold text-zinc-900">
-                Gastos Asociados
-              </h2>
-              <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                Solo lectura
-              </span>
-            </div>
-
-            {operation && operation.gastos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
-                  <span className="material-symbols-outlined text-2xl text-zinc-400">
-                    receipt_long
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-zinc-600">
-                  Sin gastos asociados
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Fecha
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Descripción
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Categoría
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Monto
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 bg-white">
-                    {operation?.gastos.map((gasto, index) => (
-                      <tr key={index} className="transition-colors hover:bg-zinc-50">
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {formatDate(gasto.fecha)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.descripcion}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {gasto.categoria}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-red-600">
-                          {formatCurrency(gasto.monto)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          {/* Sección: Cobranzas */}
+          <div className="lg:col-span-2">
+            <OperationCobranzasSection
+              operacionId={id}
+              precioVentaTotal={parseFloat(precioVentaTotal) || 0}
+              estado={estado}
+              onPendienteChange={setPendienteReal}
+              readOnly={false}
+            />
           </div>
 
           {/* Sección: Información financiera */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 payments
@@ -948,7 +904,7 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Sección: Estado y tipo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 info
@@ -1039,7 +995,7 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Sección: Vehículos de intercambio (solo lectura) */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-zinc-400">
                 swap_horiz
