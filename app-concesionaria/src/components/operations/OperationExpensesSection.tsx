@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import "material-symbols/outlined.css";
+import { NumericInput } from "@/components/ui/NumericInput";
 
 interface GastoOperacion {
   id: string;
@@ -618,13 +619,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange }: Props) 
                 <label htmlFor="gasto-monto" className="text-sm font-medium text-zinc-700">
                   Monto
                 </label>
-                <input
+                <NumericInput
                   id="gasto-monto"
-                  type="number"
-                  min="0"
-                  step="1"
                   value={formMonto}
-                  onChange={(e) => setFormMonto(e.target.value)}
+                  onChange={setFormMonto}
                   placeholder="0"
                   disabled={saving}
                   className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import "material-symbols/outlined.css";
+import { NumericInput } from "@/components/ui/NumericInput";
 
 interface VehicleBrand {
   id: string;
@@ -206,14 +207,11 @@ export function StockFilters({
             <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
               attach_money
             </span>
-            <input
+            <NumericInput
               id="precioMin"
-              type="number"
               value={precioMin}
-              onChange={(e) => setPrecioMin(e.target.value)}
+              onChange={setPrecioMin}
               placeholder="0"
-              min="0"
-              step="1000"
               className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -227,14 +225,11 @@ export function StockFilters({
             <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
               attach_money
             </span>
-            <input
+            <NumericInput
               id="precioMax"
-              type="number"
               value={precioMax}
-              onChange={(e) => setPrecioMax(e.target.value)}
-              placeholder="999999999"
-              min="0"
-              step="1000"
+              onChange={setPrecioMax}
+              placeholder="999.999.999"
               className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -269,14 +264,11 @@ export function StockFilters({
             <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
               speed
             </span>
-            <input
+            <NumericInput
               id="kilometrosMax"
-              type="number"
               value={kilometrosMax}
-              onChange={(e) => setKilometrosMax(e.target.value)}
-              placeholder="200000"
-              min="0"
-              step="1000"
+              onChange={setKilometrosMax}
+              placeholder="200.000"
               className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>

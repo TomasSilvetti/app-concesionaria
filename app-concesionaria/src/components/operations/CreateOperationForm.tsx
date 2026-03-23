@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import "material-symbols/outlined.css";
+import { NumericInput } from "@/components/ui/NumericInput";
 import {
   VehicleFieldsForm,
   VehicleFieldsData,
@@ -1104,13 +1105,11 @@ export function CreateOperationForm({
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                       speed
                     </span>
-                    <input
+                    <NumericInput
                       id="tradeInKilometros"
-                      type="number"
                       value={tradeInKilometros}
-                      onChange={(e) => setTradeInKilometros(e.target.value)}
-                      placeholder="50000"
-                      min="0"
+                      onChange={setTradeInKilometros}
+                      placeholder="50.000"
                       className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50"
                       disabled={isSubmitting}
                     />
@@ -1129,16 +1128,14 @@ export function CreateOperationForm({
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                       menu_book
                     </span>
-                    <input
+                    <NumericInput
                       id="tradeInPrecioRevista"
-                      type="number"
-                      step="0.01"
                       value={tradeInPrecioRevista}
-                      onChange={(e) => {
-                        setTradeInPrecioRevista(e.target.value);
+                      onChange={(v) => {
+                        setTradeInPrecioRevista(v);
                         handleTradeInInputChange("tradeInPrecioRevista");
                       }}
-                      placeholder="0.00"
+                      placeholder="0"
                       className={`h-12 w-full rounded-lg border ${
                         tradeInFieldErrors.tradeInPrecioRevista
                           ? "border-red-300 bg-red-50"
@@ -1166,16 +1163,14 @@ export function CreateOperationForm({
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                       attach_money
                     </span>
-                    <input
+                    <NumericInput
                       id="tradeInPrecioNegociado"
-                      type="number"
-                      step="0.01"
                       value={tradeInPrecioNegociado}
-                      onChange={(e) => {
-                        setTradeInPrecioNegociado(e.target.value);
+                      onChange={(v) => {
+                        setTradeInPrecioNegociado(v);
                         handleTradeInInputChange("tradeInPrecioNegociado");
                       }}
-                      placeholder="0.00"
+                      placeholder="0"
                       className={`h-12 w-full rounded-lg border ${
                         tradeInFieldErrors.tradeInPrecioNegociado
                           ? "border-red-300 bg-red-50"
