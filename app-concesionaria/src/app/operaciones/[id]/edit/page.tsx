@@ -81,6 +81,7 @@ export default function OperacionEditPage() {
   const [showCerrarModal, setShowCerrarModal] = useState(false);
   const [savingCerrar, setSavingCerrar] = useState(false);
   const [showOperacionCerradaModal, setShowOperacionCerradaModal] = useState(false);
+  const [reabriendo, setReabriendo] = useState(false);
 
   // Form fields (solo campos editables de la operación)
   const [fechaInicio, setFechaInicio] = useState("");
@@ -379,6 +380,24 @@ export default function OperacionEditPage() {
     }
   };
 
+  const handleReabrir = async () => {
+    setReabriendo(true);
+    try {
+      const res = await fetch(`/api/operations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: "abierta" }),
+      });
+      if (!res.ok) throw new Error();
+      setOperation((prev) => prev ? { ...prev, estado: "abierta" } : null);
+      setEstado("abierta");
+    } catch {
+      // silencioso, el banner seguirá visible
+    } finally {
+      setReabriendo(false);
+    }
+  };
+
   const handleCancel = () => {
     router.push(`/operaciones/${id}`);
   };
@@ -433,6 +452,7 @@ export default function OperacionEditPage() {
 
   const estadoBadge = getEstadoBadge(estado);
   const hasValidationErrors = Object.keys(fieldErrors).length > 0;
+  const isCerrada = operation?.estado === "cerrada";
 
   return (
     <AppLayout>
@@ -490,7 +510,7 @@ export default function OperacionEditPage() {
             </button>
             <button
               onClick={handleSave}
-              disabled={isSaving || hasValidationErrors}
+              disabled={isSaving || hasValidationErrors || isCerrada}
               className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Guardar cambios"
             >
@@ -510,6 +530,28 @@ export default function OperacionEditPage() {
             </button>
           </div>
         </div>
+
+        {/* Banner operación cerrada */}
+        {isCerrada && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-center gap-3">
+            <span className="material-symbols-outlined text-xl text-amber-600 shrink-0">lock</span>
+            <p className="text-sm text-amber-800 flex-1">
+              Esta operación está cerrada. Para editarla, primero debés reabrirla.
+            </p>
+            <button
+              type="button"
+              onClick={handleReabrir}
+              disabled={reabriendo}
+              className="flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
+            >
+              {reabriendo && (
+                <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+              )}
+              <span className="material-symbols-outlined text-sm">lock_open</span>
+              Abrir operación
+            </button>
+          </div>
+        )}
 
         {/* Mensaje de error global */}
         {error && operation && (
@@ -652,7 +694,7 @@ export default function OperacionEditPage() {
                         ? "border-red-300 bg-red-50"
                         : "border-zinc-300 bg-zinc-50"
                     } pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
+                    disabled={isSaving || isCerrada}
                   />
                 </div>
                 {fieldErrors.fechaInicio && (
@@ -682,7 +724,7 @@ export default function OperacionEditPage() {
                         ? "border-red-300 bg-red-50"
                         : "border-zinc-300 bg-zinc-50"
                     } pl-11 pr-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
+                    disabled={isSaving || isCerrada}
                   />
                 </div>
                 {fieldErrors.fechaVenta && (
@@ -815,7 +857,7 @@ export default function OperacionEditPage() {
                         ? "border-red-300 bg-red-50"
                         : "border-zinc-300 bg-zinc-50"
                     } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
+                    disabled={isSaving || isCerrada}
                   />
                 </div>
                 {fieldErrors.precioVentaTotal && (
@@ -843,7 +885,7 @@ export default function OperacionEditPage() {
                     }}
                     placeholder="0.00"
                     className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                    disabled={isSaving}
+                    disabled={isSaving || isCerrada}
                   />
                 </div>
                 <p className="text-xs text-zinc-500">
@@ -933,7 +975,7 @@ export default function OperacionEditPage() {
                       handleInputChange("estado");
                     }}
                     className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                    disabled={isSaving}
+                    disabled={isSaving || isCerrada}
                   >
                     <option value="abierta">Abierta</option>
                     <option value="cerrada">Cerrada</option>
@@ -976,7 +1018,7 @@ export default function OperacionEditPage() {
                         ? "border-red-300 bg-red-50"
                         : "border-zinc-300 bg-zinc-50"
                     } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving}
+                    disabled={isSaving || isCerrada}
                   >
                     <option value="">Seleccionar tipo...</option>
                     {operationTypes.map((type) => (
@@ -1070,26 +1112,28 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Cerrar operación */}
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm lg:col-span-3">
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-2xl text-amber-600">warning</span>
-                <div>
-                  <h2 className="text-base font-semibold text-amber-900">Cerrar operación</h2>
-                  <p className="mt-0.5 text-sm text-amber-700">
-                    Ingresa el pago final para cerrar la operación
-                  </p>
+          {!isCerrada && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm lg:col-span-3">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-2xl text-amber-600">warning</span>
+                  <div>
+                    <h2 className="text-base font-semibold text-amber-900">Cerrar operación</h2>
+                    <p className="mt-0.5 text-sm text-amber-700">
+                      Ingresa el pago final para cerrar la operación
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setShowCerrarModal(true)}
+                  className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                >
+                  <span className="material-symbols-outlined text-xl">lock</span>
+                  Cerrar operación
+                </button>
               </div>
-              <button
-                onClick={() => setShowCerrarModal(true)}
-                className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
-              >
-                <span className="material-symbols-outlined text-xl">lock</span>
-                Cerrar operación
-              </button>
             </div>
-          </div>
+          )}
 
         </div>
       </div>

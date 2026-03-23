@@ -77,6 +77,8 @@ export default function OperacionDetailPage() {
   const [showConfirmCerrarModal, setShowConfirmCerrarModal] = useState(false);
   const [confirmingCerrar, setConfirmingCerrar] = useState(false);
   const [showOperacionCerradaModal, setShowOperacionCerradaModal] = useState(false);
+  const [showReabrirModal, setShowReabrirModal] = useState(false);
+  const [reabriendo, setReabriendo] = useState(false);
 
   useEffect(() => {
     const fetchOperation = async () => {
@@ -164,7 +166,27 @@ export default function OperacionDetailPage() {
   };
 
   const handleEditar = () => {
-    router.push(`/operaciones/${id}/edit`);
+    if (operation?.estado === "cerrada") {
+      setShowReabrirModal(true);
+    } else {
+      router.push(`/operaciones/${id}/edit`);
+    }
+  };
+
+  const handleConfirmReabrir = async () => {
+    setReabriendo(true);
+    try {
+      const res = await fetch(`/api/operations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: "abierta" }),
+      });
+      if (!res.ok) throw new Error();
+      router.push(`/operaciones/${id}/edit`);
+    } catch {
+      setReabriendo(false);
+      setShowReabrirModal(false);
+    }
   };
 
   const handleConfirmCerrar = async () => {
@@ -691,6 +713,48 @@ export default function OperacionDetailPage() {
                 className="flex h-10 items-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReabrirModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Reabrir operación"
+        >
+          <div className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl">
+            <div className="flex items-center gap-3 border-b border-zinc-200 px-6 py-4">
+              <span className="material-symbols-outlined text-2xl text-blue-600">lock_open</span>
+              <h2 className="text-base font-semibold text-zinc-900">Reabrir operación</h2>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                ¿Deseás reabrir la operación? El estado volverá a <span className="font-medium">abierta</span> y podrás editarla.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => !reabriendo && setShowReabrirModal(false)}
+                disabled={reabriendo}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReabrir}
+                disabled={reabriendo}
+                className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {reabriendo && (
+                  <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                )}
+                Confirmar
               </button>
             </div>
           </div>

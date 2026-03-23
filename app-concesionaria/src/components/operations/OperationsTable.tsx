@@ -48,6 +48,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [paymentOp, setPaymentOp] = useState<Operation | null>(null);
+  const [showAlreadyPaidModal, setShowAlreadyPaidModal] = useState(false);
   const router = useRouter();
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -221,7 +222,14 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
 
   const handlePayClick = (e: React.MouseEvent, operation: Operation) => {
     e.stopPropagation();
-    setPaymentOp(operation);
+    if (
+      operation.precioVentaTotal !== null &&
+      operation.saldado >= operation.precioVentaTotal
+    ) {
+      setShowAlreadyPaidModal(true);
+    } else {
+      setPaymentOp(operation);
+    }
   };
 
   const handlePaymentSave = async (data: {
@@ -261,6 +269,51 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
 
   return (
     <>
+      {showAlreadyPaidModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowAlreadyPaidModal(false)}
+        >
+          <div
+            className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-green-600">
+                  check_circle
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">Operación saldada</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAlreadyPaidModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                aria-label="Cerrar"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                Ya fueron pagadas todas las cuotas de esta operación. No es posible agregar un nuevo pago.
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowAlreadyPaidModal(false)}
+                className="flex h-10 items-center rounded-lg bg-zinc-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {paymentOp && (
         <PaymentModal
           operacionId={String(paymentOp.idOperacion)}

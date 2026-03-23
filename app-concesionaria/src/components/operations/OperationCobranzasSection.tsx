@@ -30,6 +30,7 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAlreadyPaidModal, setShowAlreadyPaidModal] = useState(false);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("es-AR", {
@@ -124,7 +125,13 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
           <div className="flex flex-col items-end gap-1">
             <button
               type="button"
-              onClick={() => setShowModal(true)}
+              onClick={() => {
+                if (saldado >= precioVentaTotal) {
+                  setShowAlreadyPaidModal(true);
+                } else {
+                  setShowModal(true);
+                }
+              }}
               disabled={estado === "cerrada"}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 estado === "cerrada"
@@ -249,6 +256,51 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
           onSave={handleSave}
           onClose={() => !saving && setShowModal(false)}
         />
+      )}
+
+      {showAlreadyPaidModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowAlreadyPaidModal(false)}
+        >
+          <div
+            className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-green-600">
+                  check_circle
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">Operación saldada</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAlreadyPaidModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                aria-label="Cerrar"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                Ya fueron pagadas todas las cuotas de esta operación. No es posible agregar un nuevo pago.
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowAlreadyPaidModal(false)}
+                className="flex h-10 items-center rounded-lg bg-zinc-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </>
