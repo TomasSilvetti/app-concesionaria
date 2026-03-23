@@ -713,7 +713,7 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                   id="ng-descripcion"
                   type="text"
                   value={formDescripcion}
-                  onChange={(e) => setFormDescripcion(e.target.value)}
+                  onChange={(e) => { const v = e.target.value; setFormDescripcion(v.charAt(0).toUpperCase() + v.slice(1)); }}
                   placeholder="Ej: Publicidad, limpieza, seguro..."
                   disabled={saving}
                   autoFocus
@@ -743,7 +743,7 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                     <input
                       type="text"
                       value={nuevoOrigenNombre}
-                      onChange={(e) => setNuevoOrigenNombre(e.target.value)}
+                      onChange={(e) => setNuevoOrigenNombre(e.target.value.toUpperCase())}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearOrigen(); } }}
                       placeholder="Nombre del pagador..."
                       disabled={saving || creatingOrigen}
@@ -808,7 +808,7 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                     <input
                       type="text"
                       value={nuevaCatNombre}
-                      onChange={(e) => setNuevaCatNombre(e.target.value)}
+                      onChange={(e) => setNuevaCatNombre(e.target.value.toUpperCase())}
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearCategoria(); } }}
                       placeholder="Nombre de la categoría..."
                       disabled={saving || creatingCat}
