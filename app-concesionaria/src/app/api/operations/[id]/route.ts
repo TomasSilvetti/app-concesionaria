@@ -142,6 +142,8 @@ export async function GET(
         ? { id: operation.OperationDocument.id, nombreArchivo: operation.OperationDocument.nombreArchivo }
         : null,
       vehiculosIntercambiados: operation.OperationExchange.map((exchange) => ({
+        vehicleId: exchange.stockId,
+        marcaId: exchange.Vehicle.marcaId,
         marca: exchange.Vehicle.VehicleBrand.nombre,
         modelo: exchange.Vehicle.modelo,
         anio: exchange.Vehicle.anio,
@@ -366,6 +368,66 @@ export async function PATCH(
       }
     }
 
+    // Actualizar vehículo principal si se envían datos
+    if (body.vehiculo && typeof body.vehiculo === "object" && !Array.isArray(body.vehiculo)) {
+      const v = body.vehiculo as Record<string, unknown>;
+      const vehicleUpdate: Record<string, unknown> = { actualizadoEn: new Date() };
+
+      if (typeof v.modelo === "string" && v.modelo.trim()) vehicleUpdate.modelo = v.modelo.trim();
+      if (typeof v.anio === "number" && v.anio >= 1900 && v.anio <= 2100) vehicleUpdate.anio = v.anio;
+      if (typeof v.patente === "string") vehicleUpdate.patente = v.patente.trim() || null;
+      if (typeof v.version === "string") vehicleUpdate.version = v.version.trim() || null;
+      if (typeof v.color === "string") vehicleUpdate.color = v.color.trim() || null;
+      if (typeof v.kilometros === "number" && v.kilometros >= 0) vehicleUpdate.kilometros = v.kilometros;
+      if (typeof v.precioRevista === "number" && v.precioRevista > 0) vehicleUpdate.precioRevista = v.precioRevista;
+      if (v.precioOferta === null) vehicleUpdate.precioOferta = null;
+      else if (typeof v.precioOferta === "number" && v.precioOferta > 0) vehicleUpdate.precioOferta = v.precioOferta;
+      if (typeof v.notasMecanicas === "string") vehicleUpdate.notasMecanicas = v.notasMecanicas.trim() || null;
+      if (typeof v.notasGenerales === "string") vehicleUpdate.notasGenerales = v.notasGenerales.trim() || null;
+      if (typeof v.marcaId === "string" && v.marcaId.trim()) {
+        vehicleUpdate.marcaId = v.marcaId.trim();
+        updateData.marcaId = v.marcaId.trim();
+      }
+      if (typeof v.categoriaId === "string" && v.categoriaId.trim()) {
+        vehicleUpdate.categoriaId = v.categoriaId.trim();
+        updateData.categoriaId = v.categoriaId.trim();
+      }
+
+      await prisma.vehicle.update({
+        where: { id: existingOperation.vehiculoVendidoId },
+        data: vehicleUpdate,
+      });
+    }
+
+    // Actualizar vehículos de intercambio si se envían datos
+    if (Array.isArray(body.vehiculosIntercambiados)) {
+      for (const ev of body.vehiculosIntercambiados as Record<string, unknown>[]) {
+        if (typeof ev.vehicleId !== "string" || !ev.vehicleId) continue;
+        const evUpdate: Record<string, unknown> = { actualizadoEn: new Date() };
+
+        if (typeof ev.modelo === "string" && ev.modelo.trim()) evUpdate.modelo = ev.modelo.trim();
+        if (typeof ev.anio === "number" && ev.anio >= 1900 && ev.anio <= 2100) evUpdate.anio = ev.anio;
+        if (typeof ev.patente === "string") evUpdate.patente = ev.patente.trim() || null;
+        if (typeof ev.version === "string") evUpdate.version = ev.version.trim() || null;
+        if (typeof ev.color === "string") evUpdate.color = ev.color.trim() || null;
+        if (typeof ev.kilometros === "number" && ev.kilometros >= 0) evUpdate.kilometros = ev.kilometros;
+        if (typeof ev.marcaId === "string" && ev.marcaId.trim()) evUpdate.marcaId = ev.marcaId.trim();
+
+        await prisma.vehicle.update({
+          where: { id: ev.vehicleId },
+          data: evUpdate,
+        });
+
+        if (ev.precioNegociado !== undefined) {
+          const pn = ev.precioNegociado === null ? null : typeof ev.precioNegociado === "number" ? ev.precioNegociado : null;
+          await prisma.operationExchange.update({
+            where: { operacionId_stockId: { operacionId: existingOperation.id, stockId: ev.vehicleId } },
+            data: { precioNegociado: pn, actualizadoEn: new Date() },
+          });
+        }
+      }
+    }
+
     const gastosAsociados = existingOperation.gastosAsociados;
     const ingresosBrutos = (updateData.ingresosBrutos as number) ?? existingOperation.ingresosBrutos;
     const precioVentaTotal = (updateData.precioVentaTotal as number) ?? existingOperation.precioVentaTotal;
@@ -505,6 +567,8 @@ export async function PATCH(
         ? { id: updatedWithVehicle.OperationDocument.id, nombreArchivo: updatedWithVehicle.OperationDocument.nombreArchivo }
         : null,
       vehiculosIntercambiados: updatedWithVehicle.OperationExchange.map((ex) => ({
+        vehicleId: ex.stockId,
+        marcaId: ex.Vehicle.marcaId,
         marca: ex.Vehicle.VehicleBrand.nombre,
         modelo: ex.Vehicle.modelo,
         anio: ex.Vehicle.anio,

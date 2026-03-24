@@ -8,6 +8,8 @@ import { OperationCobranzasSection } from "@/components/operations/OperationCobr
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
+  vehicleId: string;
+  marcaId: string;
   marca: string;
   modelo: string;
   anio: number;
@@ -16,6 +18,28 @@ interface VehicleExchange {
   version?: string;
   color?: string;
   kilometros?: number;
+}
+
+interface Brand {
+  id: string;
+  nombre: string;
+}
+
+interface Category {
+  id: string;
+  nombre: string;
+}
+
+interface ExchangeVehicleEdit {
+  vehicleId: string;
+  marcaId: string;
+  modelo: string;
+  anio: string;
+  patente: string;
+  version: string;
+  color: string;
+  kilometros: string;
+  precioNegociado: string;
 }
 
 interface Expense {
@@ -105,6 +129,27 @@ export default function OperacionEditPage() {
   // Data for selectors
   const [operationTypes, setOperationTypes] = useState<OperationType[]>([]);
 
+  // Vehicle fields (editable)
+  const [vehicleModelo, setVehicleModelo] = useState("");
+  const [vehicleAnio, setVehicleAnio] = useState("");
+  const [vehiclePatente, setVehiclePatente] = useState("");
+  const [vehicleVersion, setVehicleVersion] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
+  const [vehicleKilometros, setVehicleKilometros] = useState("");
+  const [vehiclePrecioRevista, setVehiclePrecioRevista] = useState("");
+  const [vehiclePrecioOferta, setVehiclePrecioOferta] = useState("");
+  const [vehicleNotasMecanicas, setVehicleNotasMecanicas] = useState("");
+  const [vehicleNotasGenerales, setVehicleNotasGenerales] = useState("");
+  const [vehicleMarcaId, setVehicleMarcaId] = useState("");
+  const [vehicleCategoriaId, setVehicleCategoriaId] = useState("");
+
+  // Exchange vehicles (editable)
+  const [exchangeVehicles, setExchangeVehicles] = useState<ExchangeVehicleEdit[]>([]);
+
+  // Data for selectors
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
   // Validation errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -138,6 +183,35 @@ export default function OperacionEditPage() {
           setIngresosNetos(ingresosCalculados);
           setComision(comisionCalculada);
 
+          // Initialize vehicle fields
+          setVehicleModelo(data.modelo || "");
+          setVehicleAnio(data.anio?.toString() || "");
+          setVehiclePatente(data.patente || "");
+          setVehicleVersion(data.version || "");
+          setVehicleColor(data.color || "");
+          setVehicleKilometros(data.kilometros?.toString() || "");
+          setVehiclePrecioRevista(data.precioRevista?.toString() || "");
+          setVehiclePrecioOferta(data.precioOferta?.toString() || "");
+          setVehicleNotasMecanicas(data.notasMecanicas || "");
+          setVehicleNotasGenerales(data.notasGenerales || "");
+          setVehicleMarcaId(data.marcaId || "");
+          setVehicleCategoriaId(data.categoriaId || "");
+
+          // Initialize exchange vehicles
+          setExchangeVehicles(
+            (data.vehiculosIntercambiados || []).map((v: VehicleExchange) => ({
+              vehicleId: v.vehicleId,
+              marcaId: v.marcaId,
+              modelo: v.modelo,
+              anio: v.anio?.toString() || "",
+              patente: v.patente || "",
+              version: v.version || "",
+              color: v.color || "",
+              kilometros: v.kilometros?.toString() || "",
+              precioNegociado: v.precioNegociado?.toString() || "",
+            }))
+          );
+
           // Store original values for change detection
           setOriginalValues({
             fechaInicio: data.fechaInicio ? data.fechaInicio.split('T')[0] : "",
@@ -167,6 +241,8 @@ export default function OperacionEditPage() {
 
   useEffect(() => {
     fetchOperationTypes();
+    fetchBrands();
+    fetchCategories();
   }, []);
 
   const fetchOperationTypes = async () => {
@@ -179,6 +255,32 @@ export default function OperacionEditPage() {
       }
     } catch {
       setOperationTypes([]);
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(`${baseUrl}/api/vehicle-brands`);
+      if (res.ok) {
+        const data = await res.json();
+        setBrands(data.brands ?? []);
+      }
+    } catch {
+      setBrands([]);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const res = await fetch(`${baseUrl}/api/vehicle-categories`);
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data.categories ?? []);
+      }
+    } catch {
+      setCategories([]);
     }
   };
 
@@ -314,9 +416,37 @@ export default function OperacionEditPage() {
 
     const modifiedFields = getModifiedFields();
 
-    if (Object.keys(modifiedFields).length === 0) {
-      setError("No hay cambios para guardar");
-      return;
+    const payload: Record<string, unknown> = { ...modifiedFields };
+
+    // Incluir datos del vehículo principal
+    payload.vehiculo = {
+      marcaId: vehicleMarcaId,
+      categoriaId: vehicleCategoriaId,
+      modelo: vehicleModelo,
+      anio: parseInt(vehicleAnio) || undefined,
+      patente: vehiclePatente,
+      version: vehicleVersion,
+      color: vehicleColor,
+      kilometros: vehicleKilometros !== "" ? parseInt(vehicleKilometros) : undefined,
+      precioRevista: vehiclePrecioRevista !== "" ? parseFloat(vehiclePrecioRevista) : undefined,
+      precioOferta: vehiclePrecioOferta !== "" ? parseFloat(vehiclePrecioOferta) : null,
+      notasMecanicas: vehicleNotasMecanicas,
+      notasGenerales: vehicleNotasGenerales,
+    };
+
+    // Incluir vehículos de intercambio si existen
+    if (exchangeVehicles.length > 0) {
+      payload.vehiculosIntercambiados = exchangeVehicles.map((v) => ({
+        vehicleId: v.vehicleId,
+        marcaId: v.marcaId,
+        modelo: v.modelo,
+        anio: v.anio !== "" ? parseInt(v.anio) : undefined,
+        patente: v.patente,
+        version: v.version,
+        color: v.color,
+        kilometros: v.kilometros !== "" ? parseInt(v.kilometros) : undefined,
+        precioNegociado: v.precioNegociado !== "" ? parseFloat(v.precioNegociado) : null,
+      }));
     }
 
     setIsSaving(true);
@@ -327,7 +457,7 @@ export default function OperacionEditPage() {
       const res = await fetch(`${baseUrl}/api/operations/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(modifiedFields),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -546,22 +676,17 @@ export default function OperacionEditPage() {
 
         {/* Contenido principal en grid */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Sección: Datos del vehículo (solo lectura) */}
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm lg:col-span-2 lg:row-start-1">
+          {/* Sección: Datos del vehículo (editable) */}
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-1">
             <div className="mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-zinc-600">
+              <span className="material-symbols-outlined text-2xl text-blue-600">
                 directions_car
               </span>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-zinc-900">
-                  Datos del Vehículo
-                </h2>
-                <p className="text-xs text-zinc-500">
-                  Los datos del vehículo no son editables desde la operación
-                </p>
-              </div>
+              <h2 className="text-lg font-semibold text-zinc-900">
+                Datos del Vehículo
+              </h2>
             </div>
-            
+
             {/* Fotos del vehículo */}
             {operation && operation.fotos && operation.fotos.length > 0 && (
               <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -580,70 +705,185 @@ export default function OperacionEditPage() {
               </div>
             )}
 
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Marca</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation?.marcaNombre}</dd>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Marca */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Marca</label>
+                <div className="relative">
+                  <select
+                    value={vehicleMarcaId}
+                    onChange={(e) => setVehicleMarcaId(e.target.value)}
+                    disabled={isSaving || isCerrada}
+                    className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  >
+                    <option value="">Seleccioná una marca</option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>{b.nombre}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">expand_more</span>
+                </div>
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Modelo</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation?.modelo}</dd>
+
+              {/* Modelo */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Modelo</label>
+                <input
+                  type="text"
+                  value={vehicleModelo}
+                  onChange={(e) => setVehicleModelo(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Año</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation?.anio}</dd>
+
+              {/* Año */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Año</label>
+                <input
+                  type="number"
+                  value={vehicleAnio}
+                  onChange={(e) => setVehicleAnio(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Patente</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation?.patente || "—"}</dd>
+
+              {/* Patente */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Patente</label>
+                <input
+                  type="text"
+                  value={vehiclePatente}
+                  onChange={(e) => setVehiclePatente(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Categoría</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation?.categoriaNombre}</dd>
+
+              {/* Categoría */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Categoría</label>
+                <div className="relative">
+                  <select
+                    value={vehicleCategoriaId}
+                    onChange={(e) => setVehicleCategoriaId(e.target.value)}
+                    disabled={isSaving || isCerrada}
+                    className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  >
+                    <option value="">Seleccioná una categoría</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">expand_more</span>
+                </div>
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Versión</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation?.version || "—"}</dd>
+
+              {/* Versión */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Versión</label>
+                <input
+                  type="text"
+                  value={vehicleVersion}
+                  onChange={(e) => setVehicleVersion(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Color</dt>
-                <dd className="text-sm font-medium text-zinc-900">{operation?.color || "—"}</dd>
+
+              {/* Color */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Color</label>
+                <input
+                  type="text"
+                  value={vehicleColor}
+                  onChange={(e) => setVehicleColor(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Kilómetros</dt>
-                <dd className="text-sm font-medium text-zinc-900">
-                  {operation?.kilometros !== null && operation?.kilometros !== undefined 
-                    ? `${operation.kilometros.toLocaleString("es-AR")} km` 
-                    : "—"}
-                </dd>
+
+              {/* Kilómetros */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Kilómetros</label>
+                <input
+                  type="number"
+                  value={vehicleKilometros}
+                  onChange={(e) => setVehicleKilometros(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                />
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Precio Revista</dt>
-                <dd className="text-sm font-medium text-zinc-900">{formatCurrency(operation?.precioRevista || null)}</dd>
+
+              {/* Precio Revista */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Precio Revista</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">attach_money</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={vehiclePrecioRevista}
+                    onChange={(e) => setVehiclePrecioRevista(e.target.value)}
+                    disabled={isSaving || isCerrada}
+                    placeholder="0.00"
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                </div>
               </div>
-              <div className="flex justify-between border-b border-zinc-200 pb-2">
-                <dt className="text-sm text-zinc-600">Precio Oferta</dt>
-                <dd className="text-sm font-semibold text-green-600">{formatCurrency(operation?.precioOferta || null)}</dd>
+
+              {/* Precio Oferta */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Precio Oferta</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">sell</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={vehiclePrecioOferta}
+                    onChange={(e) => setVehiclePrecioOferta(e.target.value)}
+                    disabled={isSaving || isCerrada}
+                    placeholder="0.00"
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                </div>
               </div>
+
+              {/* Comprador (solo lectura) */}
               {operation?.nombreComprador && (
-                <div className="flex justify-between border-b border-zinc-200 pb-2 sm:col-span-2">
-                  <dt className="text-sm text-zinc-600">Comprador</dt>
-                  <dd className="text-sm font-medium text-zinc-900">{operation.nombreComprador}</dd>
+                <div className="flex flex-col gap-2 sm:col-span-2">
+                  <label className="text-sm font-medium text-zinc-700">Comprador</label>
+                  <div className="flex h-12 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-4 text-sm text-zinc-700">
+                    {operation.nombreComprador}
+                  </div>
                 </div>
               )}
-              {operation?.notasMecanicas && (
-                <div className="flex flex-col gap-1 border-b border-zinc-200 pb-2 sm:col-span-2">
-                  <dt className="text-sm text-zinc-600">Notas Mecánicas</dt>
-                  <dd className="text-sm text-zinc-900">{operation.notasMecanicas}</dd>
-                </div>
-              )}
-              {operation?.notasGenerales && (
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <dt className="text-sm text-zinc-600">Notas Generales</dt>
-                  <dd className="text-sm text-zinc-900">{operation.notasGenerales}</dd>
-                </div>
-              )}
-            </dl>
+
+              {/* Notas Mecánicas */}
+              <div className="flex flex-col gap-2 sm:col-span-2">
+                <label className="text-sm font-medium text-zinc-700">Notas Mecánicas</label>
+                <textarea
+                  value={vehicleNotasMecanicas}
+                  onChange={(e) => setVehicleNotasMecanicas(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  rows={3}
+                  className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 resize-none"
+                />
+              </div>
+
+              {/* Notas Generales */}
+              <div className="flex flex-col gap-2 sm:col-span-2">
+                <label className="text-sm font-medium text-zinc-700">Notas Generales</label>
+                <textarea
+                  value={vehicleNotasGenerales}
+                  onChange={(e) => setVehicleNotasGenerales(e.target.value)}
+                  disabled={isSaving || isCerrada}
+                  rows={3}
+                  className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 resize-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Sección: Módulo de Gastos */}
@@ -950,21 +1190,18 @@ export default function OperacionEditPage() {
             </div>
           </div>
 
-          {/* Sección: Vehículos de intercambio (solo lectura) */}
+          {/* Sección: Vehículos de intercambio (editable) */}
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
             <div className="mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-2xl text-zinc-400">
+              <span className="material-symbols-outlined text-2xl text-blue-600">
                 swap_horiz
               </span>
               <h2 className="text-lg font-semibold text-zinc-900">
                 Vehículos de Intercambio
               </h2>
-              <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                Solo lectura
-              </span>
             </div>
 
-            {operation && operation.vehiculosIntercambiados.length === 0 ? (
+            {exchangeVehicles.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
                   <span className="material-symbols-outlined text-2xl text-zinc-400">
@@ -976,49 +1213,155 @@ export default function OperacionEditPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Marca
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Modelo
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Año
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Patente
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Precio Negociado
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 bg-white">
-                    {operation?.vehiculosIntercambiados.map((vehicle, index) => (
-                      <tr key={index} className="transition-colors hover:bg-zinc-50">
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.marca}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.modelo}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.anio}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.patente}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-zinc-900">
-                          {formatCurrency(vehicle.precioNegociado)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex flex-col gap-6">
+                {exchangeVehicles.map((vehicle, index) => (
+                  <div key={vehicle.vehicleId} className="rounded-lg border border-zinc-200 p-4">
+                    <p className="mb-4 text-sm font-semibold text-zinc-700">
+                      Vehículo {index + 1}
+                    </p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {/* Marca */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Marca</label>
+                        <div className="relative">
+                          <select
+                            value={vehicle.marcaId}
+                            onChange={(e) => {
+                              const updated = [...exchangeVehicles];
+                              updated[index] = { ...updated[index], marcaId: e.target.value };
+                              setExchangeVehicles(updated);
+                            }}
+                            disabled={isSaving || isCerrada}
+                            className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                          >
+                            <option value="">Seleccioná una marca</option>
+                            {brands.map((b) => (
+                              <option key={b.id} value={b.id}>{b.nombre}</option>
+                            ))}
+                          </select>
+                          <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">expand_more</span>
+                        </div>
+                      </div>
+
+                      {/* Modelo */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Modelo</label>
+                        <input
+                          type="text"
+                          value={vehicle.modelo}
+                          onChange={(e) => {
+                            const updated = [...exchangeVehicles];
+                            updated[index] = { ...updated[index], modelo: e.target.value };
+                            setExchangeVehicles(updated);
+                          }}
+                          disabled={isSaving || isCerrada}
+                          className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                        />
+                      </div>
+
+                      {/* Año */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Año</label>
+                        <input
+                          type="number"
+                          value={vehicle.anio}
+                          onChange={(e) => {
+                            const updated = [...exchangeVehicles];
+                            updated[index] = { ...updated[index], anio: e.target.value };
+                            setExchangeVehicles(updated);
+                          }}
+                          disabled={isSaving || isCerrada}
+                          className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                        />
+                      </div>
+
+                      {/* Patente */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Patente</label>
+                        <input
+                          type="text"
+                          value={vehicle.patente}
+                          onChange={(e) => {
+                            const updated = [...exchangeVehicles];
+                            updated[index] = { ...updated[index], patente: e.target.value };
+                            setExchangeVehicles(updated);
+                          }}
+                          disabled={isSaving || isCerrada}
+                          className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                        />
+                      </div>
+
+                      {/* Versión */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Versión</label>
+                        <input
+                          type="text"
+                          value={vehicle.version}
+                          onChange={(e) => {
+                            const updated = [...exchangeVehicles];
+                            updated[index] = { ...updated[index], version: e.target.value };
+                            setExchangeVehicles(updated);
+                          }}
+                          disabled={isSaving || isCerrada}
+                          className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                        />
+                      </div>
+
+                      {/* Color */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Color</label>
+                        <input
+                          type="text"
+                          value={vehicle.color}
+                          onChange={(e) => {
+                            const updated = [...exchangeVehicles];
+                            updated[index] = { ...updated[index], color: e.target.value };
+                            setExchangeVehicles(updated);
+                          }}
+                          disabled={isSaving || isCerrada}
+                          className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                        />
+                      </div>
+
+                      {/* Kilómetros */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Kilómetros</label>
+                        <input
+                          type="number"
+                          value={vehicle.kilometros}
+                          onChange={(e) => {
+                            const updated = [...exchangeVehicles];
+                            updated[index] = { ...updated[index], kilometros: e.target.value };
+                            setExchangeVehicles(updated);
+                          }}
+                          disabled={isSaving || isCerrada}
+                          className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                        />
+                      </div>
+
+                      {/* Precio Negociado */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Precio Negociado</label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">handshake</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={vehicle.precioNegociado}
+                            onChange={(e) => {
+                              const updated = [...exchangeVehicles];
+                              updated[index] = { ...updated[index], precioNegociado: e.target.value };
+                              setExchangeVehicles(updated);
+                            }}
+                            disabled={isSaving || isCerrada}
+                            placeholder="0.00"
+                            className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
