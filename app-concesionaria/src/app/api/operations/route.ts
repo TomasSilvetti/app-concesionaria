@@ -718,6 +718,31 @@ export async function POST(req: NextRequest) {
             actualizadoEn: now,
           },
         });
+
+        if (usedVehiclePrecioToma && usedVehiclePrecioToma > 0) {
+          const metodoPagoVehiculo = await tx.paymentMethod.upsert({
+            where: { clienteId_nombre: { clienteId, nombre: "Vehiculo tomado" } },
+            create: {
+              id: randomUUID(),
+              clienteId,
+              nombre: "Vehiculo tomado",
+            },
+            update: {},
+          });
+
+          await tx.pago.create({
+            data: {
+              id: randomUUID(),
+              operacionId: operationId,
+              clienteId,
+              fecha: parsedFechaInicio,
+              metodoPagoId: metodoPagoVehiculo.id,
+              monto: usedVehiclePrecioToma,
+              nota: `se descuentan $${usedVehiclePrecioToma} del vehiculo tomado como forma de pago`,
+              actualizadoEn: now,
+            },
+          });
+        }
       }
 
       return operation;
