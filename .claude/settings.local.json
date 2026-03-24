@@ -17,7 +17,10 @@
       "Bash(find c:UserstomasDocumentsProyectosApp-Concesionaria -type d -name *operacio* -o -type d -name *operation*)",
       "Bash(find c:UserstomasDocumentsProyectosApp-Concesionaria/app-concesionaria/src -path *operations* -type f -name *.tsx)",
       "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionaria -type f -name *operacion*)",
-      "Bash(find c:/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/components -type f -name *.tsx -o -name *.ts)"
+      "Bash(find c:/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/components -type f -name *.tsx -o -name *.ts)",
+      "Bash(grep -n \"tradeIn\\\\|vehiculosIntercambiados\\\\|VehiculoFormaPago\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/edit/page.tsx)",
+      "Bash(grep -n \"select\\\\|Select\\\\|marca\\\\|Marca\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/edit/page.tsx)",
+      "Bash(wc -l /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/operaciones/[id]/edit/page.tsx)"
     ],
     "additionalDirectories": [
       "c:\\Users\\tomas\\Documents\\Proyectos\\App-Concesionaria\\docs\\historias-de-usuario"

@@ -42,6 +42,7 @@ interface StockVehicle {
 interface TradeInVehicle {
   id: string;
   marcaId: string;
+  categoriaId: string;
   modelo: string;
   anio: string;
   patente: string;
@@ -102,6 +103,7 @@ export function CreateOperationForm({
   
   // Trade-in form fields
   const [tradeInMarcaId, setTradeInMarcaId] = useState("");
+  const [tradeInCategoriaId, setTradeInCategoriaId] = useState("");
   const [tradeInModelo, setTradeInModelo] = useState("");
   const [tradeInAnio, setTradeInAnio] = useState("");
   const [tradeInPatente, setTradeInPatente] = useState("");
@@ -117,6 +119,16 @@ export function CreateOperationForm({
   const [tradeInPhotos, setTradeInPhotos] = useState<PhotoFile[]>([]);
   const [tradeInIsDragging, setTradeInIsDragging] = useState(false);
   const tradeInFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Trade-in add brand/category inline
+  const [showAddTradeInBrand, setShowAddTradeInBrand] = useState(false);
+  const [newTradeInBrandName, setNewTradeInBrandName] = useState("");
+  const [isSavingTradeInBrand, setIsSavingTradeInBrand] = useState(false);
+  const [localTradeInBrands, setLocalTradeInBrands] = useState<VehicleBrand[]>([]);
+  const [showAddTradeInCategory, setShowAddTradeInCategory] = useState(false);
+  const [newTradeInCategoryName, setNewTradeInCategoryName] = useState("");
+  const [isSavingTradeInCategory, setIsSavingTradeInCategory] = useState(false);
+  const [localTradeInCategories, setLocalTradeInCategories] = useState<VehicleCategory[]>([]);
 
   // Data for selectors
   const [brands, setBrands] = useState<VehicleBrand[]>([]);
@@ -185,8 +197,61 @@ export function CreateOperationForm({
     }
   };
 
+  const handleAddTradeInBrandClick = async () => {
+    if (!showAddTradeInBrand) {
+      setShowAddTradeInBrand(true);
+      return;
+    }
+    if (!newTradeInBrandName.trim()) return;
+    setIsSavingTradeInBrand(true);
+    try {
+      const res = await fetch("/api/vehicle-brands", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: newTradeInBrandName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLocalTradeInBrands((prev) => [...prev, data.brand]);
+        setTradeInMarcaId(data.brand.id);
+        handleTradeInInputChange("tradeInMarcaId");
+        setNewTradeInBrandName("");
+        setShowAddTradeInBrand(false);
+      }
+    } finally {
+      setIsSavingTradeInBrand(false);
+    }
+  };
+
+  const handleAddTradeInCategoryClick = async () => {
+    if (!showAddTradeInCategory) {
+      setShowAddTradeInCategory(true);
+      return;
+    }
+    if (!newTradeInCategoryName.trim()) return;
+    setIsSavingTradeInCategory(true);
+    try {
+      const res = await fetch("/api/vehicle-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: newTradeInCategoryName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLocalTradeInCategories((prev) => [...prev, data.category]);
+        setTradeInCategoriaId(data.category.id);
+        handleTradeInInputChange("tradeInCategoriaId");
+        setNewTradeInCategoryName("");
+        setShowAddTradeInCategory(false);
+      }
+    } finally {
+      setIsSavingTradeInCategory(false);
+    }
+  };
+
   const resetTradeInForm = () => {
     setTradeInMarcaId("");
+    setTradeInCategoriaId("");
     setTradeInModelo("");
     setTradeInAnio("");
     setTradeInPatente("");
@@ -200,6 +265,10 @@ export function CreateOperationForm({
     setTradeInNotasGenerales("");
     setTradeInFieldErrors({});
     setTradeInPhotos([]);
+    setShowAddTradeInBrand(false);
+    setNewTradeInBrandName("");
+    setShowAddTradeInCategory(false);
+    setNewTradeInCategoryName("");
   };
 
   const validateTradeInForm = (): boolean => {
@@ -244,6 +313,7 @@ export function CreateOperationForm({
     const newVehicle: TradeInVehicle = {
       id: crypto.randomUUID(),
       marcaId: tradeInMarcaId,
+      categoriaId: tradeInCategoriaId,
       modelo: tradeInModelo.trim(),
       anio: tradeInAnio,
       patente: tradeInPatente.trim(),
@@ -275,6 +345,7 @@ export function CreateOperationForm({
   const handleEditTradeInVehicle = (vehicle: TradeInVehicle) => {
     setTradeInVehicles((prev) => prev.filter((v) => v.id !== vehicle.id));
     setTradeInMarcaId(vehicle.marcaId);
+    setTradeInCategoriaId(vehicle.categoriaId);
     setTradeInModelo(vehicle.modelo);
     setTradeInAnio(vehicle.anio);
     setTradeInPatente(vehicle.patente);
@@ -914,39 +985,122 @@ export function CreateOperationForm({
                   >
                     Marca <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                      branding_watermark
-                    </span>
-                    <select
-                      id="tradeInMarca"
-                      value={tradeInMarcaId}
-                      onChange={(e) => {
-                        setTradeInMarcaId(e.target.value);
-                        handleTradeInInputChange("tradeInMarcaId");
-                      }}
-                      className={`h-12 w-full appearance-none rounded-lg border ${
-                        tradeInFieldErrors.tradeInMarcaId
-                          ? "border-red-300 bg-red-50"
-                          : "border-zinc-300 bg-zinc-50"
-                      } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50`}
-                      disabled={isSubmitting || brandsLoading}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                        branding_watermark
+                      </span>
+                      <select
+                        id="tradeInMarca"
+                        value={tradeInMarcaId}
+                        onChange={(e) => {
+                          setTradeInMarcaId(e.target.value);
+                          handleTradeInInputChange("tradeInMarcaId");
+                        }}
+                        className={`h-12 w-full appearance-none rounded-lg border ${
+                          tradeInFieldErrors.tradeInMarcaId
+                            ? "border-red-300 bg-red-50"
+                            : "border-zinc-300 bg-zinc-50"
+                        } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50`}
+                        disabled={isSubmitting || brandsLoading}
+                      >
+                        <option value="">Selecciona una marca</option>
+                        {[...brands, ...localTradeInBrands].map((brand) => (
+                          <option key={brand.id} value={brand.id}>
+                            {brand.nombre}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                        expand_more
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddTradeInBrandClick}
+                      disabled={isSubmitting || isSavingTradeInBrand || (showAddTradeInBrand && !newTradeInBrandName.trim())}
+                      className={`flex h-12 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors disabled:opacity-40 focus:outline-none ${showAddTradeInBrand ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                      aria-label={showAddTradeInBrand ? "Confirmar nueva marca" : "Agregar nueva marca"}
                     >
-                      <option value="">Selecciona una marca</option>
-                      {brands.map((brand) => (
-                        <option key={brand.id} value={brand.id}>
-                          {brand.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                      expand_more
-                    </span>
+                      <span className="material-symbols-outlined text-base">add</span>
+                      {showAddTradeInBrand ? "Confirmar" : "Agregar"}
+                    </button>
                   </div>
+                  {showAddTradeInBrand && (
+                    <input
+                      type="text"
+                      value={newTradeInBrandName}
+                      onChange={(e) => setNewTradeInBrandName(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddTradeInBrandClick()}
+                      placeholder="Nombre de la nueva marca..."
+                      autoFocus
+                      className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      disabled={isSavingTradeInBrand}
+                    />
+                  )}
                   {tradeInFieldErrors.tradeInMarcaId && (
                     <span className="text-xs text-red-600">
                       {tradeInFieldErrors.tradeInMarcaId}
                     </span>
+                  )}
+                </div>
+
+                {/* Categoría */}
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="tradeInCategoria"
+                    className="text-sm font-medium text-zinc-700"
+                  >
+                    Categoría
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                        label
+                      </span>
+                      <select
+                        id="tradeInCategoria"
+                        value={tradeInCategoriaId}
+                        onChange={(e) => {
+                          setTradeInCategoriaId(e.target.value);
+                          handleTradeInInputChange("tradeInCategoriaId");
+                        }}
+                        className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50"
+                        disabled={isSubmitting || categoriesLoading}
+                      >
+                        <option value="">Selecciona una categoría</option>
+                        {[...categories, ...localTradeInCategories].map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.nombre}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                        expand_more
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddTradeInCategoryClick}
+                      disabled={isSubmitting || isSavingTradeInCategory || (showAddTradeInCategory && !newTradeInCategoryName.trim())}
+                      className={`flex h-12 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors disabled:opacity-40 focus:outline-none ${showAddTradeInCategory ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                      aria-label={showAddTradeInCategory ? "Confirmar nueva categoría" : "Agregar nueva categoría"}
+                    >
+                      <span className="material-symbols-outlined text-base">add</span>
+                      {showAddTradeInCategory ? "Confirmar" : "Agregar"}
+                    </button>
+                  </div>
+                  {showAddTradeInCategory && (
+                    <input
+                      type="text"
+                      value={newTradeInCategoryName}
+                      onChange={(e) => setNewTradeInCategoryName(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddTradeInCategoryClick()}
+                      placeholder="Nombre de la nueva categoría..."
+                      autoFocus
+                      className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      disabled={isSavingTradeInCategory}
+                    />
                   )}
                 </div>
 
