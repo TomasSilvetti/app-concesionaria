@@ -40,6 +40,7 @@ interface ExchangeVehicleEdit {
   color: string;
   kilometros: string;
   precioNegociado: string;
+  precioToma: string;
 }
 
 interface Expense {
@@ -209,6 +210,7 @@ export default function OperacionEditPage() {
               color: v.color || "",
               kilometros: v.kilometros?.toString() || "",
               precioNegociado: v.precioNegociado?.toString() || "",
+              precioToma: v.precioToma?.toString() || "",
             }))
           );
 
@@ -446,6 +448,7 @@ export default function OperacionEditPage() {
         color: v.color,
         kilometros: v.kilometros !== "" ? parseInt(v.kilometros) : undefined,
         precioNegociado: v.precioNegociado !== "" ? parseFloat(v.precioNegociado) : null,
+        precioToma: v.precioToma !== "" ? parseFloat(v.precioToma) : null,
       }));
     }
 
@@ -814,6 +817,26 @@ export default function OperacionEditPage() {
                   disabled={isSaving || isCerrada}
                   className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                 />
+              </div>
+
+              {/* Precio de Toma */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-zinc-700">Precio de Toma</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">handshake</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={precioToma}
+                    onChange={(e) => {
+                      setPrecioToma(e.target.value);
+                      handleInputChange("precioToma");
+                    }}
+                    disabled={isSaving || isCerrada}
+                    placeholder="0.00"
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                </div>
               </div>
 
               {/* Precio Revista */}
@@ -1339,9 +1362,30 @@ export default function OperacionEditPage() {
                         />
                       </div>
 
-                      {/* Precio Negociado */}
+                      {/* Precio de Toma */}
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-zinc-700">Precio Negociado</label>
+                        <label className="text-sm font-medium text-zinc-700">Precio de Toma</label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">sell</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={vehicle.precioToma}
+                            onChange={(e) => {
+                              const updated = [...exchangeVehicles];
+                              updated[index] = { ...updated[index], precioToma: e.target.value };
+                              setExchangeVehicles(updated);
+                            }}
+                            disabled={isSaving || isCerrada}
+                            placeholder="0.00"
+                            className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Precio Venta Estimado */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-zinc-700">Precio Venta Estimado</label>
                         <div className="relative">
                           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">handshake</span>
                           <input

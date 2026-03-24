@@ -660,6 +660,9 @@ export async function POST(req: NextRequest) {
         const usedVehiclePrecioNegociado = vehiculoUsado.precioNegociado
           ? parseFloat(vehiculoUsado.precioNegociado)
           : null;
+        const usedVehiclePrecioToma = vehiculoUsado.precioToma
+          ? parseFloat(vehiculoUsado.precioToma)
+          : null;
 
         await tx.vehicle.create({
           data: {
@@ -711,6 +714,7 @@ export async function POST(req: NextRequest) {
             operacionId: operationId,
             stockId: usedVehicleId,
             precioNegociado: usedVehiclePrecioNegociado,
+            precioToma: usedVehiclePrecioToma,
             actualizadoEn: now,
           },
         });

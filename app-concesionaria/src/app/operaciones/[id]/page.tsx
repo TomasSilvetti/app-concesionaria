@@ -13,6 +13,7 @@ interface VehicleExchange {
   anio: number;
   patente: string;
   precioNegociado: number | null;
+  precioToma: number | null;
   version?: string;
   color?: string;
   kilometros?: number;
@@ -371,6 +372,10 @@ export default function OperacionDetailPage() {
                 </dd>
               </div>
               <div className="flex justify-between border-b border-zinc-100 pb-2">
+                <dt className="text-sm text-zinc-500">Precio de Toma</dt>
+                <dd className="text-sm font-medium text-zinc-900">{formatCurrency(operation.precioToma)}</dd>
+              </div>
+              <div className="flex justify-between border-b border-zinc-100 pb-2">
                 <dt className="text-sm text-zinc-500">Precio Revista</dt>
                 <dd className="text-sm font-medium text-zinc-900">{formatCurrency(operation.precioRevista)}</dd>
               </div>
@@ -588,7 +593,10 @@ export default function OperacionDetailPage() {
                         Patente
                       </th>
                       <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Precio Negociado
+                        Precio de Toma
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        Precio Venta Estimado
                       </th>
                     </tr>
                   </thead>
@@ -606,6 +614,9 @@ export default function OperacionDetailPage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-zinc-900">
                           {vehicle.patente}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-zinc-900">
+                          {vehicle.precioToma ? formatCurrency(vehicle.precioToma) : "—"}
                         </td>
                         <td className="px-4 py-3 text-right text-sm font-medium text-zinc-900">
                           {formatCurrency(vehicle.precioNegociado)}

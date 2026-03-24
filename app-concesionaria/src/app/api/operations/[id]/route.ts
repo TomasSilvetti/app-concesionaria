@@ -149,6 +149,7 @@ export async function GET(
         anio: exchange.Vehicle.anio,
         patente: exchange.Vehicle.patente,
         precioNegociado: exchange.precioNegociado,
+        precioToma: exchange.precioToma,
         version: exchange.Vehicle.version,
         color: exchange.Vehicle.color,
         kilometros: exchange.Vehicle.kilometros,
@@ -425,6 +426,14 @@ export async function PATCH(
             data: { precioNegociado: pn, actualizadoEn: new Date() },
           });
         }
+
+        if (ev.precioToma !== undefined) {
+          const pt = ev.precioToma === null ? null : typeof ev.precioToma === "number" ? ev.precioToma : null;
+          await prisma.operationExchange.update({
+            where: { operacionId_stockId: { operacionId: existingOperation.id, stockId: ev.vehicleId } },
+            data: { precioToma: pt, actualizadoEn: new Date() },
+          });
+        }
       }
     }
 
@@ -574,6 +583,7 @@ export async function PATCH(
         anio: ex.Vehicle.anio,
         patente: ex.Vehicle.patente,
         precioNegociado: ex.precioNegociado,
+        precioToma: ex.precioToma,
         version: ex.Vehicle.version,
         color: ex.Vehicle.color,
         kilometros: ex.Vehicle.kilometros,

@@ -117,6 +117,7 @@ model OperationExchange {
   operacionId     String
   stockId         String
   precioNegociado Float?
+  precioToma      Float?
   creadoEn        DateTime  @default(now())
   actualizadoEn   DateTime
   Operation       Operation @relation(fields: [operacionId], references: [id], onDelete: Cascade)

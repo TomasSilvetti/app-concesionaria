@@ -628,7 +628,7 @@ export function VehicleFieldsForm({
                   htmlFor="precioToma"
                   className="text-sm font-medium text-zinc-700"
                 >
-                  Precio de Toma
+                  Precio de Toma <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
@@ -642,13 +642,19 @@ export function VehicleFieldsForm({
                       handleInputChange("precioToma");
                     }}
                     placeholder="0"
-                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                    className={`h-12 w-full rounded-lg border ${
+                      fieldErrors.precioToma
+                        ? "border-red-300 bg-red-50"
+                        : "border-zinc-300 bg-zinc-50"
+                    } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
                     disabled={disabled}
                   />
                 </div>
-                <p className="text-xs text-zinc-500">
-                  Precio al que la concesionaria compra el vehículo (opcional)
-                </p>
+                {fieldErrors.precioToma && (
+                  <span className="text-xs text-red-600">
+                    {fieldErrors.precioToma}
+                  </span>
+                )}
               </div>
 
               {/* 2. Precio de Venta Total (estimado) */}
@@ -823,7 +829,7 @@ export function VehicleFieldsForm({
                   </span>
                 )}
                 <p className="text-xs text-zinc-500">
-                  Precio al que la concesionaria compra el vehículo (opcional)
+                  Precio al que la concesionaria compra el vehículo
                 </p>
               </div>
 

@@ -50,6 +50,7 @@ interface TradeInVehicle {
   kilometros: string;
   precioRevista: string;
   precioNegociado: string;
+  precioToma: string;
   notasMecanicas: string;
   notasGenerales: string;
   photos: PhotoFile[];
@@ -109,6 +110,7 @@ export function CreateOperationForm({
   const [tradeInKilometros, setTradeInKilometros] = useState("");
   const [tradeInPrecioRevista, setTradeInPrecioRevista] = useState("");
   const [tradeInPrecioNegociado, setTradeInPrecioNegociado] = useState("");
+  const [tradeInPrecioToma, setTradeInPrecioToma] = useState("");
   const [tradeInNotasMecanicas, setTradeInNotasMecanicas] = useState("");
   const [tradeInNotasGenerales, setTradeInNotasGenerales] = useState("");
   const [tradeInFieldErrors, setTradeInFieldErrors] = useState<Record<string, string>>({});
@@ -193,6 +195,7 @@ export function CreateOperationForm({
     setTradeInKilometros("");
     setTradeInPrecioRevista("");
     setTradeInPrecioNegociado("");
+    setTradeInPrecioToma("");
     setTradeInNotasMecanicas("");
     setTradeInNotasGenerales("");
     setTradeInFieldErrors({});
@@ -223,6 +226,11 @@ export function CreateOperationForm({
     } else if (parseFloat(tradeInPrecioNegociado) <= 0) {
       errors.tradeInPrecioNegociado = "El precio debe ser mayor a 0";
     }
+    if (!tradeInPrecioToma) {
+      errors.tradeInPrecioToma = "El precio de toma es requerido";
+    } else if (parseFloat(tradeInPrecioToma) <= 0) {
+      errors.tradeInPrecioToma = "El precio debe ser mayor a 0";
+    }
 
     setTradeInFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -244,6 +252,7 @@ export function CreateOperationForm({
       kilometros: tradeInKilometros,
       precioRevista: tradeInPrecioRevista,
       precioNegociado: tradeInPrecioNegociado,
+      precioToma: tradeInPrecioToma,
       notasMecanicas: tradeInNotasMecanicas.trim(),
       notasGenerales: tradeInNotasGenerales.trim(),
       photos: tradeInPhotos,
@@ -274,6 +283,7 @@ export function CreateOperationForm({
     setTradeInKilometros(vehicle.kilometros);
     setTradeInPrecioRevista(vehicle.precioRevista);
     setTradeInPrecioNegociado(vehicle.precioNegociado);
+    setTradeInPrecioToma(vehicle.precioToma);
     setTradeInNotasMecanicas(vehicle.notasMecanicas);
     setTradeInNotasGenerales(vehicle.notasGenerales);
     setTradeInPhotos(vehicle.photos);
@@ -405,6 +415,11 @@ export function CreateOperationForm({
     } else if (parseFloat(precioRevista) <= 0) {
       errors.precioRevista = "El precio debe ser mayor a 0";
     }
+    if (!precioToma) {
+      errors.precioToma = "El precio de toma es requerido";
+    } else if (parseFloat(precioToma) <= 0) {
+      errors.precioToma = "El precio debe ser mayor a 0";
+    }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -455,9 +470,7 @@ export function CreateOperationForm({
       formData.append("precioVentaTotal", precioVentaTotal);
       formData.append("ingresosBrutos", ingresosBrutos);
 
-      if (precioToma) {
-        formData.append("precioToma", precioToma);
-      }
+      formData.append("precioToma", precioToma);
       if (stockAutofillId && tipoOperacion === "Venta desde stock") {
         formData.append("stockVehicleId", stockAutofillId);
       }
@@ -1184,6 +1197,41 @@ export function CreateOperationForm({
                   {tradeInFieldErrors.tradeInPrecioNegociado && (
                     <span className="text-xs text-red-600">
                       {tradeInFieldErrors.tradeInPrecioNegociado}
+                    </span>
+                  )}
+                </div>
+
+                {/* Precio de Toma */}
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="tradeInPrecioToma"
+                    className="text-sm font-medium text-zinc-700"
+                  >
+                    Precio de Toma <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                      sell
+                    </span>
+                    <NumericInput
+                      id="tradeInPrecioToma"
+                      value={tradeInPrecioToma}
+                      onChange={(v) => {
+                        setTradeInPrecioToma(v);
+                        handleTradeInInputChange("tradeInPrecioToma");
+                      }}
+                      placeholder="0"
+                      className={`h-12 w-full rounded-lg border ${
+                        tradeInFieldErrors.tradeInPrecioToma
+                          ? "border-red-300 bg-red-50"
+                          : "border-zinc-300 bg-zinc-50"
+                      } pl-11 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50`}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  {tradeInFieldErrors.tradeInPrecioToma && (
+                    <span className="text-xs text-red-600">
+                      {tradeInFieldErrors.tradeInPrecioToma}
                     </span>
                   )}
                 </div>
