@@ -16,37 +16,13 @@ export async function GET(_req: NextRequest) {
       );
     }
 
-    const [disponiblesResult, enOperacionResult, precioTomaResult] =
-      await Promise.all([
-        // Vehículos con estado 'disponible'
-        prisma.vehicle.aggregate({
-          where: { clienteId, estado: "disponible" },
-          _sum: { precioRevista: true },
-        }),
+    const result = await prisma.vehicle.aggregate({
+      where: { clienteId, estado: "disponible" },
+      _sum: { precioRevista: true, precioToma: true },
+    });
 
-        // Vehículos siendo vendidos en operaciones abiertas
-        prisma.vehicle.aggregate({
-          where: {
-            clienteId,
-            OperacionesVenta: {
-              some: { estado: { in: ["abierta", "open"] } },
-            },
-          },
-          _sum: { precioRevista: true },
-        }),
-
-        // precioToma de operaciones abiertas (costo de adquisición del inventario activo)
-        prisma.operation.aggregate({
-          where: { clienteId, estado: { in: ["abierta", "open"] } },
-          _sum: { precioToma: true },
-        }),
-      ]);
-
-    const valorRevista =
-      (disponiblesResult._sum.precioRevista ?? 0) +
-      (enOperacionResult._sum.precioRevista ?? 0);
-
-    const valorRealToma = precioTomaResult._sum.precioToma ?? 0;
+    const valorRevista = result._sum.precioRevista ?? 0;
+    const valorRealToma = result._sum.precioToma ?? 0;
 
     return NextResponse.json({ valorRevista, valorRealToma });
   } catch (error) {

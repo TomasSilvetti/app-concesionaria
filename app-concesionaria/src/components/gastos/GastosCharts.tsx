@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { PieChart, Pie, Cell, Label } from "recharts";
+import { PieChart, Pie, Cell, Label, BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
 import "material-symbols/outlined.css";
 
 interface GastosChartsProps {
@@ -186,8 +186,6 @@ function GraficoInventario() {
     valorRevista: 0,
     valorRealToma: 0,
   };
-  const totalValor = valorRevista + valorRealToma;
-
   const data = [
     { name: "Valor Revista", value: valorRevista, color: "#2563EB" },
     { name: "Precio Real Toma", value: valorRealToma, color: "#10B981" },
@@ -196,79 +194,21 @@ function GraficoInventario() {
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between">
-        <p className="text-base font-semibold text-zinc-900">Estado del Inventario</p>
+        <p className="text-base font-semibold text-zinc-900">Valor del Inventario</p>
         <p className="text-xs text-zinc-400">Estado Actual</p>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex-shrink-0">
-          <PieChart width={180} height={180}>
-            <Pie
-              data={data}
-              cx={85}
-              cy={85}
-              innerRadius={58}
-              outerRadius={82}
-              dataKey="value"
-              startAngle={90}
-              endAngle={-270}
-              strokeWidth={0}
-            >
-              {data.map((entry, index) => (
-                <Cell key={index} fill={entry.color} />
-              ))}
-              <Label
-                content={({ viewBox }) => {
-                  const { cx, cy } = viewBox as { cx: number; cy: number };
-                  return (
-                    <text textAnchor="middle">
-                      <tspan
-                        x={cx}
-                        y={cy - 6}
-                        fontSize={20}
-                        fontWeight={700}
-                        fill="#18181b"
-                      >
-                        {formatPesosShort(totalValor)}
-                      </tspan>
-                      <tspan
-                        x={cx}
-                        y={cy + 14}
-                        fontSize={9}
-                        fontWeight={500}
-                        fill="#71717a"
-                      >
-                        VALOR TOTAL
-                      </tspan>
-                    </text>
-                  );
-                }}
-              />
-            </Pie>
-          </PieChart>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {data.map((entry) => (
-            <div
-              key={entry.name}
-              className="flex items-center justify-between gap-8"
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 flex-shrink-0 rounded-full"
-                  style={{ backgroundColor: entry.color }}
-                  aria-hidden="true"
-                />
-                <span className="text-sm text-zinc-600">{entry.name}</span>
-              </div>
-              <span className="text-sm font-semibold text-zinc-900">
-                {formatPesosShort(entry.value)}
-              </span>
-            </div>
+      <BarChart width={340} height={160} data={data} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 8 }}>
+        <XAxis type="number" hide />
+        <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fill: "#71717a" }} axisLine={false} tickLine={false} />
+        <Tooltip formatter={(value) => formatPesosShort(Number(value))} cursor={{ fill: "#f4f4f5" }} />
+        <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={28}>
+          {data.map((entry, index) => (
+            <Cell key={index} fill={entry.color} />
           ))}
-        </div>
-      </div>
+          <LabelList dataKey="value" position="right" formatter={(v: unknown) => formatPesosShort(Number(v))} style={{ fontSize: 12, fill: "#18181b", fontWeight: 600 }} />
+        </Bar>
+      </BarChart>
     </div>
   );
 }
