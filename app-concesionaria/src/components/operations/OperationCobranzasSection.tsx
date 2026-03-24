@@ -32,6 +32,7 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showAlreadyPaidModal, setShowAlreadyPaidModal] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("es-AR", {
@@ -71,6 +72,23 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
   useEffect(() => {
     fetchPagos();
   }, [fetchPagos]);
+
+  async function handleDelete(pagoId: string) {
+    try {
+      const res = await fetch(`/api/operations/${operacionId}/pagos/${pagoId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      const result = await res.json();
+      setPagos((prev) => prev.filter((p) => p.id !== pagoId));
+      setSaldado(result.saldado);
+      setPendiente(result.pendiente);
+      onPendienteChange?.(result.pendiente);
+      if (result.estado && result.estado !== estado) {
+        onEstadoChange?.(result.estado);
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleSave(data: {
     fecha: string;
@@ -182,13 +200,14 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
                     <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
                       Nota
                     </th>
+                    {!readOnly && <th className="pb-3 w-16" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {pagos.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={!readOnly ? 5 : 4}
                         className="py-8 text-center text-sm text-zinc-400"
                       >
                         Sin pagos registrados
@@ -196,7 +215,7 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
                     </tr>
                   ) : (
                     pagos.map((pago) => (
-                      <tr key={pago.id} className="hover:bg-zinc-50">
+                      <tr key={pago.id} className="group hover:bg-zinc-50">
                         <td className="py-3 pr-4 text-sm text-zinc-900">
                           {formatDate(pago.fecha)}
                         </td>
@@ -209,6 +228,39 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
                         <td className="py-3 text-sm text-zinc-500">
                           {pago.nota ?? <span className="text-zinc-300">—</span>}
                         </td>
+                        {!readOnly && (
+                          <td className="py-3">
+                            {deletingId === pago.id ? (
+                              <div className="flex items-center gap-1 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(pago.id)}
+                                  className="flex h-6 items-center rounded bg-red-600 px-2 text-xs font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                >
+                                  Sí
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingId(null)}
+                                  className="flex h-6 items-center rounded border border-zinc-300 bg-white px-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingId(pago.id)}
+                                  className="flex h-7 w-7 items-center justify-center rounded text-zinc-400 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
+                                  aria-label="Eliminar pago"
+                                >
+                                  <span className="material-symbols-outlined text-base">delete</span>
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
