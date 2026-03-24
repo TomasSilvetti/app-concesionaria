@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import PreventNumberInputScroll from "@/components/providers/PreventNumberInputScroll";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning={true}
       >
+        <PreventNumberInputScroll />
         <SessionProvider>
           <SidebarProvider>
             {children}
