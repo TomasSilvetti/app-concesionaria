@@ -265,10 +265,6 @@ export default function OperacionEditPage() {
       }
     }
 
-    if (!tipoOperacionId) {
-      errors.tipoOperacionId = "Seleccioná un tipo de operación";
-    }
-
     if (!precioVentaTotal) {
       errors.precioVentaTotal = "El precio de venta es requerido";
     } else if (parseFloat(precioVentaTotal) <= 0) {
@@ -308,10 +304,6 @@ export default function OperacionEditPage() {
     if (estado !== originalValues.estado) {
       modified.estado = estado;
     }
-    if (tipoOperacionId !== originalValues.tipoOperacionId) {
-      modified.tipoOperacionId = tipoOperacionId;
-    }
-
     return modified;
   };
 
@@ -941,43 +933,19 @@ export default function OperacionEditPage() {
                 </div>
               </div>
 
-              {/* Tipo de Operación */}
+              {/* Tipo de Operación (solo lectura) */}
               <div className="flex flex-col gap-2">
-                <label htmlFor="tipoOperacion" className="text-sm font-medium text-zinc-700">
+                <label className="text-sm font-medium text-zinc-700">
                   Tipo de Operación
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                     category
                   </span>
-                  <select
-                    id="tipoOperacion"
-                    value={tipoOperacionId}
-                    onChange={(e) => {
-                      setTipoOperacionId(e.target.value);
-                      handleInputChange("tipoOperacionId");
-                    }}
-                    className={`h-12 w-full appearance-none rounded-lg border ${
-                      fieldErrors.tipoOperacionId
-                        ? "border-red-300 bg-red-50"
-                        : "border-zinc-300 bg-zinc-50"
-                    } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                    disabled={isSaving || isCerrada}
-                  >
-                    <option value="">Seleccionar tipo...</option>
-                    {operationTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                    expand_more
-                  </span>
+                  <div className="flex h-12 w-full items-center rounded-lg border border-zinc-200 bg-zinc-100 pl-11 pr-4 text-sm text-zinc-700">
+                    {operationTypes.find((t) => t.id === tipoOperacionId)?.nombre || "—"}
+                  </div>
                 </div>
-                {fieldErrors.tipoOperacionId && (
-                  <span className="text-xs text-red-600">{fieldErrors.tipoOperacionId}</span>
-                )}
               </div>
             </div>
           </div>
