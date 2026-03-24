@@ -25,6 +25,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       label: "Dashboard",
       icon: "dashboard",
       path: "/dashboard",
+      disabled: true,
     },
     {
       label: "Gastos",
@@ -211,11 +212,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                 return (
                   <li key={item.path}>
                     <button
-                      onClick={() => handleNavigation(item.path)}
+                      onClick={() => !item.disabled && handleNavigation(item.path)}
+                      disabled={item.disabled}
+                      title={item.disabled ? "Próximamente" : undefined}
                       className={`
                         flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
                         ${
-                          isActive
+                          item.disabled
+                            ? "cursor-not-allowed opacity-40 text-zinc-700"
+                            : isActive
                             ? "bg-blue-50 text-blue-600"
                             : "text-zinc-700 hover:bg-zinc-100"
                         }
