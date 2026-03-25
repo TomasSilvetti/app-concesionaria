@@ -3,10 +3,14 @@ import path from "path";
 
 export default defineConfig({
   test: {
-    include: ["app-concesionaria/src/__tests__/**/*.test.ts"],
-    exclude: ["app-concesionaria/src/__tests__/integration/**/*.integration.test.ts"],
+    include: [
+      "app-concesionaria/src/__tests__/integration/**/*.integration.test.ts",
+    ],
     environment: "node",
     passWithNoTests: true,
+    env: {
+      DATABASE_URL: process.env.DATABASE_TEST_URL ?? "",
+    },
   },
   resolve: {
     alias: {
