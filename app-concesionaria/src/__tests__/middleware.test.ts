@@ -1,4 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { vi, describe, it, expect } from "vitest";
+
+vi.mock("next-auth/jwt", () => ({ getToken: vi.fn() }));
+vi.mock("next/server", () => ({
+  NextRequest: vi.fn(),
+  NextResponse: { next: vi.fn(), redirect: vi.fn() },
+}));
+
 import {
   isPublicPath,
   extractClienteIdFromPath,
