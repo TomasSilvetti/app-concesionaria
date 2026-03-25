@@ -17,6 +17,7 @@ interface VehicleExchange {
   version?: string;
   color?: string;
   kilometros?: number;
+  fotos: { id: string; nombreArchivo: string; orden: number }[];
 }
 
 interface Expense {
@@ -625,6 +626,23 @@ export default function OperacionDetailPage() {
                         </dd>
                       </div>
                     </dl>
+                    {vehicle.fotos && vehicle.fotos.length > 0 && (
+                      <div className="mt-4">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                          Fotos
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {vehicle.fotos.map((foto) => (
+                            <img
+                              key={foto.id}
+                              src={`/api/photos/${foto.id}`}
+                              alt={`Foto ${foto.orden + 1}`}
+                              className="h-24 w-32 rounded-lg object-cover"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

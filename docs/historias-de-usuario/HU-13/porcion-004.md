@@ -3,7 +3,8 @@
 **Historia de usuario:** HU-13: Fix vehículos de intercambio — múltiples vehículos, fotos y precio de toma
 **Par:** —
 **Tipo:** FRONT
-**Estado:** Pendiente
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-25
 **Prerequisitos:** porcion-002
 
 ## Descripción

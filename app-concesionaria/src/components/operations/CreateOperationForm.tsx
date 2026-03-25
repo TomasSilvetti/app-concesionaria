@@ -547,10 +547,13 @@ export function CreateOperationForm({
       }
 
       if (tradeInVehicles.length > 0) {
-        const { photos: tradeInVehiclePhotos, ...vehicleData } = tradeInVehicles[0];
-        formData.append("vehiculoUsado", JSON.stringify(vehicleData));
-        tradeInVehiclePhotos.forEach((photo) => {
-          formData.append("vehiculoUsadoFotos", photo.file);
+        const vehiculosData = tradeInVehicles.map(({ photos: _, ...vehicleData }) => vehicleData);
+        formData.append("vehiculosUsados", JSON.stringify(vehiculosData));
+
+        tradeInVehicles.forEach((vehicle, index) => {
+          vehicle.photos.forEach((photo) => {
+            formData.append(`vehiculosUsadoFotos_${index}`, photo.file);
+          });
         });
       }
 
