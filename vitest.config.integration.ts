@@ -11,6 +11,7 @@ export default defineConfig({
     ],
     environment: "node",
     passWithNoTests: true,
+    fileParallelism: false,
     globalSetup: "./vitest.integration.setup.ts",
     env: {
       DATABASE_URL: process.env.DATABASE_TEST_URL ?? "",
