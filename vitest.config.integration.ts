@@ -1,5 +1,8 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
+import { config } from "dotenv";
+
+config({ path: "./app-concesionaria/.env.test" });
 
 export default defineConfig({
   test: {
@@ -8,6 +11,7 @@ export default defineConfig({
     ],
     environment: "node",
     passWithNoTests: true,
+    globalSetup: "./vitest.integration.setup.ts",
     env: {
       DATABASE_URL: process.env.DATABASE_TEST_URL ?? "",
     },
