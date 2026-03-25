@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
