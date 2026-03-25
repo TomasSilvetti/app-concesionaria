@@ -284,7 +284,7 @@ export async function POST(req: NextRequest) {
     const precioVentaTotalStr = formData.get("precioVentaTotal") as string;
     const ingresosBrutosStr = formData.get("ingresosBrutos") as string;
     const precioTomaStr = formData.get("precioToma") as string | null;
-    const vehiculoUsadoStr = formData.get("vehiculoUsado") as string | null;
+    const vehiculosUsadosStr = formData.get("vehiculosUsados") as string | null;
     const stockVehicleId = formData.get("stockVehicleId") as string | null;
     const documentoDetalle = formData.get("documentoDetalle") as File | null;
 
@@ -413,23 +413,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let vehiculoUsado: Record<string, string> | null = null;
+    let vehiculosUsados: Record<string, string>[] = [];
 
-    if (vehiculoUsadoStr) {
+    if (vehiculosUsadosStr) {
       try {
-        vehiculoUsado = JSON.parse(vehiculoUsadoStr);
+        const parsed = JSON.parse(vehiculosUsadosStr);
+        if (Array.isArray(parsed)) {
+          vehiculosUsados = parsed;
+        }
       } catch {
         return NextResponse.json(
-          { message: "El formato del vehículo usado es inválido" },
+          { message: "vehiculosUsados tiene formato inválido" },
           { status: 400 }
         );
       }
 
-      if (!vehiculoUsado?.marcaId || !vehiculoUsado?.modelo || !vehiculoUsado?.anio) {
-        return NextResponse.json(
-          { message: "El vehículo usado debe tener marcaId, modelo y anio" },
-          { status: 400 }
-        );
+      for (let i = 0; i < vehiculosUsados.length; i++) {
+        const vu = vehiculosUsados[i];
+        if (!vu.marcaId || !vu.modelo || !vu.anio) {
+          return NextResponse.json(
+            { message: `El vehículo en posición ${i} debe tener marcaId, modelo y anio` },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -464,7 +470,6 @@ export async function POST(req: NextRequest) {
     const now = new Date();
 
     const fotos = formData.getAll("fotos") as File[];
-    const vehiculoUsadoFotos = formData.getAll("vehiculoUsadoFotos") as File[];
 
     const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -509,15 +514,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (vehiculoUsadoFotos.length > 0) {
-      for (const foto of vehiculoUsadoFotos) {
+    for (let i = 0; i < vehiculosUsados.length; i++) {
+      const vuFotos = formData.getAll(`vehiculosUsadoFotos_${i}`) as File[];
+      for (const foto of vuFotos) {
         if (!ALLOWED_MIME_TYPES.includes(foto.type)) {
           return NextResponse.json(
             { message: `Tipo de archivo no permitido: ${foto.type}. Solo se permiten imágenes JPEG, PNG y WebP` },
             { status: 400 }
           );
         }
-
         if (foto.size > MAX_FILE_SIZE) {
           return NextResponse.json(
             { message: `El archivo ${foto.name} excede el tamaño máximo permitido de 10MB` },
@@ -648,49 +653,43 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      if (vehiculoUsado) {
+      for (let i = 0; i < vehiculosUsados.length; i++) {
+        const vu = vehiculosUsados[i];
         const usedVehicleId = randomUUID();
-        const usedVehicleAnio = parseInt(vehiculoUsado.anio, 10);
-        const usedVehicleKilometros = vehiculoUsado.kilometros
-          ? parseInt(vehiculoUsado.kilometros, 10)
-          : null;
-        const usedVehiclePrecioRevista = vehiculoUsado.precioRevista
-          ? parseFloat(vehiculoUsado.precioRevista)
-          : null;
-        const usedVehiclePrecioNegociado = vehiculoUsado.precioNegociado
-          ? parseFloat(vehiculoUsado.precioNegociado)
-          : null;
-        const usedVehiclePrecioToma = vehiculoUsado.precioToma
-          ? parseFloat(vehiculoUsado.precioToma)
-          : null;
+        const vuAnio = parseInt(vu.anio, 10);
+        const vuKilometros = vu.kilometros ? parseInt(vu.kilometros, 10) : null;
+        const vuPrecioRevista = vu.precioRevista ? parseFloat(vu.precioRevista) : null;
+        const vuPrecioNegociado = vu.precioNegociado ? parseFloat(vu.precioNegociado) : null;
+        const vuPrecioToma = vu.precioToma ? parseFloat(vu.precioToma) : null;
 
         await tx.vehicle.create({
           data: {
             id: usedVehicleId,
             clienteId,
             operacionId: operationId,
-            marcaId: vehiculoUsado.marcaId,
-            modelo: vehiculoUsado.modelo,
-            anio: usedVehicleAnio,
-            categoriaId: vehiculoUsado.categoriaId || categoriaId,
-            patente: vehiculoUsado.patente || null,
-            version: vehiculoUsado.version || null,
-            color: vehiculoUsado.color || null,
-            kilometros: usedVehicleKilometros,
-            notasMecanicas: vehiculoUsado.notasMecanicas || null,
-            notasGenerales: vehiculoUsado.notasGenerales || null,
-            precioRevista: usedVehiclePrecioRevista,
-            estado: "disponible",
+            marcaId: vu.marcaId,
+            modelo: vu.modelo,
+            anio: vuAnio,
+            categoriaId: vu.categoriaId || categoriaId,
+            patente: vu.patente || null,
+            version: vu.version || null,
+            color: vu.color || null,
+            kilometros: vuKilometros,
+            notasMecanicas: vu.notasMecanicas || null,
+            notasGenerales: vu.notasGenerales || null,
+            precioRevista: vuPrecioRevista,
+            precioToma: vuPrecioToma,
+            estado: "intercambio",
             actualizadoEn: now,
           },
         });
 
-        if (vehiculoUsadoFotos.length > 0) {
+        const vuFotos = formData.getAll(`vehiculosUsadoFotos_${i}`) as File[];
+        if (vuFotos.length > 0) {
           const usedPhotosData = await Promise.all(
-            vehiculoUsadoFotos.map(async (foto, index) => {
+            vuFotos.map(async (foto, index) => {
               const buffer = await foto.arrayBuffer();
               const bytes = Buffer.from(buffer);
-
               return {
                 id: randomUUID(),
                 stockId: usedVehicleId,
@@ -702,10 +701,7 @@ export async function POST(req: NextRequest) {
               };
             })
           );
-
-          await tx.vehiclePhoto.createMany({
-            data: usedPhotosData,
-          });
+          await tx.vehiclePhoto.createMany({ data: usedPhotosData });
         }
 
         await tx.operationExchange.create({
@@ -713,13 +709,12 @@ export async function POST(req: NextRequest) {
             id: randomUUID(),
             operacionId: operationId,
             stockId: usedVehicleId,
-            precioNegociado: usedVehiclePrecioNegociado,
-            precioToma: usedVehiclePrecioToma,
+            precioNegociado: vuPrecioNegociado,
             actualizadoEn: now,
           },
         });
 
-        if (usedVehiclePrecioToma && usedVehiclePrecioToma > 0) {
+        if (vuPrecioToma && vuPrecioToma > 0) {
           const metodoPagoVehiculo = await tx.paymentMethod.upsert({
             where: { clienteId_nombre: { clienteId, nombre: "Vehiculo tomado" } },
             create: {
@@ -737,8 +732,8 @@ export async function POST(req: NextRequest) {
               clienteId,
               fecha: parsedFechaInicio,
               metodoPagoId: metodoPagoVehiculo.id,
-              monto: usedVehiclePrecioToma,
-              nota: `se descuentan $${usedVehiclePrecioToma} del vehiculo tomado como forma de pago`,
+              monto: vuPrecioToma,
+              nota: `se descuentan $${vuPrecioToma} del vehiculo tomado como forma de pago`,
               actualizadoEn: now,
             },
           });

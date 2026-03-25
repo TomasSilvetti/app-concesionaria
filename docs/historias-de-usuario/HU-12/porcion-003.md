@@ -3,7 +3,7 @@
 **Historia de usuario:** HU-12: Campo "Precio de Toma" en vehículo intercambiado
 **Par:** —
 **Tipo:** FRONT
-**Estado:** Pendiente
+**Estado:** 🔄 En progreso
 **Prerequisitos:** porcion-001
 
 ## Descripción

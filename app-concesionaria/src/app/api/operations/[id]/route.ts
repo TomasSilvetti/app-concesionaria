@@ -71,6 +71,9 @@ export async function GET(
                     nombre: true,
                   },
                 },
+                VehiclePhoto: {
+                  orderBy: { orden: "asc" },
+                },
               },
             },
           },
@@ -149,10 +152,15 @@ export async function GET(
         anio: exchange.Vehicle.anio,
         patente: exchange.Vehicle.patente,
         precioNegociado: exchange.precioNegociado,
-        precioToma: exchange.precioToma,
+        precioToma: exchange.Vehicle.precioToma,
         version: exchange.Vehicle.version,
         color: exchange.Vehicle.color,
         kilometros: exchange.Vehicle.kilometros,
+        fotos: exchange.Vehicle.VehiclePhoto.map((photo) => ({
+          id: photo.id,
+          nombreArchivo: photo.nombreArchivo,
+          orden: photo.orden,
+        })),
       })),
       gastos: operation.Expense.map((expense) => ({
         fecha: expense.fecha,
@@ -413,6 +421,9 @@ export async function PATCH(
         if (typeof ev.color === "string") evUpdate.color = ev.color.trim() || null;
         if (typeof ev.kilometros === "number" && ev.kilometros >= 0) evUpdate.kilometros = ev.kilometros;
         if (typeof ev.marcaId === "string" && ev.marcaId.trim()) evUpdate.marcaId = ev.marcaId.trim();
+        if (ev.precioToma !== undefined) {
+          evUpdate.precioToma = ev.precioToma === null ? null : typeof ev.precioToma === "number" ? ev.precioToma : undefined;
+        }
 
         await prisma.vehicle.update({
           where: { id: ev.vehicleId },
@@ -424,14 +435,6 @@ export async function PATCH(
           await prisma.operationExchange.update({
             where: { operacionId_stockId: { operacionId: existingOperation.id, stockId: ev.vehicleId } },
             data: { precioNegociado: pn, actualizadoEn: new Date() },
-          });
-        }
-
-        if (ev.precioToma !== undefined) {
-          const pt = ev.precioToma === null ? null : typeof ev.precioToma === "number" ? ev.precioToma : null;
-          await prisma.operationExchange.update({
-            where: { operacionId_stockId: { operacionId: existingOperation.id, stockId: ev.vehicleId } },
-            data: { precioToma: pt, actualizadoEn: new Date() },
           });
         }
       }
@@ -475,6 +478,7 @@ export async function PATCH(
             Vehicle: {
               include: {
                 VehicleBrand: { select: { nombre: true } },
+                VehiclePhoto: { orderBy: { orden: "asc" } },
               },
             },
           },
@@ -513,6 +517,7 @@ export async function PATCH(
             Vehicle: {
               include: {
                 VehicleBrand: { select: { nombre: true } },
+                VehiclePhoto: { orderBy: { orden: "asc" } },
               },
             },
           },
@@ -583,10 +588,15 @@ export async function PATCH(
         anio: ex.Vehicle.anio,
         patente: ex.Vehicle.patente,
         precioNegociado: ex.precioNegociado,
-        precioToma: ex.precioToma,
+        precioToma: ex.Vehicle.precioToma,
         version: ex.Vehicle.version,
         color: ex.Vehicle.color,
         kilometros: ex.Vehicle.kilometros,
+        fotos: ex.Vehicle.VehiclePhoto.map((photo) => ({
+          id: photo.id,
+          nombreArchivo: photo.nombreArchivo,
+          orden: photo.orden,
+        })),
       })),
       gastos: updatedWithVehicle.Expense.map((exp) => ({
         fecha: exp.fecha,
