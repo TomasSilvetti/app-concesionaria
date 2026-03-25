@@ -10,7 +10,7 @@ const PUBLIC_PATHS = [LOGIN_PATH];
 /** Patrón para extraer clienteId de rutas /cliente/[id]/... */
 const CLIENTE_ROUTE_REGEX = /^\/cliente\/([^/]+)/;
 
-function isPublicPath(pathname: string): boolean {
+export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.includes(pathname);
 }
 
@@ -22,12 +22,12 @@ function hasSessionCookie(request: NextRequest): boolean {
   );
 }
 
-function extractClienteIdFromPath(pathname: string): string | null {
+export function extractClienteIdFromPath(pathname: string): string | null {
   const match = pathname.match(CLIENTE_ROUTE_REGEX);
   return match ? match[1] : null;
 }
 
-function buildLoginUrl(origin: string, expired: boolean): URL {
+export function buildLoginUrl(origin: string, expired: boolean): URL {
   const url = new URL(LOGIN_PATH, origin);
   if (expired) {
     url.searchParams.set(SESSION_EXPIRED_PARAM, "1");
