@@ -576,55 +576,57 @@ export default function OperacionDetailPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Marca
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Modelo
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Año
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Patente
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Precio de Toma
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                        Precio Venta Estimado
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-200 bg-white">
-                    {operation.vehiculosIntercambiados.map((vehicle, index) => (
-                      <tr key={index} className="transition-colors hover:bg-zinc-50">
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.marca}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.modelo}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.anio}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-zinc-900">
-                          {vehicle.patente}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-zinc-900">
+              <div className="flex flex-col gap-6">
+                {operation.vehiculosIntercambiados.map((vehicle, index) => (
+                  <div key={index} className="rounded-lg border border-zinc-100 bg-zinc-50 p-4">
+                    <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Marca</dt>
+                        <dd className="text-sm font-medium text-zinc-900">{vehicle.marca}</dd>
+                      </div>
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Modelo</dt>
+                        <dd className="text-sm font-medium text-zinc-900">{vehicle.modelo}</dd>
+                      </div>
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Año</dt>
+                        <dd className="text-sm font-medium text-zinc-900">{vehicle.anio}</dd>
+                      </div>
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Patente</dt>
+                        <dd className="text-sm font-medium text-zinc-900">{vehicle.patente || "—"}</dd>
+                      </div>
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Versión</dt>
+                        <dd className="text-sm font-medium text-zinc-900">{vehicle.version || "—"}</dd>
+                      </div>
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Color</dt>
+                        <dd className="text-sm font-medium text-zinc-900">{vehicle.color || "—"}</dd>
+                      </div>
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Kilómetros</dt>
+                        <dd className="text-sm font-medium text-zinc-900">
+                          {vehicle.kilometros !== undefined && vehicle.kilometros !== null
+                            ? `${vehicle.kilometros.toLocaleString("es-AR")} km`
+                            : "—"}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between border-b border-zinc-100 pb-2">
+                        <dt className="text-sm text-zinc-500">Precio de Toma</dt>
+                        <dd className="text-sm font-medium text-zinc-900">
                           {vehicle.precioToma ? formatCurrency(vehicle.precioToma) : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-zinc-900">
+                        </dd>
+                      </div>
+                      <div className="flex justify-between pb-2 sm:col-span-2">
+                        <dt className="text-sm text-zinc-500">Precio Venta Estimado</dt>
+                        <dd className="text-sm font-medium text-zinc-900">
                           {formatCurrency(vehicle.precioNegociado)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                ))}
               </div>
             )}
           </div>
