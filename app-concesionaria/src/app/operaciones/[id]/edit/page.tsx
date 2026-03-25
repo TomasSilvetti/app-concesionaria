@@ -15,6 +15,7 @@ interface VehicleExchange {
   anio: number;
   patente: string;
   precioNegociado: number | null;
+  precioToma?: number | null;
   version?: string;
   color?: string;
   kilometros?: number;
