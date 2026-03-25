@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isValidOperationTypeName } from "@/lib/operation-types";
+import { calcularIngresosNetos, calcularComision } from "@/lib/calculations";
 
 export async function GET(
   req: NextRequest,
@@ -444,10 +445,8 @@ export async function PATCH(
     const ingresosBrutos = (updateData.ingresosBrutos as number) ?? existingOperation.ingresosBrutos;
     const precioVentaTotal = (updateData.precioVentaTotal as number) ?? existingOperation.precioVentaTotal;
 
-    const ingresosNetos = ingresosBrutos - gastosAsociados;
-    const comision = precioVentaTotal > 0
-      ? (ingresosNetos / precioVentaTotal) * 100
-      : 0;
+    const ingresosNetos = calcularIngresosNetos(ingresosBrutos, gastosAsociados);
+    const comision = calcularComision(precioVentaTotal, ingresosNetos);
 
     const dataToUpdate: Record<string, unknown> = {
       ...updateData,

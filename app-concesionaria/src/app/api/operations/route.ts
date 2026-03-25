@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { isValidOperationTypeName } from "@/lib/operation-types";
+import { calcularIngresosNetos, calcularComision } from "@/lib/calculations";
 
 const ALLOWED_SORT_FIELDS = [
   "fechaInicio",
@@ -462,8 +463,8 @@ export async function POST(req: NextRequest) {
     }
 
     const gastosAsociados = 0;
-    const ingresosNetos = ingresosBrutos - gastosAsociados;
-    const comision = precioVentaTotal > 0 ? (ingresosNetos / precioVentaTotal) * 100 : 0;
+    const ingresosNetos = calcularIngresosNetos(ingresosBrutos, gastosAsociados);
+    const comision = calcularComision(precioVentaTotal, ingresosNetos);
 
     const operationId = randomUUID();
     const vehicleId = randomUUID();
