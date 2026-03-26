@@ -220,6 +220,10 @@ export function EditVehicleForm({
         formData.append("notasGenerales", notasGenerales.trim());
       }
 
+      if (existingPhotoIds.length > 0) {
+        formData.append("foto_reorden", JSON.stringify(existingPhotoIds));
+      }
+
       photos.forEach((photo, index) => {
         formData.append("fotos", photo.file);
         formData.append(`foto_orden_${index}`, index.toString());
@@ -250,6 +254,13 @@ export function EditVehicleForm({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSetExistingPhotoAsPrincipal = (photoId: string) => {
+    setExistingPhotoIds((prev) => {
+      const updated = prev.filter((id) => id !== photoId);
+      return [photoId, ...updated];
+    });
   };
 
   const handleDeleteExistingPhoto = async (photoId: string) => {
@@ -366,6 +377,7 @@ export function EditVehicleForm({
         stockPhotoIds={existingPhotoIds}
         stockVehicleId={vehicleId}
         onDeleteExistingPhoto={handleDeleteExistingPhoto}
+        onSetExistingPhotoAsPrincipal={handleSetExistingPhotoAsPrincipal}
       />
 
       {/* Botones de acción */}

@@ -74,6 +74,7 @@ interface VehicleFieldsFormProps {
   stockPhotoIds?: string[];
   stockVehicleId?: string;
   onDeleteExistingPhoto?: (photoId: string) => void;
+  onSetExistingPhotoAsPrincipal?: (photoId: string) => void;
 }
 
 export function VehicleFieldsForm({
@@ -92,6 +93,7 @@ export function VehicleFieldsForm({
   stockPhotoIds,
   stockVehicleId,
   onDeleteExistingPhoto,
+  onSetExistingPhotoAsPrincipal,
 }: VehicleFieldsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -983,7 +985,7 @@ export function VehicleFieldsForm({
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {stockPhotoIds.map((photoId) => (
+              {stockPhotoIds.map((photoId, index) => (
                 <div
                   key={photoId}
                   className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
@@ -1007,6 +1009,26 @@ export function VehicleFieldsForm({
                       <span className="material-symbols-outlined text-lg">
                         close
                       </span>
+                    </button>
+                  )}
+                  {index === 0 && (
+                    <div className="absolute bottom-0 left-0 flex items-center gap-1 bg-blue-600 px-2 py-1 text-xs font-semibold text-white">
+                      <span className="material-symbols-outlined text-sm">star</span>
+                      Principal
+                    </div>
+                  )}
+                  {index > 0 && onSetExistingPhotoAsPrincipal && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSetExistingPhotoAsPrincipal(photoId);
+                      }}
+                      className="absolute bottom-2 left-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white opacity-0 shadow-lg transition-opacity hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 group-hover:opacity-100"
+                      disabled={disabled}
+                      aria-label="Establecer como foto principal"
+                    >
+                      <span className="material-symbols-outlined text-lg">star</span>
                     </button>
                   )}
                 </div>
