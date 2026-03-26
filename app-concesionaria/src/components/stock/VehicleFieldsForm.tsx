@@ -77,6 +77,22 @@ interface VehicleFieldsFormProps {
   onSetExistingPhotoAsPrincipal?: (photoId: string) => void;
 }
 
+async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo leer la imagen"));
+    };
+    img.src = url;
+  });
+}
+
 export function VehicleFieldsForm({
   data,
   handlers,
@@ -96,6 +112,8 @@ export function VehicleFieldsForm({
   onSetExistingPhotoAsPrincipal,
 }: VehicleFieldsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [photoErrors, setPhotoErrors] = useState<string[]>([]);
 
   const [showAddBrand, setShowAddBrand] = useState(false);
   const [newBrandName, setNewBrandName] = useState("");
@@ -162,18 +180,28 @@ export function VehicleFieldsForm({
     }
   };
 
-  const handlePhotoSelect = (files: FileList | null) => {
+  const handlePhotoSelect = async (files: FileList | null) => {
     if (!files) return;
+    const rejected: string[] = [];
+    const validFiles: File[] = [];
 
-    const validFiles = Array.from(files).filter((file) => {
-      if (!file.type.startsWith("image/")) {
-        return false;
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) continue;
+      try {
+        const { width, height } = await getImageDimensions(file);
+        if (Math.max(width, height) < 800) {
+          rejected.push(file.name);
+        } else {
+          validFiles.push(file);
+        }
+      } catch {
+        rejected.push(file.name);
       }
-      if (file.size > 10 * 1024 * 1024) {
-        return false;
-      }
-      return true;
-    });
+    }
+
+    setPhotoErrors(
+      rejected.map((name) => `"${name}" no cumple el mínimo de 800px en su lado más largo.`)
+    );
 
     handlers.setPhotos((prev) => {
       const existingCount = (stockPhotoIds?.length ?? 0) + prev.length;
@@ -974,6 +1002,18 @@ export function VehicleFieldsForm({
             </div>
           );
         })()}
+
+        {/* Errores de validación de dimensiones */}
+        {photoErrors.length > 0 && (
+          <ul className="mt-1 space-y-1" role="alert">
+            {photoErrors.map((msg, i) => (
+              <li key={i} className="flex items-center gap-1 text-xs text-red-600">
+                <span className="material-symbols-outlined text-sm">error</span>
+                {msg}
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* Fotos existentes del vehículo de stock */}
         {stockPhotoIds && stockPhotoIds.length > 0 && stockVehicleId && (
