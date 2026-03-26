@@ -48,6 +48,9 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
   const [vehicleToDelete, setVehicleToDelete] = useState<StockVehicle | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const router = useRouter();
 
   const handleToggleSelect = (e: React.MouseEvent, vehicle: StockVehicle) => {
@@ -97,6 +100,8 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
       if (filters.anio !== undefined) params.append("anio", filters.anio.toString());
       if (filters.kilometrosMax !== undefined) params.append("kilometrosMax", filters.kilometrosMax.toString());
       if (filters.mostrarConOperacion) params.append("mostrarConOperacion", "true");
+      params.append("page", page.toString());
+      params.append("pageSize", "20");
 
       const url = `${baseUrl}/api/stock?${params.toString()}`;
 
@@ -104,8 +109,12 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
       if (res.ok) {
         const data = await res.json();
         setVehicles(data.vehicles ?? []);
+        setTotal(data.total ?? 0);
+        setTotalPages(data.totalPages ?? 1);
       } else {
         setVehicles([]);
+        setTotal(0);
+        setTotalPages(1);
       }
     } catch {
       setVehicles([]);
@@ -115,10 +124,14 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
   };
 
   useEffect(() => {
+    setPage(1);
+  }, [refreshTrigger, sortBy, sortOrder, filters]);
+
+  useEffect(() => {
     fetchVehicles();
     setSelectedIds(new Set());
     onSelectionChange?.([]);
-  }, [refreshTrigger, sortBy, sortOrder, filters]);
+  }, [page, refreshTrigger, sortBy, sortOrder, filters]);
 
   const handleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -539,6 +552,36 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
           ))
         )}
       </div>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-zinc-200 bg-white px-4 py-3">
+          <p className="text-sm text-zinc-600">
+            {total} vehículo{total !== 1 ? "s" : ""}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-300 text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Página anterior"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+            <span className="text-sm text-zinc-700">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-300 text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Página siguiente"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Diálogo de confirmación de eliminación */}
       {vehicleToDelete && (

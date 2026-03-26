@@ -173,13 +173,16 @@ export function VehicleFieldsForm({
       return true;
     });
 
-    const newPhotos = validFiles.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-
-    handlers.setPhotos((prev) => [...prev, ...newPhotos]);
+    handlers.setPhotos((prev) => {
+      const existingCount = (stockPhotoIds?.length ?? 0) + prev.length;
+      const slots = Math.max(0, 10 - existingCount);
+      const toAdd = validFiles.slice(0, slots).map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      return [...prev, ...toAdd];
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -917,45 +920,58 @@ export function VehicleFieldsForm({
             photo_library
           </span>
           <h2 className="text-lg font-semibold text-zinc-900">
-            Fotos del Vehículo
+            Fotos del Vehículo{" "}
+            <span className="text-base font-normal text-zinc-500">
+              ({(stockPhotoIds?.length ?? 0) + data.photos.length}/10)
+            </span>
           </h2>
         </div>
 
         {/* Zona de drag & drop */}
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => !disabled && fileInputRef.current?.click()}
-          className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 transition-all ${
-            isDragging
-              ? "border-blue-500 bg-blue-50"
-              : "border-zinc-300 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50"
-          } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
-        >
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-            <span className="material-symbols-outlined text-4xl text-blue-600">
-              cloud_upload
-            </span>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-zinc-900">
-              Arrastrá las fotos aquí o hacé clic para seleccionar
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              JPG, PNG o WEBP hasta 10MB por archivo
-            </p>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            onChange={(e) => handlePhotoSelect(e.target.files)}
-            className="hidden"
-            disabled={disabled}
-          />
-        </div>
+        {(() => {
+          const totalFotos = (stockPhotoIds?.length ?? 0) + data.photos.length;
+          const atLimit = totalFotos >= 10;
+          return (
+            <div
+              onDragOver={!atLimit ? handleDragOver : undefined}
+              onDragLeave={!atLimit ? handleDragLeave : undefined}
+              onDrop={!atLimit ? handleDrop : undefined}
+              onClick={() => !disabled && !atLimit && fileInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 transition-all ${
+                atLimit
+                  ? "pointer-events-none cursor-not-allowed border-zinc-200 bg-zinc-100 opacity-50"
+                  : isDragging
+                  ? "cursor-pointer border-blue-500 bg-blue-50"
+                  : "cursor-pointer border-zinc-300 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50"
+              } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+                <span className="material-symbols-outlined text-4xl text-blue-600">
+                  cloud_upload
+                </span>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-zinc-900">
+                  {atLimit
+                    ? "Límite de fotos alcanzado"
+                    : "Arrastrá las fotos aquí o hacé clic para seleccionar"}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  JPG, PNG o WEBP hasta 10MB — máximo 10 fotos por vehículo
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(e) => handlePhotoSelect(e.target.files)}
+                className="hidden"
+                disabled={disabled || atLimit}
+              />
+            </div>
+          );
+        })()}
 
         {/* Fotos existentes del vehículo de stock */}
         {stockPhotoIds && stockPhotoIds.length > 0 && stockVehicleId && (

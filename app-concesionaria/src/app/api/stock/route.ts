@@ -206,36 +206,28 @@ export async function GET(req: NextRequest) {
     const where = buildWhereClause(clienteId, filters);
     const orderByClause = buildOrderByClause(orderBy, order);
 
-    const stockVehicles = await prisma.vehicle.findMany({
-      where,
-      include: {
-        VehicleBrand: {
-          select: {
-            nombre: true,
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") || "20", 10)));
+
+    const [total, stockVehicles] = await Promise.all([
+      prisma.vehicle.count({ where }),
+      prisma.vehicle.findMany({
+        where,
+        include: {
+          VehicleBrand: { select: { nombre: true } },
+          VehicleCategory: { select: { nombre: true } },
+          Operation: { select: { idOperacion: true } },
+          VehiclePhoto: {
+            select: { id: true },
+            orderBy: { orden: "asc" },
+            take: 1,
           },
         },
-        VehicleCategory: {
-          select: {
-            nombre: true,
-          },
-        },
-        Operation: {
-          select: {
-            idOperacion: true,
-          },
-        },
-        VehiclePhoto: {
-          select: {
-            id: true,
-          },
-          orderBy: {
-            orden: "asc",
-          },
-          take: 1,
-        },
-      },
-      orderBy: orderByClause,
-    });
+        orderBy: orderByClause,
+        take: pageSize,
+        skip: (page - 1) * pageSize,
+      }),
+    ]);
 
     const vehiclesFormatted = stockVehicles.map((vehicle) => ({
       id: vehicle.id,
@@ -254,8 +246,12 @@ export async function GET(req: NextRequest) {
       fotoId: vehicle.VehiclePhoto[0]?.id ?? null,
     }));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       vehicles: vehiclesFormatted,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
     }, { status: 200 });
   } catch (error) {
     console.error("Error al obtener stock:", error);
