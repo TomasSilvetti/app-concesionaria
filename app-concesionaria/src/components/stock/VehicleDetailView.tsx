@@ -62,6 +62,11 @@ export function VehicleDetailView({ vehicleId }: VehicleDetailViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [mainPhotoLoaded, setMainPhotoLoaded] = useState(false);
+
+  useEffect(() => {
+    setMainPhotoLoaded(false);
+  }, [photoIndex]);
 
   useEffect(() => {
     const fetchVehicle = async () => {
@@ -273,11 +278,16 @@ export function VehicleDetailView({ vehicleId }: VehicleDetailViewProps) {
           <div className="flex flex-col gap-4">
             {/* Foto principal */}
             <div className="relative overflow-hidden rounded-xl bg-zinc-100">
+              {!mainPhotoLoaded && (
+                <div className="absolute inset-0 z-10 animate-pulse bg-zinc-200 dark:bg-zinc-700" />
+              )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={`/api/stock/${vehicleId}/photos/${currentPhoto!.id}`}
                 alt={`Foto ${photoIndex + 1} de ${vehicle.VehicleBrand.nombre} ${vehicle.modelo}`}
-                className="h-72 w-full object-contain sm:h-96"
+                loading="eager"
+                onLoad={() => setMainPhotoLoaded(true)}
+                className={`h-72 w-full object-contain sm:h-96 transition-opacity duration-300 ${mainPhotoLoaded ? "opacity-100" : "opacity-0"}`}
               />
 
               {/* Controles de navegación */}
@@ -331,8 +341,9 @@ export function VehicleDetailView({ vehicleId }: VehicleDetailViewProps) {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`/api/stock/${vehicleId}/photos/${photo.id}`}
+                      src={`/api/stock/${vehicleId}/photos/${photo.id}?thumb=true`}
                       alt={`Miniatura ${index + 1}`}
+                      loading="lazy"
                       className="h-16 w-20 object-cover"
                     />
                   </button>
