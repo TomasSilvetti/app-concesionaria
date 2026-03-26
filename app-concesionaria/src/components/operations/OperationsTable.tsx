@@ -49,6 +49,10 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
   const [hasMore, setHasMore] = useState(false);
   const [paymentOp, setPaymentOp] = useState<Operation | null>(null);
   const [showAlreadyPaidModal, setShowAlreadyPaidModal] = useState(false);
+  const [cancelOp, setCancelOp] = useState<Operation | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [reopenOp, setReopenOp] = useState<Operation | null>(null);
+  const [isReopening, setIsReopening] = useState(false);
   const router = useRouter();
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -232,6 +236,50 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
     }
   };
 
+  const handleCancelClick = (e: React.MouseEvent, operation: Operation) => {
+    e.stopPropagation();
+    setCancelOp(operation);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelOp) return;
+    setIsCancelling(true);
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      await fetch(`${baseUrl}/api/operations/${cancelOp.idOperacion}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: "cancelada" }),
+      });
+      setCancelOp(null);
+      fetchOperations();
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleReopenClick = (e: React.MouseEvent, operation: Operation) => {
+    e.stopPropagation();
+    setReopenOp(operation);
+  };
+
+  const handleReopenConfirm = async () => {
+    if (!reopenOp) return;
+    setIsReopening(true);
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      await fetch(`${baseUrl}/api/operations/${reopenOp.idOperacion}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: "abierta" }),
+      });
+      setReopenOp(null);
+      fetchOperations();
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
   const handlePaymentSave = async (data: {
     fecha: string;
     metodoPagoId: string;
@@ -308,6 +356,114 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                 className="flex h-10 items-center rounded-lg bg-zinc-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
               >
                 Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelOp && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setCancelOp(null)}
+        >
+          <div
+            className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-red-600">
+                  cancel
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">Cancelar operación</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCancelOp(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                aria-label="Cerrar"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                ¿Estás seguro que querés cancelar la operación{" "}
+                <span className="font-semibold">#{cancelOp.idOperacion}</span>? Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setCancelOp(null)}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2"
+              >
+                No, volver
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelConfirm}
+                disabled={isCancelling}
+                className="flex h-10 items-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-60"
+              >
+                {isCancelling ? "Cancelando..." : "Sí, cancelar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reopenOp && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setReopenOp(null)}
+        >
+          <div
+            className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-blue-600">
+                  restart_alt
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">Reabrir operación</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReopenOp(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                aria-label="Cerrar"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                ¿Deseás reabrir la operación{" "}
+                <span className="font-semibold">#{reopenOp.idOperacion}</span>? Volverá a estar activa.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setReopenOp(null)}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2"
+              >
+                No, volver
+              </button>
+              <button
+                type="button"
+                onClick={handleReopenConfirm}
+                disabled={isReopening}
+                className="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60"
+              >
+                {isReopening ? "Reabriendo..." : "Sí, reabrir"}
               </button>
             </div>
           </div>
@@ -543,6 +699,28 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                               attach_money
                             </span>
                           </button>
+                          {operation.estado === "abierta" && (
+                            <button
+                              onClick={(e) => handleCancelClick(e, operation)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                              aria-label={`Cancelar operación ${operation.idOperacion}`}
+                            >
+                              <span className="material-symbols-outlined text-lg">
+                                close
+                              </span>
+                            </button>
+                          )}
+                          {operation.estado === "cancelada" && (
+                            <button
+                              onClick={(e) => handleReopenClick(e, operation)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                              aria-label={`Reabrir operación ${operation.idOperacion}`}
+                            >
+                              <span className="material-symbols-outlined text-lg">
+                                restart_alt
+                              </span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -697,6 +875,30 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                           </span>
                           Pago
                         </button>
+                        {operation.estado === "abierta" && (
+                          <button
+                            onClick={(e) => handleCancelClick(e, operation)}
+                            className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            aria-label={`Cancelar operación ${operation.idOperacion}`}
+                          >
+                            <span className="material-symbols-outlined text-base">
+                              close
+                            </span>
+                            Cancelar
+                          </button>
+                        )}
+                        {operation.estado === "cancelada" && (
+                          <button
+                            onClick={(e) => handleReopenClick(e, operation)}
+                            className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            aria-label={`Reabrir operación ${operation.idOperacion}`}
+                          >
+                            <span className="material-symbols-outlined text-base">
+                              restart_alt
+                            </span>
+                            Reabrir
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
