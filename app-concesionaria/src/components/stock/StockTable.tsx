@@ -340,7 +340,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                   <td className="px-4 py-3">
                     {vehicle.fotoId ? (
                       <img
-                        src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}`}
+                        src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}?thumb=true`}
                         alt={`${vehicle.marca} ${vehicle.modelo}`}
                         className="h-10 w-14 rounded object-cover"
                       />
@@ -453,7 +453,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
               <div className="flex items-start gap-4">
                 {vehicle.fotoId ? (
                   <img
-                    src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}`}
+                    src={`/api/stock/${vehicle.id}/photos/${vehicle.fotoId}?thumb=true`}
                     alt={`${vehicle.marca} ${vehicle.modelo}`}
                     className="h-16 w-16 flex-shrink-0 rounded-lg object-cover"
                   />
