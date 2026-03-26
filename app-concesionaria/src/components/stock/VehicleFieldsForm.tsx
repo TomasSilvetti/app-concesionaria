@@ -1035,7 +1035,7 @@ export function VehicleFieldsForm({
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {data.photos.map((photo) => (
+              {data.photos.map((photo, index) => (
                 <div
                   key={photo.id}
                   className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
@@ -1059,11 +1059,37 @@ export function VehicleFieldsForm({
                       close
                     </span>
                   </button>
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                    <p className="truncate text-xs text-white">
-                      {photo.file.name}
-                    </p>
-                  </div>
+                  {index === 0 && (
+                    <div className="absolute bottom-0 left-0 flex items-center gap-1 bg-blue-600 px-2 py-1 text-xs font-semibold text-white">
+                      <span className="material-symbols-outlined text-sm">star</span>
+                      Principal
+                    </div>
+                  )}
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlers.setPhotos((prev) => {
+                          const updated = [...prev];
+                          const [selected] = updated.splice(index, 1);
+                          return [selected, ...updated];
+                        });
+                      }}
+                      className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white opacity-0 shadow-lg transition-opacity hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 group-hover:opacity-100"
+                      disabled={disabled}
+                      aria-label="Establecer como foto principal"
+                    >
+                      <span className="material-symbols-outlined text-lg">star</span>
+                    </button>
+                  )}
+                  {index > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                      <p className="truncate text-xs text-white">
+                        {photo.file.name}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -1,10 +1,10 @@
-# porcion-003 — UI de imagen principal para fotos nuevas [FRONT]
+2# porcion-003 — UI de imagen principal para fotos nuevas [FRONT]
 
 **Historia de usuario:** HU-16: Límite de fotos y selección de imagen principal por vehículo
 **Par:** —
 **Tipo:** FRONT
 **Prerequisitos:** porcion-001
-**Estado:** ⬜ Pendiente
+**Estado:** 🔄 En progreso
 
 ## Descripción
 
