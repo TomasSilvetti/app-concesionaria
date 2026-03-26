@@ -4,7 +4,7 @@
 **Par:** porcion-005
 **Tipo:** BACK
 **Prerequisitos:** porcion-002
-**Estado:** ⬜ Pendiente
+**Estado:** 🔄 En progreso
 
 ## Descripción
 

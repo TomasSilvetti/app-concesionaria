@@ -287,6 +287,11 @@ export async function PUT(
       }
     }
 
+    const fotoReordenRaw = formData.get("foto_reorden") as string | null;
+    const fotoReorden: string[] = fotoReordenRaw
+      ? (JSON.parse(fotoReordenRaw) as string[])
+      : [];
+
     const now = new Date();
 
     const vehicle = await prisma.vehicle.update({
@@ -310,6 +315,17 @@ export async function PUT(
       include: vehicleInclude,
     });
 
+    if (fotoReorden.length > 0) {
+      await Promise.all(
+        fotoReorden.map((photoId, index) =>
+          prisma.vehiclePhoto.updateMany({
+            where: { id: photoId, stockId: id },
+            data: { orden: index },
+          })
+        )
+      );
+    }
+
     if (fotos.length > 0) {
       const photosData = await Promise.all(
         fotos.map(async (foto, index) => {
@@ -322,7 +338,7 @@ export async function PUT(
             nombreArchivo: foto.name,
             mimeType: foto.type,
             datos: bytes,
-            orden: index,
+            orden: fotoReorden.length + index,
             creadoEn: now,
           };
         })
