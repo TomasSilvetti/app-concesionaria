@@ -267,8 +267,9 @@ model VehiclePhoto {
   id            String   @id
   stockId       String
   nombreArchivo String
-  mimeType      String
-  datos         Bytes
+  mimeType      String   // "image/webp" para fotos nuevas
+  datos         Bytes    // versión full (1280px WebP para fotos nuevas, original para fotos viejas)
+  datosThumb    Bytes?   // versión thumbnail (400px WebP), null para fotos pre-migración
   orden         Int      @default(0)
   creadoEn      DateTime @default(now())
   Vehicle       Vehicle  @relation(fields: [stockId], references: [id], onDelete: Cascade)

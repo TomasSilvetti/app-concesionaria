@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { isValidOperationTypeName } from "@/lib/operation-types";
 import { calcularIngresosNetos, calcularComision } from "@/lib/calculations";
+import { processVehiclePhoto, ImageTooSmallError } from "@/lib/imageProcessor";
 
 const ALLOWED_SORT_FIELDS = [
   "fechaInicio",
@@ -533,6 +534,78 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Procesar fotos del vehículo vendido antes de abrir la transacción
+    type ProcessedPhoto = {
+      id: string;
+      stockId: string;
+      nombreArchivo: string;
+      mimeType: string;
+      datos: Buffer;
+      datosThumb: Buffer;
+      orden: number;
+      creadoEn: Date;
+    };
+
+    const fotosVendidoProcesadas: ProcessedPhoto[] = [];
+    if (!stockVehicleId && fotos.length > 0) {
+      for (const [index, foto] of fotos.entries()) {
+        const buffer = Buffer.from(await foto.arrayBuffer());
+        try {
+          const { full, thumb } = await processVehiclePhoto(buffer);
+          fotosVendidoProcesadas.push({
+            id: randomUUID(),
+            stockId: vehicleId,
+            nombreArchivo: foto.name,
+            mimeType: "image/webp",
+            datos: full,
+            datosThumb: thumb,
+            orden: index,
+            creadoEn: now,
+          });
+        } catch (error) {
+          if (error instanceof ImageTooSmallError) {
+            return NextResponse.json(
+              { message: `La foto "${foto.name}" no cumple el mínimo de 800px en su lado más largo.` },
+              { status: 400 }
+            );
+          }
+          throw error;
+        }
+      }
+    }
+
+    // Procesar fotos de vehículos en intercambio antes de abrir la transacción
+    const fotosIntercambioProcesadas: ProcessedPhoto[][] = [];
+    for (let i = 0; i < vehiculosUsados.length; i++) {
+      const vuFotos = formData.getAll(`vehiculosUsadoFotos_${i}`) as File[];
+      const processed: ProcessedPhoto[] = [];
+      for (const [index, foto] of vuFotos.entries()) {
+        const buffer = Buffer.from(await foto.arrayBuffer());
+        try {
+          const { full, thumb } = await processVehiclePhoto(buffer);
+          processed.push({
+            id: randomUUID(),
+            stockId: "", // se asigna dentro de la transacción al conocer el id del vehículo
+            nombreArchivo: foto.name,
+            mimeType: "image/webp",
+            datos: full,
+            datosThumb: thumb,
+            orden: index,
+            creadoEn: now,
+          });
+        } catch (error) {
+          if (error instanceof ImageTooSmallError) {
+            return NextResponse.json(
+              { message: `La foto "${foto.name}" no cumple el mínimo de 800px en su lado más largo.` },
+              { status: 400 }
+            );
+          }
+          throw error;
+        }
+      }
+      fotosIntercambioProcesadas.push(processed);
+    }
+
     const newOperation = await prisma.$transaction(async (tx) => {
       let resolvedVehicleId: string;
 
@@ -567,26 +640,9 @@ export async function POST(req: NextRequest) {
         });
         resolvedVehicleId = vehicleId;
 
-        if (fotos.length > 0) {
-          const photosData = await Promise.all(
-            fotos.map(async (foto, index) => {
-              const buffer = await foto.arrayBuffer();
-              const bytes = Buffer.from(buffer);
-
-              return {
-                id: randomUUID(),
-                stockId: vehicleId,
-                nombreArchivo: foto.name,
-                mimeType: foto.type,
-                datos: bytes,
-                orden: index,
-                creadoEn: now,
-              };
-            })
-          );
-
+        if (fotosVendidoProcesadas.length > 0) {
           await tx.vehiclePhoto.createMany({
-            data: photosData,
+            data: fotosVendidoProcesadas,
           });
         }
       }
@@ -685,24 +741,11 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        const vuFotos = formData.getAll(`vehiculosUsadoFotos_${i}`) as File[];
-        if (vuFotos.length > 0) {
-          const usedPhotosData = await Promise.all(
-            vuFotos.map(async (foto, index) => {
-              const buffer = await foto.arrayBuffer();
-              const bytes = Buffer.from(buffer);
-              return {
-                id: randomUUID(),
-                stockId: usedVehicleId,
-                nombreArchivo: foto.name,
-                mimeType: foto.type,
-                datos: bytes,
-                orden: index,
-                creadoEn: now,
-              };
-            })
-          );
-          await tx.vehiclePhoto.createMany({ data: usedPhotosData });
+        const processedVuFotos = fotosIntercambioProcesadas[i] ?? [];
+        if (processedVuFotos.length > 0) {
+          await tx.vehiclePhoto.createMany({
+            data: processedVuFotos.map((p) => ({ ...p, stockId: usedVehicleId })),
+          });
         }
 
         await tx.operationExchange.create({
