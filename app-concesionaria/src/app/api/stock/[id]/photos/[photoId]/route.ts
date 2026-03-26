@@ -38,9 +38,11 @@ export async function GET(
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
+    const thumb = _req.nextUrl.searchParams.get("thumb") === "true";
+
     const photo = await prisma.vehiclePhoto.findUnique({
       where: { id: photoId },
-      select: { datos: true, mimeType: true, nombreArchivo: true },
+      select: { datos: true, datosThumb: true, mimeType: true, nombreArchivo: true },
     });
 
     if (!photo) {
@@ -50,7 +52,9 @@ export async function GET(
       );
     }
 
-    return new NextResponse(new Uint8Array(photo.datos), {
+    const imageData = thumb && photo.datosThumb ? photo.datosThumb : photo.datos;
+
+    return new NextResponse(new Uint8Array(imageData), {
       status: 200,
       headers: {
         "Content-Type": photo.mimeType,
