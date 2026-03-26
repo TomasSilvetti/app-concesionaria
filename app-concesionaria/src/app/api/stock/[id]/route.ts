@@ -276,6 +276,17 @@ export async function PUT(
       );
     }
 
+    const fotos = formData.getAll("fotos") as File[];
+    if (fotos.length > 0) {
+      const existingCount = await prisma.vehiclePhoto.count({ where: { stockId: id } });
+      if (existingCount + fotos.length > 10) {
+        return NextResponse.json(
+          { message: "No se pueden cargar más de 10 fotos por vehículo" },
+          { status: 400 }
+        );
+      }
+    }
+
     const now = new Date();
 
     const vehicle = await prisma.vehicle.update({
@@ -298,8 +309,6 @@ export async function PUT(
       },
       include: vehicleInclude,
     });
-
-    const fotos = formData.getAll("fotos") as File[];
 
     if (fotos.length > 0) {
       const photosData = await Promise.all(

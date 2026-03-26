@@ -357,6 +357,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const fotos = formData.getAll("fotos") as File[];
+    if (fotos.length > 10) {
+      return NextResponse.json(
+        { message: "No se pueden cargar más de 10 fotos por vehículo" },
+        { status: 400 }
+      );
+    }
+
     const vehicleId = randomUUID();
     const now = new Date();
 
@@ -384,8 +392,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const fotos = formData.getAll("fotos") as File[];
-    
     if (fotos.length > 0) {
       const photosData = await Promise.all(
         fotos.map(async (foto, index) => {
