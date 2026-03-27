@@ -4,9 +4,23 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 const CLIENTE_ID = "cliente-prueba-001";
+const ADMIN_CLIENT_ID = "client-admin-sistema";
 
 async function main() {
   console.log("🌱 Iniciando seed de la base de datos...");
+
+  // === CLIENTE FANTASMA (admin) ===
+  await prisma.client.upsert({
+    where: { id: ADMIN_CLIENT_ID },
+    update: {},
+    create: {
+      id: ADMIN_CLIENT_ID,
+      nombre: "Sistema",
+      activo: true,
+      modulos: {},
+      actualizadoEn: new Date(),
+    },
+  });
 
   // === USUARIOS ===
   const adminPassword = await bcrypt.hash("admin123", 10);
@@ -14,14 +28,14 @@ async function main() {
 
   await prisma.user.upsert({
     where: { username: "admin" },
-    update: {},
+    update: { clienteId: ADMIN_CLIENT_ID },
     create: {
       id: "user-admin-001",
       username: "admin",
       password: adminPassword,
       nombre: "Administrador del Sistema",
       rol: "admin",
-      clienteId: null,
+      clienteId: ADMIN_CLIENT_ID,
       activo: true,
       actualizadoEn: new Date(),
     },

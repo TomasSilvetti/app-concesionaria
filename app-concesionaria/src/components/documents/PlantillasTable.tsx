@@ -40,7 +40,7 @@ export function PlantillasTable({
     setError(null);
     try {
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(`${baseUrl}/api/document-templates`);
+      const res = await fetch(`${baseUrl}/api/admin/document-templates`);
       if (res.ok) {
         const data = await res.json();
         setPlantillas(data.templates ?? data ?? []);
@@ -68,7 +68,7 @@ export function PlantillasTable({
     setIsDeleting(true);
     try {
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(`${baseUrl}/api/document-templates/${plantillaToDelete.id}`, {
+      const res = await fetch(`${baseUrl}/api/admin/document-templates/${plantillaToDelete.id}`, {
         method: "DELETE",
       });
       if (res.ok) {

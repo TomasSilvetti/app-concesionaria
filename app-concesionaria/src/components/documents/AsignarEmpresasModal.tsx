@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "material-symbols/outlined.css";
 
 interface Empresa {
@@ -35,31 +35,33 @@ export function AsignarEmpresasModal({
       try {
         const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
-        const [empresasRes, asignacionesRes] = await Promise.all([
-          fetch(`${baseUrl}/api/clientes`),
-          fetch(`${baseUrl}/api/document-templates/${plantillaId}/assignments`),
-        ]);
+        const res = await fetch(
+          `${baseUrl}/api/admin/document-templates/${plantillaId}/assignments`
+        );
 
-        const empresasData: Empresa[] = empresasRes.ok
-          ? await empresasRes.json()
-          : MOCK_EMPRESAS;
+        if (!res.ok) {
+          setLoadError("Error al cargar las empresas.");
+          return;
+        }
 
-        const asignaciones: { empresaId: string; activo: boolean }[] = asignacionesRes.ok
-          ? await asignacionesRes.json()
-          : [];
+        const data = await res.json();
+        const assignments: { clienteId: string; nombre: string; activo: boolean }[] =
+          data.assignments ?? [];
+
+        const empresasData: Empresa[] = assignments.map((a) => ({
+          id: a.clienteId,
+          nombre: a.nombre,
+        }));
 
         const activosSet = new Set(
-          asignaciones.filter((a) => a.activo).map((a) => a.empresaId)
+          assignments.filter((a) => a.activo).map((a) => a.clienteId)
         );
 
         setEmpresas(empresasData);
         setInitialActivos(new Set(activosSet));
         setActivos(new Set(activosSet));
       } catch {
-        // API no implementada — usar datos mock
-        setEmpresas(MOCK_EMPRESAS);
-        setInitialActivos(new Set());
-        setActivos(new Set());
+        setLoadError("Error al cargar las empresas.");
       } finally {
         setIsLoading(false);
       }
@@ -90,35 +92,31 @@ export function AsignarEmpresasModal({
     setSaveError(null);
     setSaveSuccess(false);
 
-    const changes = empresas
-      .filter(
-        (e) =>
-          activos.has(e.id) !== initialActivos.has(e.id)
-      )
-      .map((e) => ({ empresaId: e.id, activo: activos.has(e.id) }));
+    const assignments = empresas.map((e) => ({
+      clienteId: e.id,
+      activo: activos.has(e.id),
+    }));
 
     try {
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
       const res = await fetch(
-        `${baseUrl}/api/document-templates/${plantillaId}/assignments`,
+        `${baseUrl}/api/admin/document-templates/${plantillaId}/assignments`,
         {
-          method: "PATCH",
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ changes }),
+          body: JSON.stringify({ assignments }),
         }
       );
 
-      if (res.ok || res.status === 404) {
+      if (res.ok) {
         setInitialActivos(new Set(activos));
         setSaveSuccess(true);
       } else {
         const data = await res.json().catch(() => ({}));
-        setSaveError(data.error ?? "Error al guardar los cambios.");
+        setSaveError(data.message ?? "Error al guardar los cambios.");
       }
     } catch {
-      // API aún no implementada — simular éxito
-      setInitialActivos(new Set(activos));
-      setSaveSuccess(true);
+      setSaveError("Error al guardar los cambios.");
     } finally {
       setIsSaving(false);
     }
@@ -286,10 +284,3 @@ export function AsignarEmpresasModal({
   );
 }
 
-// Mock para preview mientras la API no está implementada
-const MOCK_EMPRESAS: Empresa[] = [
-  { id: "1", nombre: "Concesionaria Norte" },
-  { id: "2", nombre: "Concesionaria Sur" },
-  { id: "3", nombre: "Grupo AutoMax" },
-  { id: "4", nombre: "Automotores del Valle" },
-];

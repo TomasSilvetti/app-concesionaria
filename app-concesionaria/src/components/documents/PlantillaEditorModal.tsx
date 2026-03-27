@@ -21,28 +21,38 @@ interface PlantillaEditorModalProps {
 
 const CONTEXT_FIELDS: Record<string, { value: string; label: string }[]> = {
   operacion: [
-    { value: "operacion.cliente.nombre", label: "Cliente → Nombre" },
-    { value: "operacion.cliente.apellido", label: "Cliente → Apellido" },
-    { value: "operacion.cliente.dni", label: "Cliente → DNI" },
-    { value: "operacion.vehiculo.marca", label: "Vehículo → Marca" },
-    { value: "operacion.vehiculo.modelo", label: "Vehículo → Modelo" },
-    { value: "operacion.vehiculo.año", label: "Vehículo → Año" },
-    { value: "operacion.vehiculo.patente", label: "Vehículo → Patente" },
+    { value: "operacion.nombreComprador", label: "Comprador → Nombre" },
+    { value: "operacion.fechaVenta", label: "Fecha de venta" },
+    { value: "operacion.fechaInicio", label: "Fecha de inicio" },
     { value: "operacion.precioVentaTotal", label: "Precio de venta total" },
-    { value: "operacion.financiamiento.cuotas", label: "Financiamiento → Cuotas" },
-    { value: "operacion.financiamiento.monto", label: "Financiamiento → Monto cuota" },
-    { value: "operacion.empresa.nombre", label: "Empresa → Nombre" },
-    { value: "operacion.fecha", label: "Fecha de operación" },
+    { value: "operacion.precioToma", label: "Precio de toma" },
+    { value: "operacion.tipoOperacion", label: "Tipo de operación" },
+    { value: "operacion.estado", label: "Estado" },
+    { value: "operacion.ingresosBrutos", label: "Ingresos brutos" },
+    { value: "operacion.comision", label: "Comisión" },
+    { value: "operacion.ingresosNetos", label: "Ingresos netos" },
+    { value: "operacion.vehiculo.modelo", label: "Vehículo → Modelo" },
+    { value: "operacion.vehiculo.patente", label: "Vehículo → Patente" },
+    { value: "operacion.vehiculo.anio", label: "Vehículo → Año" },
+    { value: "operacion.vehiculo.color", label: "Vehículo → Color" },
+    { value: "operacion.vehiculo.version", label: "Vehículo → Versión" },
+    { value: "operacion.vehiculo.kilometros", label: "Vehículo → Kilómetros" },
+    { value: "operacion.marca.nombre", label: "Vehículo → Marca" },
+    { value: "operacion.categoria.nombre", label: "Vehículo → Categoría" },
   ],
   vehiculo: [
-    { value: "vehiculo.marca", label: "Marca" },
+    { value: "vehiculo.marca.nombre", label: "Marca" },
+    { value: "vehiculo.categoria.nombre", label: "Categoría" },
     { value: "vehiculo.modelo", label: "Modelo" },
-    { value: "vehiculo.año", label: "Año" },
+    { value: "vehiculo.anio", label: "Año" },
     { value: "vehiculo.patente", label: "Patente" },
-    { value: "vehiculo.precio", label: "Precio" },
     { value: "vehiculo.color", label: "Color" },
-    { value: "vehiculo.kilometraje", label: "Kilometraje" },
-    { value: "vehiculo.vin", label: "VIN / Chasis" },
+    { value: "vehiculo.kilometros", label: "Kilómetros" },
+    { value: "vehiculo.version", label: "Versión" },
+    { value: "vehiculo.precioRevista", label: "Precio revista" },
+    { value: "vehiculo.precioOferta", label: "Precio oferta" },
+    { value: "vehiculo.precioToma", label: "Precio de toma" },
+    { value: "vehiculo.estado", label: "Estado" },
   ],
 };
 
@@ -179,10 +189,25 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
       formData.append("pdf", pdfFile);
       formData.append("nombre", nombre.trim());
       formData.append("contexto", contexto);
-      formData.append("recuadros", JSON.stringify(recuadros));
+      formData.append(
+        "campos",
+        JSON.stringify(
+          recuadros.map((r, i) => ({
+            nombre: r.nombre,
+            tipo: r.tipo,
+            valorFijo: r.tipo === "fijo" ? r.valor : undefined,
+            rutaAuto: r.tipo === "auto" ? r.valor : undefined,
+            posX: r.x,
+            posY: r.y,
+            ancho: r.width,
+            alto: r.height,
+            orden: i,
+          }))
+        )
+      );
 
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(`${baseUrl}/api/document-templates`, {
+      const res = await fetch(`${baseUrl}/api/admin/document-templates`, {
         method: "POST",
         body: formData,
       });
@@ -191,7 +216,7 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
         onSaved();
       } else {
         const data = await res.json().catch(() => ({}));
-        setSaveError(data.error ?? "Error al guardar la plantilla.");
+        setSaveError(data.message ?? "Error al guardar la plantilla.");
       }
     } catch {
       // API aún no implementada — tratar como éxito para preview de frontend
