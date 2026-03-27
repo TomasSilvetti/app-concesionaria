@@ -75,6 +75,7 @@ interface VehicleFieldsFormProps {
   stockVehicleId?: string;
   onDeleteExistingPhoto?: (photoId: string) => void;
   onSetExistingPhotoAsPrincipal?: (photoId: string) => void;
+  inversionSlot?: React.ReactNode;
 }
 
 async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
@@ -110,6 +111,7 @@ export function VehicleFieldsForm({
   stockVehicleId,
   onDeleteExistingPhoto,
   onSetExistingPhotoAsPrincipal,
+  inversionSlot,
 }: VehicleFieldsFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -825,6 +827,8 @@ export function VehicleFieldsForm({
                   Se calcula automáticamente según ingreso bruto / precio venta
                 </p>
               </div>
+
+              {inversionSlot}
             </>
           ) : (
             <>

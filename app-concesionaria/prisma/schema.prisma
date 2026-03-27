@@ -29,6 +29,7 @@ model Client {
   actualizadoEn   DateTime
   Category        Category[]
   Expense         Expense[]
+  Inversor        Inversor[]
   Operation       Operation[]
   Origin          Origin[]
   Pago            Pago[]
@@ -87,6 +88,7 @@ model Operation {
   Client                                       Client              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   VehicleBrand                                 VehicleBrand        @relation(fields: [marcaId], references: [id])
   VehiculoVendido                              Vehicle             @relation("VehiculosVendidos", fields: [vehiculoVendidoId], references: [id], onDelete: Cascade)
+  Inversion                                    Inversion?
   OperationDocument                            OperationDocument?
   OperationExchange                            OperationExchange[]
   Pago                                         Pago[]
@@ -128,6 +130,46 @@ model OperationExchange {
   @@index([stockId])
 }
 
+
+model Inversor {
+  id                    String                 @id
+  clienteId             String
+  nombre                String
+  creadoEn              DateTime               @default(now())
+  Client                Client                 @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  InversionParticipante InversionParticipante[]
+
+  @@index([clienteId])
+}
+
+model Inversion {
+  id                    String                 @id
+  operacionId           String                 @unique
+  clienteId             String
+  creadoEn              DateTime               @default(now())
+  actualizadoEn         DateTime
+  Operation             Operation              @relation(fields: [operacionId], references: [id], onDelete: Cascade)
+  InversionParticipante InversionParticipante[]
+
+  @@index([clienteId])
+}
+
+model InversionParticipante {
+  id                      String     @id
+  inversionId             String
+  inversorId              String?
+  esConcecionaria         Boolean
+  montoAporte             Float
+  porcentajeParticipacion Float
+  porcentajeUtilidad      Float?
+  creadoEn                DateTime   @default(now())
+  actualizadoEn           DateTime
+  Inversion               Inversion  @relation(fields: [inversionId], references: [id], onDelete: Cascade)
+  Inversor                Inversor?  @relation(fields: [inversorId], references: [id])
+
+  @@index([inversionId])
+  @@index([inversorId])
+}
 
 model Origin {
   id        String    @id

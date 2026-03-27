@@ -10,6 +10,10 @@ import {
   PhotoFile,
 } from "../stock/VehicleFieldsForm";
 import { OPERATION_TYPES } from "@/lib/operation-types";
+import {
+  InversionSubform,
+  type InversionParticipante,
+} from "@/components/operations/InversionSubform";
 
 interface VehicleBrand {
   id: string;
@@ -155,6 +159,10 @@ export function CreateOperationForm({
   const [brandsLoading, setBrandsLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Inversión
+  const [hayInversion, setHayInversion] = useState(false);
+  const [inversionParticipantes, setInversionParticipantes] = useState<InversionParticipante[]>([]);
 
   // UI states
   const [error, setError] = useState<string | null>(null);
@@ -938,6 +946,16 @@ export function CreateOperationForm({
         showOperationFields={true}
         stockPhotoIds={stockPhotoIds.length > 0 ? stockPhotoIds : undefined}
         stockVehicleId={stockAutofillId ?? undefined}
+        inversionSlot={
+          <InversionSubform
+            variant="inline"
+            hayInversion={hayInversion}
+            onToggle={setHayInversion}
+            participantes={inversionParticipantes}
+            onParticipantesChange={setInversionParticipantes}
+            disabled={isSubmitting}
+          />
+        }
       />
 
       {/* Botón para añadir auto en parte de pago - Siempre visible */}

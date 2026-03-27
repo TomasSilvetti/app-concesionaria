@@ -5,6 +5,10 @@ import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
 import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
+import {
+  InversionSubform,
+  type InversionParticipante,
+} from "@/components/operations/InversionSubform";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -165,6 +169,10 @@ export default function OperacionEditPage() {
   const [newExchangeCategoryName, setNewExchangeCategoryName] = useState("");
   const [isSavingExchangeCategory, setIsSavingExchangeCategory] = useState(false);
   const [localExchangeCategories, setLocalExchangeCategories] = useState<Category[]>([]);
+
+  // Inversión
+  const [hayInversion, setHayInversion] = useState(false);
+  const [inversionParticipantes, setInversionParticipantes] = useState<InversionParticipante[]>([]);
 
   // Validation errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -1210,6 +1218,15 @@ export default function OperacionEditPage() {
                 </p>
               </div>
             </div>
+
+            <InversionSubform
+              variant="inline"
+              hayInversion={hayInversion}
+              onToggle={setHayInversion}
+              participantes={inversionParticipantes}
+              onParticipantesChange={setInversionParticipantes}
+              disabled={isCerrada || isSaving}
+            />
           </div>
 
           {/* Sección: Estado y tipo */}
