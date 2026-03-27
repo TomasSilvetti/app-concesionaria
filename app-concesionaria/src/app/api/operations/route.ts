@@ -289,6 +289,7 @@ export async function POST(req: NextRequest) {
     const vehiculosUsadosStr = formData.get("vehiculosUsados") as string | null;
     const stockVehicleId = formData.get("stockVehicleId") as string | null;
     const documentoDetalle = formData.get("documentoDetalle") as File | null;
+    const inversionStr = formData.get("inversion") as string | null;
 
     const errors: string[] = [];
 
@@ -781,6 +782,62 @@ export async function POST(req: NextRequest) {
               actualizadoEn: now,
             },
           });
+        }
+      }
+
+      // Crear inversión si viene en el payload
+      if (inversionStr) {
+        try {
+          const invData = JSON.parse(inversionStr) as {
+            hayInversion: boolean;
+            participantes: {
+              esConcecionaria: boolean;
+              inversorId?: string | null;
+              montoAporte: number;
+              porcentajeUtilidad?: number | null;
+            }[];
+          };
+          if (
+            invData.hayInversion &&
+            Array.isArray(invData.participantes) &&
+            invData.participantes.length > 0
+          ) {
+            const montos = invData.participantes.map((p) =>
+              typeof p.montoAporte === "number" ? p.montoAporte : 0
+            );
+            const total = montos.reduce((acc, m) => acc + m, 0);
+            const porcentajes =
+              total === 0
+                ? montos.map(() => 0)
+                : montos.map((m) => (m / total) * 100);
+
+            const inversionId = randomUUID();
+            await tx.inversion.create({
+              data: {
+                id: inversionId,
+                operacionId: operationId,
+                clienteId,
+                actualizadoEn: now,
+              },
+            });
+
+            await tx.inversionParticipante.createMany({
+              data: invData.participantes.map((p, idx) => ({
+                id: randomUUID(),
+                inversionId,
+                inversorId: p.esConcecionaria ? null : (p.inversorId ?? null),
+                esConcecionaria: p.esConcecionaria,
+                montoAporte: montos[idx],
+                porcentajeParticipacion: porcentajes[idx],
+                porcentajeUtilidad:
+                  p.porcentajeUtilidad != null ? p.porcentajeUtilidad : null,
+                creadoEn: now,
+                actualizadoEn: now,
+              })),
+            });
+          }
+        } catch {
+          // inversión malformada: se ignora silenciosamente
         }
       }
 

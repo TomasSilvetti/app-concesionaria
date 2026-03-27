@@ -3,6 +3,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isValidOperationTypeName } from "@/lib/operation-types";
 import { calcularIngresosNetos, calcularComision } from "@/lib/calculations";
+import { randomUUID } from "crypto";
+
+function calcularPorcentajes(montos: number[]): number[] {
+  const total = montos.reduce((acc, m) => acc + m, 0);
+  if (total === 0) return montos.map(() => 0);
+  return montos.map((m) => (m / total) * 100);
+}
 
 export async function GET(
   req: NextRequest,
@@ -94,6 +101,16 @@ export async function GET(
             nombreArchivo: true,
           },
         },
+        Inversion: {
+          include: {
+            InversionParticipante: {
+              include: {
+                Inversor: { select: { id: true, nombre: true } },
+              },
+              orderBy: { creadoEn: "asc" },
+            },
+          },
+        },
       },
     });
 
@@ -169,6 +186,19 @@ export async function GET(
         categoria: expense.Category.nombre,
         monto: expense.monto,
       })),
+      inversion: operation.Inversion
+        ? {
+            participantes: operation.Inversion.InversionParticipante.map((p) => ({
+              id: p.id,
+              esConcecionaria: p.esConcecionaria,
+              inversorId: p.inversorId,
+              inversorNombre: p.Inversor?.nombre ?? null,
+              montoAporte: p.montoAporte,
+              porcentajeParticipacion: p.porcentajeParticipacion,
+              porcentajeUtilidad: p.porcentajeUtilidad,
+            })),
+          }
+        : null,
     };
 
     return NextResponse.json(operationFormatted, { status: 200 });
@@ -604,6 +634,123 @@ export async function PATCH(
         monto: exp.monto,
       })),
     };
+
+    // Procesar inversión si viene en el payload
+    if ("inversion" in body) {
+      const inv = body.inversion as Record<string, unknown> | null | false;
+      const hayInversion = inv && (inv as Record<string, unknown>).hayInversion === true;
+
+      if (!hayInversion) {
+        // Eliminar inversión existente (cascade elimina participantes)
+        await prisma.inversion.deleteMany({
+          where: { operacionId: existingOperation.id },
+        });
+      } else {
+        const participantesRaw = (inv as Record<string, unknown>).participantes;
+        if (!Array.isArray(participantesRaw) || participantesRaw.length === 0) {
+          return NextResponse.json(
+            { message: "La inversión debe tener al menos un participante" },
+            { status: 400 }
+          );
+        }
+
+        type ParticipanteInput = {
+          esConcecionaria: boolean;
+          inversorId?: string | null;
+          montoAporte: number;
+          porcentajeUtilidad?: number | null;
+        };
+
+        const participantes = participantesRaw as ParticipanteInput[];
+
+        // Validar que inversorId de cada participante pertenezca al clienteId
+        const inversorIds = participantes
+          .filter((p) => !p.esConcecionaria && p.inversorId)
+          .map((p) => p.inversorId as string);
+
+        if (inversorIds.length > 0) {
+          const inversoresValidos = await prisma.inversor.findMany({
+            where: { id: { in: inversorIds }, clienteId },
+            select: { id: true },
+          });
+          const idsValidos = new Set(inversoresValidos.map((i) => i.id));
+          const invalido = inversorIds.find((id) => !idsValidos.has(id));
+          if (invalido) {
+            return NextResponse.json(
+              { message: "Uno o más inversores no pertenecen al cliente" },
+              { status: 400 }
+            );
+          }
+        }
+
+        const montos = participantes.map((p) => {
+          const m = typeof p.montoAporte === "number" ? p.montoAporte : parseFloat(String(p.montoAporte));
+          return isNaN(m) ? 0 : m;
+        });
+
+        const totalMontos = montos.reduce((acc, m) => acc + m, 0);
+
+        if (totalMontos === 0 && participantes.length > 1) {
+          return NextResponse.json(
+            { message: "No se puede guardar una inversión con montos totales en $0 cuando hay más de un participante" },
+            { status: 400 }
+          );
+        }
+
+        const porcentajes = calcularPorcentajes(montos);
+        const now = new Date();
+
+        await prisma.$transaction(async (tx) => {
+          // Upsert Inversion
+          const inversionExistente = await tx.inversion.findUnique({
+            where: { operacionId: existingOperation.id },
+          });
+
+          let inversionId: string;
+          if (inversionExistente) {
+            inversionId = inversionExistente.id;
+            await tx.inversion.update({
+              where: { id: inversionId },
+              data: { actualizadoEn: now },
+            });
+          } else {
+            inversionId = randomUUID();
+            await tx.inversion.create({
+              data: {
+                id: inversionId,
+                operacionId: existingOperation.id,
+                clienteId,
+                actualizadoEn: now,
+              },
+            });
+          }
+
+          // Reemplazar participantes
+          await tx.inversionParticipante.deleteMany({
+            where: { inversionId },
+          });
+
+          await tx.inversionParticipante.createMany({
+            data: participantes.map((p, idx) => ({
+              id: randomUUID(),
+              inversionId,
+              inversorId: p.esConcecionaria ? null : (p.inversorId ?? null),
+              esConcecionaria: p.esConcecionaria,
+              montoAporte: montos[idx],
+              porcentajeParticipacion: porcentajes[idx],
+              porcentajeUtilidad:
+                p.porcentajeUtilidad !== undefined && p.porcentajeUtilidad !== null
+                  ? typeof p.porcentajeUtilidad === "number"
+                    ? p.porcentajeUtilidad
+                    : parseFloat(String(p.porcentajeUtilidad)) || null
+                  : null,
+              creadoEn: now,
+              actualizadoEn: now,
+            })),
+          });
+        });
+      }
+    }
 
     return NextResponse.json(operationFormatted, { status: 200 });
   } catch (error) {

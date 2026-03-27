@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { NumericInput } from "@/components/ui/NumericInput";
 import "material-symbols/outlined.css";
 
@@ -29,6 +29,11 @@ function calcularPorcentajes(participantes: InversionParticipante[]): number[] {
   return montos.map((m) => (m / total) * 100);
 }
 
+interface InversorOption {
+  id: string;
+  nombre: string;
+}
+
 export function InversionSubform({
   hayInversion,
   onToggle,
@@ -38,12 +43,58 @@ export function InversionSubform({
   variant = "card",
 }: InversionSubformProps) {
   const [showAddInversor, setShowAddInversor] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<InversorOption[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const porcentajes = calcularPorcentajes(participantes);
   const totalMontos = participantes.reduce(
     (acc, p) => acc + (parseFloat(p.montoAporte) || 0),
     0
   );
+
+  // Cerrar dropdown al hacer click afuera
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        searchRef.current &&
+        !searchRef.current.contains(e.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Buscar inversores con debounce
+  useEffect(() => {
+    if (!showAddInversor) return;
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(
+          `/api/inversores?q=${encodeURIComponent(searchQuery)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data.inversores ?? []);
+          setShowDropdown(true);
+        }
+      } catch {
+        // silencioso
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, showAddInversor]);
 
   const handleToggle = () => {
     if (disabled) return;
@@ -61,6 +112,8 @@ export function InversionSubform({
     } else {
       onParticipantesChange([]);
       setShowAddInversor(false);
+      setSearchQuery("");
+      setShowDropdown(false);
     }
     onToggle(!hayInversion);
   };
@@ -74,7 +127,6 @@ export function InversionSubform({
   };
 
   const handleUtilidadChange = (localId: string, value: string) => {
-    // Clamp to 0-100
     const num = parseFloat(value);
     const clamped =
       value === "" ? "" : isNaN(num) ? "" : String(Math.min(100, Math.max(0, num)));
@@ -89,10 +141,64 @@ export function InversionSubform({
     onParticipantesChange(participantes.filter((p) => p.localId !== localId));
   };
 
+  const handleSelectInversor = (inversor: InversorOption) => {
+    const yaExiste = participantes.some((p) => p.inversorId === inversor.id);
+    if (!yaExiste) {
+      onParticipantesChange([
+        ...participantes,
+        {
+          localId: inversor.id,
+          esConcecionaria: false,
+          nombre: inversor.nombre,
+          inversorId: inversor.id,
+          montoAporte: "",
+          porcentajeUtilidad: "",
+        },
+      ]);
+    }
+    setShowAddInversor(false);
+    setSearchQuery("");
+    setShowDropdown(false);
+  };
+
+  const handleCreateInversor = async () => {
+    const nombre = searchQuery.trim();
+    if (!nombre) return;
+    setIsCreating(true);
+    try {
+      const res = await fetch("/api/inversores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        handleSelectInversor(data.inversor);
+      }
+    } catch {
+      // silencioso
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const formatPorcentaje = (idx: number): string => {
     if (totalMontos === 0) return "—";
     return `${porcentajes[idx].toFixed(2).replace(".", ",")}%`;
   };
+
+  // Inversores ya agregados (para excluirlos del dropdown)
+  const inversorIdsAgregados = new Set(
+    participantes.filter((p) => p.inversorId).map((p) => p.inversorId as string)
+  );
+  const resultadosFiltrados = searchResults.filter(
+    (r) => !inversorIdsAgregados.has(r.id)
+  );
+  const puedeCrear =
+    searchQuery.trim().length > 0 &&
+    !resultadosFiltrados.some(
+      (r) => r.nombre.toLowerCase() === searchQuery.trim().toLowerCase()
+    );
 
   const content = (
     <>
@@ -264,26 +370,73 @@ export function InversionSubform({
             </div>
           ))}
 
-          {/* Botón agregar inversor */}
+          {/* Buscador de inversores */}
           {!disabled && (
             <div className="mt-1 flex flex-col gap-2">
               {showAddInversor ? (
-                <div className="flex items-center gap-2">
+                <div className="relative flex items-center gap-2">
                   <div className="relative flex-1">
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                       search
                     </span>
+                    {isSearching && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400">
+                        …
+                      </span>
+                    )}
                     <input
+                      ref={searchRef}
                       type="text"
-                      placeholder="Buscar o crear inversor... (disponible en porción 3)"
-                      disabled
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setShowDropdown(true)}
+                      placeholder="Buscar inversor por nombre..."
                       aria-label="Buscar inversor"
-                      className="h-11 w-full cursor-not-allowed rounded-lg border border-dashed border-purple-300 bg-purple-50/60 pl-10 pr-4 text-sm text-zinc-400 placeholder-zinc-400 focus:outline-none"
+                      autoFocus
+                      className="h-11 w-full rounded-lg border border-purple-300 bg-white pl-10 pr-4 text-sm text-zinc-900 placeholder-zinc-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                     />
+                    {/* Dropdown */}
+                    {showDropdown && (resultadosFiltrados.length > 0 || puedeCrear) && (
+                      <div
+                        ref={dropdownRef}
+                        className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg"
+                      >
+                        {resultadosFiltrados.map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onMouseDown={() => handleSelectInversor(r)}
+                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-purple-50 first:rounded-t-lg last:rounded-b-lg"
+                          >
+                            <span className="material-symbols-outlined text-base text-zinc-400">
+                              person
+                            </span>
+                            {r.nombre}
+                          </button>
+                        ))}
+                        {puedeCrear && (
+                          <button
+                            type="button"
+                            onMouseDown={handleCreateInversor}
+                            disabled={isCreating}
+                            className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-purple-700 hover:bg-purple-50 last:rounded-b-lg disabled:opacity-50"
+                          >
+                            <span className="material-symbols-outlined text-base">
+                              person_add
+                            </span>
+                            {isCreating ? "Creando..." : `Crear "${searchQuery.trim()}"`}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowAddInversor(false)}
+                    onClick={() => {
+                      setShowAddInversor(false);
+                      setSearchQuery("");
+                      setShowDropdown(false);
+                    }}
                     aria-label="Cancelar"
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                   >
@@ -295,7 +448,11 @@ export function InversionSubform({
               ) : (
                 <button
                   type="button"
-                  onClick={() => setShowAddInversor(true)}
+                  onClick={() => {
+                    setShowAddInversor(true);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }}
                   className="flex w-fit items-center gap-2 rounded-lg border border-dashed border-purple-300 bg-purple-50/60 px-4 py-2.5 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
                 >
                   <span className="material-symbols-outlined text-xl">

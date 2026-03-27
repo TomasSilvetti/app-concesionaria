@@ -239,6 +239,26 @@ export default function OperacionEditPage() {
             }))
           );
 
+          // Initialize inversión
+          if (data.inversion) {
+            setHayInversion(true);
+            setInversionParticipantes(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data.inversion.participantes.map((p: any) => ({
+                localId: p.esConcecionaria ? "concesionaria" : (p.inversorId ?? p.id),
+                esConcecionaria: p.esConcecionaria,
+                nombre: p.esConcecionaria ? "Concesionaria" : (p.inversorNombre ?? "Inversor"),
+                inversorId: p.inversorId ?? null,
+                montoAporte: p.montoAporte?.toString() ?? "",
+                porcentajeUtilidad:
+                  p.porcentajeUtilidad != null ? p.porcentajeUtilidad.toString() : "",
+              }))
+            );
+          } else {
+            setHayInversion(false);
+            setInversionParticipantes([]);
+          }
+
           // Store original values for change detection
           setOriginalValues({
             fechaInicio: data.fechaInicio ? data.fechaInicio.split('T')[0] : "",
@@ -525,6 +545,20 @@ export default function OperacionEditPage() {
         precioToma: v.precioToma !== "" ? parseFloat(v.precioToma) : null,
       }));
     }
+
+    // Incluir datos de inversión
+    payload.inversion = {
+      hayInversion,
+      participantes: hayInversion
+        ? inversionParticipantes.map((p) => ({
+            esConcecionaria: p.esConcecionaria,
+            inversorId: p.inversorId ?? null,
+            montoAporte: p.montoAporte !== "" ? parseFloat(p.montoAporte) : 0,
+            porcentajeUtilidad:
+              p.porcentajeUtilidad !== "" ? parseFloat(p.porcentajeUtilidad) : null,
+          }))
+        : [],
+    };
 
     setIsSaving(true);
     setError(null);

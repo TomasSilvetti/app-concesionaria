@@ -604,6 +604,24 @@ export function CreateOperationForm({
         formData.append("fotos", photo.file);
       });
 
+      if (hayInversion && inversionParticipantes.length > 0) {
+        formData.append(
+          "inversion",
+          JSON.stringify({
+            hayInversion: true,
+            participantes: inversionParticipantes.map((p) => ({
+              esConcecionaria: p.esConcecionaria,
+              inversorId: p.inversorId ?? null,
+              montoAporte: p.montoAporte !== "" ? parseFloat(p.montoAporte) : 0,
+              porcentajeUtilidad:
+                p.porcentajeUtilidad !== ""
+                  ? parseFloat(p.porcentajeUtilidad)
+                  : null,
+            })),
+          })
+        );
+      }
+
       const res = await fetch(`${baseUrl}/api/operations`, {
         method: "POST",
         body: formData,
