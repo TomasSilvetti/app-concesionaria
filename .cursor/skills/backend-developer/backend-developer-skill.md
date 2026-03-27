@@ -4,7 +4,7 @@ description: >
   Desarrolla porciones de tipo BACK a partir de su archivo .md.
   Usa esta skill SIEMPRE que el usuario mencione desarrollar porcion back, implementar logica backend, crear endpoint, arrancar porcion backend,
   o cuando comparta una porcion de tipo BACK y pida desarrollarla o implementarla.
-  La skill verifica prerequisitos, analiza la estructura del proyecto, explica lo que va a hacer en lenguaje simple con un flujo de datos y una metafora,
+  La skill verifica prerequisitos, analiza la estructura del proyecto, explica lo que va a hacer en lenguaje simple con un flujo de datos,
   desarrolla la logica backend, y acompana al desarrollador en un ciclo de revision hasta confirmar. Marca la porcion como completada al finalizar.
 ---
 
@@ -14,17 +14,30 @@ Toma una porción de tipo BACK y la lleva desde cero hasta confirmada: verifica 
 
 ---
 
+## Reglas de eficiencia (NO negociables)
+
+Estas reglas tienen prioridad sobre cualquier otra instrucción del flujo.
+
+- **Un archivo, una lectura.** Si necesitás distintas partes de un archivo, leelo completo en una sola llamada. Nunca en rangos separados.
+- **Máximo 4 archivos leídos por porción:** el `.md` de la porción + el schema/modelo del ORM + el endpoint hermano más cercano + el archivo de rutas donde se registra. Cualquier lectura adicional requiere justificación explícita.
+- **No usar glob patterns.** Las rutas convencionales del proyecto están documentadas al final de esta skill. Usarlas directamente sin explorar.
+- **No releer después de editar.** Si la escritura o el `str_replace` fue exitoso, asumir que está bien. No verificar releyendo el archivo.
+- **No leer el archivo de rutas completo si solo necesitás agregar una línea.** Usar `str_replace` con contexto mínimo suficiente para que sea único.
+- **No leer la porción Front par completa.** Solo leer el contrato que expone: qué endpoint llama, qué formato de respuesta espera, qué campos envía. Si esa información está en el `.md` de la porción Back, no leer la porción Front.
+
+---
+
 ## Flujo de trabajo
 
 ### Paso 1 — Leer la porción
 
-Lee el archivo `.md` de la porción BACK proporcionada. Extrae:
+Leer el archivo `.md` de la porción BACK proporcionada. Extraer:
 
 - **Título y descripción** de lo que hay que implementar
 - **Prerequisitos**: lista de porciones que deben estar completas antes de arrancar
-- **Par Front**: número de la porción Front asociada — leer también ese `.md` para entender qué estructura visual ya existe, qué datos necesita y qué contrato espera (endpoints, formato de respuesta, etc.)
+- **Par Front**: número de la porción Front asociada — extraer del `.md` el contrato esperado (endpoint, formato de respuesta, campos) sin leer la porción Front salvo que el `.md` Back no lo especifique
 - **Criterios de aceptación**: qué debe cumplir la lógica backend
-- **Pruebas**: las guarda en mente pero NO las marca como completadas en ningún momento
+- **Pruebas**: guardarlas en mente pero NO marcarlas como completadas en ningún momento
 
 ---
 
@@ -46,80 +59,69 @@ Si algún prerequisito **no está completado**:
 >
 > No es posible continuar hasta que esas porciones estén implementadas. ¿Querés arrancar por alguna de ellas primero?
 
-**Detener el flujo.** No continuar hasta que el desarrollador confirme que los prerequisitos están resueltos.
+**Detener el flujo.** No continuar hasta que el desarrollador confirme.
 
-También verificar que la **porción Front par** esté completada (`✅ Completada`). Si no lo está:
+También verificar que la **porción Front par** esté completada. Si no lo está:
 
 > ⚠️ La porción Front correspondiente (`porcion-{NNN}`) todavía no está completada. El backend debe desarrollarse sobre una estructura visual ya definida. Completá primero la porción Front antes de continuar.
 
-Si todo está completo, continuar al Paso 3.
-
 ---
 
-### Paso 3 — Analizar la estructura del proyecto
+### Paso 3 — Leer la estructura del proyecto (máximo 3 lecturas)
 
-Explorar el proyecto para entender cómo está organizado el backend y seguir sus convenciones.
+Leer ÚNICAMENTE estos archivos en este orden:
 
-**Qué analizar:**
+1. El **archivo de schema o modelos** del ORM (`schema.prisma`, `entities/`, `models.py`, etc.) — para conocer el estado actual de la BD
+2. El **endpoint hermano más cercano** al que se va a crear (mismo dominio/feature, tipo similar) — para inferir convenciones de naming, estructura de capas, formato de respuesta y manejo de errores
+3. El **archivo de rutas** donde se va a registrar el nuevo endpoint — solo si no se puede inferir del endpoint hermano
 
-1. **Lenguaje y framework backend**: detectar desde archivos de configuración (`package.json`, `requirements.txt`, `go.mod`, `pom.xml`, etc.) — Node/Express, Django, FastAPI, Laravel, Spring, etc.
-2. **Estructura de carpetas**: dónde viven los controladores, servicios, modelos, repositorios, rutas, middlewares, etc.
-3. **Convenciones de naming**: cómo se llaman los archivos y funciones existentes
-4. **ORM o acceso a base de datos**: Prisma, TypeORM, SQLAlchemy, Eloquent, etc. — y cómo están definidos los modelos existentes
-5. **Sistema de autenticación**: si existe, cómo funciona (JWT, sessions, OAuth) y cómo se protegen las rutas
-6. **Variables de entorno**: qué archivo usa el proyecto (`.env`, `.env.local`, etc.) y qué variables ya existen
-7. **Manejo de errores**: cómo devuelve errores el resto de la aplicación (formato, códigos HTTP, mensajes)
+**STOP. No leer ningún archivo más en este paso.**
 
-**Si el proyecto no tiene estructura backend todavía:**
+Convenciones, formato de errores, estructura de capas y patrones de autenticación se infieren del endpoint hermano. Si algo es ambiguo, preguntar al desarrollador antes de leer más archivos.
 
-> No encontré una estructura backend existente. Para arrancar necesito saber:
->
-> 1. ¿Qué lenguaje/framework backend van a usar?
-> 2. ¿Tienen preferencia de estructura? (por capas, por feature, etc.)
-> 3. ¿Qué base de datos van a usar?
->
-> Con eso armo la estructura base y arranco.
+**Rutas convencionales — usar directamente sin explorar:**
 
-Esperar respuesta antes de continuar.
+| Qué | Ruta |
+|-----|------|
+| Schema Prisma | `prisma/schema.prisma` |
+| API de operaciones | `src/app/api/operations/[id]/route.ts` |
+| API de operaciones (lista) | `src/app/api/operations/route.ts` |
+| API de inversores | `src/app/api/inversores/route.ts` |
+| API de stock | `src/app/api/stock/route.ts` |
+
+*(Actualizar esta tabla cuando se agreguen nuevos módulos al proyecto.)*
 
 ---
 
 ### Paso 4 — Explicar lo que se va a hacer
 
-Antes de escribir código, presentar dos bloques explicativos en lenguaje simple. No usar jerga técnica innecesaria.
+Antes de escribir código, presentar dos bloques explicativos en lenguaje simple.
 
 **Bloque 1 — Qué se va a crear:**
 
-Una descripción clara de qué lógica se va a implementar y cuál es su función. Ejemplo:
-
 > **Qué voy a crear:**
-> Voy a crear un endpoint que recibe el email y la contraseña del formulario de login, verifica que el usuario exista en la base de datos y que la contraseña sea correcta, y devuelve un token de acceso si todo está bien, o un mensaje de error si algo falla.
+> {describir en 1-3 oraciones qué lógica se implementa y cuál es su función, sin jerga técnica innecesaria}
 
 **Bloque 2 — Flujo de datos:**
 
-Un recorrido paso a paso de cómo viajan los datos, nombrando los archivos concretos que se van a crear o modificar:
-
 > **Cómo fluyen los datos:**
 >
-> 1. El formulario en `LoginForm.tsx` hace un `POST` a `/api/auth/login`
-> 2. La ruta en `routes/auth.routes.ts` recibe la petición y la pasa al controlador
-> 3. `controllers/auth.controller.ts` valida que los campos no estén vacíos
-> 4. Llama al servicio `services/auth.service.ts` que busca al usuario en la base de datos usando el modelo `models/User.ts`
-> 5. Si el usuario existe, compara la contraseña con el hash guardado
-> 6. Si todo está bien, genera un JWT y lo devuelve al frontend
-> 7. Si algo falla, devuelve un error 401 con mensaje descriptivo
+> 1. El componente en `{archivo Front}` hace un `{METHOD}` a `{endpoint}`
+> 2. {archivo de ruta} recibe la petición y la pasa a {controlador/handler}
+> 3. {handler} valida los campos de entrada
+> 4. Llama a {servicio/función} que {hace qué con qué datos}
+> 5. Si todo está bien, devuelve {formato de respuesta}
+> 6. Si algo falla, devuelve {código de error} con {mensaje}
 
 ---
 
 ### Paso 5 — Pedir confirmación
 
-Luego de los tres bloques, hacer una pausa:
-
 > ¿Esto es lo que esperabas? ¿Querés ajustar algo del diseño antes de que empiece a codear?
 
 Esperar confirmación explícita antes de escribir código.
 
-En cuanto el desarrollador confirme, marcar inmediatamente la porción como en progreso en el `.md`:
+Al confirmar, marcar inmediatamente la porción como en progreso:
 
 ```markdown
 **Estado:** 🔄 En progreso
@@ -133,216 +135,126 @@ Implementar siguiendo estrictamente las convenciones del proyecto.
 
 **Reglas de desarrollo:**
 
-- Seguir la misma estructura de capas que ya existe (controlador → servicio → repositorio/modelo, o la que use el proyecto)
-- Respetar el formato de respuesta que ya usa el resto de la API (estructura del JSON, códigos HTTP, mensajes de error)
+- Seguir la misma estructura de capas que ya existe (la inferida del endpoint hermano)
+- Respetar el formato de respuesta que ya usa el resto de la API
 - Implementar todos los criterios de aceptación de la porción
 - Validar siempre los datos de entrada: tipos, campos requeridos, formatos, rangos
-- Manejar todos los errores posibles: recursos no encontrados, permisos insuficientes, errores de base de datos, timeouts
+- Manejar todos los errores posibles: recursos no encontrados, permisos insuficientes, errores de BD
 - Si la porción requiere autenticación, aplicar el middleware existente — no inventar uno nuevo
-- Ningún valor configurable hardcodeado: URLs, claves, timeouts, nombres de tablas variables → siempre via variables de entorno
-- Contemplar los edge cases definidos en las pruebas de la porción al implementar las validaciones
+- Ningún valor configurable hardcodeado — siempre via variables de entorno
 
 **Reutilización de lógica existente:**
 
-Antes de crear cualquier función, servicio o helper, explorar si ya existe algo equivalente. Si existe, usarlo o extenderlo. Comunicarlo explícitamente:
+Antes de crear cualquier función o helper, verificar si ya existe algo equivalente en el endpoint hermano. Si existe, usarlo. Mencionarlo brevemente:
 
-> *"Para el hasheo de la contraseña voy a reutilizar el helper `hashPassword` que ya existe en `utils/crypto.ts`."*
+> *"Para el hasheo voy a reutilizar el helper `hashPassword` que ya existe en `utils/crypto.ts`."*
 
 ---
 
 ### Paso 7 — Migraciones de base de datos
 
-Si la porción requiere crear o modificar tablas, columnas o índices en la base de datos, **primero verificar el estado actual del esquema** y luego explicar lo que se va a hacer antes de aplicar cualquier cambio.
+Si la porción requiere crear o modificar tablas, determinar el estado actual desde el schema ya leído en el Paso 3 (no releerlo).
 
-**Verificación previa del esquema:**
+**Clasificar cada entidad necesaria:**
 
-1. Leer los modelos/migraciones existentes del proyecto (Prisma → `schema.prisma`, TypeORM → `entities/`, Django → `models.py`, etc.)
-2. Para cada tabla/campo que necesita la porción, determinar:
-   - ✅ **Ya existe con los campos correctos** → no se necesita migración, continuar al paso siguiente
-   - ⚠️ **Existe pero le faltan campos** → migración de ALTER TABLE
-   - ❌ **No existe** → migración de CREATE TABLE
+- ✅ **Ya existe con los campos correctos** → mencionar brevemente y continuar
+- ⚠️ **Existe pero le faltan campos** → migración de ALTER
+- ❌ **No existe** → migración de CREATE
 
-Si **no se necesita migración** (todo ya existe), mencionarlo brevemente y continuar:
+Si **no se necesita migración**, mencionarlo y continuar:
 
-> *"✅ La tabla `usuarios` ya existe con todos los campos necesarios. No se requiere migración."*
+> *"✅ La tabla `operaciones` ya existe con todos los campos necesarios. No se requiere migración."*
 
-Si **sí se necesita migración**, presentar al desarrollador el análisis y pedir confirmación antes de aplicar nada:
+Si **sí se necesita migración**, presentar el análisis y pedir confirmación antes de aplicar:
 
 > **🗄️ Esta porción requiere cambios en la base de datos.**
 >
-> **Estado actual:** {describir qué existe hoy — tabla inexistente, o tabla existente con campos faltantes}
->
-> **Qué se necesita:** {descripción en lenguaje simple del cambio estructural necesario}
->
-> **Por qué:** {explicar en una oración qué fallaría sin este cambio}
->
-> **Cómo se haría:** se creará el archivo de migración `migrations/{timestamp}_nombre_migracion` que {describe exactamente qué hace: crea la tabla X con los campos Y y tipos Z, agrega la columna W a la tabla V, etc.}
+> **Estado actual:** {qué existe hoy}
+> **Qué se necesita:** {descripción del cambio en lenguaje simple}
+> **Por qué:** {qué fallaría sin este cambio}
 >
 > ¿Confirmás que aplique la migración?
 
-Esperar confirmación explícita antes de crear el archivo de migración y ejecutarlo.
-
-Una vez confirmado, crear la migración siguiendo el sistema del proyecto.
-
-**Para Prisma:**
-
-Los comandos de Prisma como `npx prisma migrate dev` son interactivos y no funcionan en entornos no interactivos (como Cursor). Por lo tanto:
-
-1. Modificar el archivo `schema.prisma` con los cambios necesarios
-2. Presentar al desarrollador el comando que debe ejecutar manualmente:
+**Para Prisma:** modificar `schema.prisma` y presentar el comando para que el dev ejecute manualmente:
 
 > **📋 Ejecutá este comando en tu terminal:**
 > ```
-> npx prisma migrate dev --name {nombre_descriptivo_de_migracion}
+> npx prisma migrate dev --name {nombre_descriptivo}
 > ```
->
-> Este comando va a:
-> - Detectar los cambios en el schema
-> - Generar el archivo SQL de migración automáticamente
-> - Aplicar la migración a la base de datos
-> - Regenerar el cliente de Prisma con los tipos actualizados
->
-> Una vez que lo ejecutes, confirmame si se aplicó correctamente o si hubo algún error.
+> Una vez que lo ejecutes, confirmame si se aplicó correctamente.
 
-3. Esperar confirmación del desarrollador de que ejecutó el comando y que la migración se aplicó exitosamente antes de continuar.
-
-**Para otros ORMs** (TypeORM, Sequelize, Django, etc.): seguir el flujo normal de crear y ejecutar migraciones programáticamente.
+Esperar confirmación antes de continuar.
 
 ---
 
 ### Paso 8 — Seeders y datos de prueba
 
-Una vez implementada la lógica y aplicadas las migraciones, detectar si el desarrollador necesita datos previos en la base de datos para poder probar el flujo completo Front + Back.
-
-**Cuándo aplica:** cuando el endpoint depende de que existan registros en la BD para funcionar (un usuario para hacer login, productos para listar, un registro para editar, etc.).
-
-Si aplica, presentar los datos propuestos antes de insertarlos:
+Si el endpoint depende de que existan registros en la BD para poder probarse (un usuario, un registro de operación, etc.), proponer los datos antes de insertarlos:
 
 > **🌱 Para probar el flujo completo necesitás datos en la base de datos.**
 >
-> Propongo insertar los siguientes datos de prueba:
->
-> **{Entidad, ej: Usuario de prueba}:**
+> Propongo insertar:
 > ```
-> {campo}: {valor de ejemplo realista}
-> {campo}: {valor de ejemplo realista}
+> {campo}: {valor realista}
+> {campo}: {valor realista}
 > ```
->
-> ¿Querés que los inserte en la base de datos?
+> ¿Querés que los inserte?
 
-Esperar confirmación antes de insertar cualquier dato.
-
-Una vez confirmado, insertar los datos usando el sistema del proyecto (seeder, script, ORM directo) y pedirle al desarrollador que verifique visualmente que el registro quedó en la BD:
-
-> ✅ Datos insertados. Para confirmar que quedaron correctamente, verificá el registro directamente en la base de datos:
->
-> **Tabla:** `{nombre_tabla}`
-> **Cómo verlo:** abrí tu cliente de BD ({TablePlus, DBeaver, pgAdmin, MySQL Workbench, Prisma Studio, etc.} según el proyecto) y buscá el registro con:
-> ```
-> {campo identificador, ej: email}: {valor}
-> ```
->
-> Una vez que confirmes que el registro está ahí, podés probar el flujo con estos datos:
-> - **{campo}:** `{valor}`
-> - **{campo}:** `{valor}`
->
-> ¿Ves el registro en la BD?
-
-Esperar confirmación del desarrollador de que el dato es visible antes de continuar.
+Esperar confirmación. Una vez insertados, indicar cómo verificar el registro en la BD.
 
 ---
 
 ### Paso 9 — Seguridad
 
-Antes de dar por terminado el desarrollo, revisar activamente los siguientes puntos de seguridad en el código implementado:
+Antes de dar por terminado, revisar en el código implementado:
 
-- **Inyección**: ¿las queries usan parámetros preparados o el ORM? Nunca concatenar input del usuario en queries
+- **Inyección**: ¿las queries usan parámetros preparados o el ORM? Nunca concatenar input del usuario
 - **Datos sensibles en logs**: ¿hay passwords, tokens o datos personales siendo logueados? Eliminarlos
-- **Rate limiting**: en endpoints críticos (login, registro, recuperación de contraseña), verificar si el proyecto tiene rate limiting y aplicarlo. Si no existe, mencionárselo al desarrollador como deuda técnica
-- **Exposición de datos**: ¿la respuesta del endpoint devuelve campos sensibles que no deberían salir al frontend (passwords hasheadas, tokens internos, IDs de sistema)? Filtrarlos
-- **Autorización**: ¿el endpoint verifica que el usuario autenticado tiene permiso para acceder al recurso específico, no solo que está autenticado?
+- **Exposición de datos**: ¿la respuesta devuelve campos sensibles que no deberían salir al frontend?
+- **Autorización**: ¿el endpoint verifica que el usuario autenticado tiene permiso sobre el recurso específico?
 
-Si se detecta algún problema, corregirlo directamente y mencionárselo al desarrollador:
-
-> 🔒 Corregí estos puntos de seguridad:
-> - La query de búsqueda de usuario ahora usa parámetros preparados (antes concatenaba el input directamente)
-> - Removí el log que imprimía la contraseña recibida
-
-Si hay algo que no puede resolverse en el scope de esta porción (como implementar rate limiting desde cero), mencionarlo como deuda técnica:
-
-> ⚠️ Deuda técnica detectada: este endpoint no tiene rate limiting. Se recomienda implementarlo antes de pasar a producción.
+Si se detecta algún problema, corregirlo y mencionárselo al desarrollador. Si algo no puede resolverse en este scope, mencionarlo como deuda técnica.
 
 ---
 
-### Paso 10 — Logging
+### Paso 10 — Conectar con el frontend
 
-Verificar que la lógica implementada registre los eventos importantes siguiendo el sistema de logs del proyecto.
-
-**Qué debe loguearse:**
-- Errores inesperados (con stack trace, sin datos sensibles)
-- Eventos de negocio relevantes (usuario creado, pago procesado, etc.) — nivel `info`
-- Advertencias de seguridad (intento de acceso no autorizado, rate limit alcanzado) — nivel `warn`
-
-**Qué NO debe loguearse:**
-- Passwords, tokens, datos de tarjetas, información personal sensible
-- Datos de request/response completos en producción
-
-Si el proyecto no tiene un sistema de logging, mencionárselo al desarrollador:
-
-> ⚠️ El proyecto no tiene un sistema de logging configurado. Estoy usando `console.error` por ahora, pero se recomienda implementar una librería de logs (Winston, Pino, etc.) antes de pasar a producción.
-
----
-
-### Paso 11 — Conectar con el frontend
-
-
-Una vez implementada la lógica, verificar que el contrato con la porción Front par sea correcto:
+Verificar que el contrato con la porción Front par sea correcto:
 
 - La URL del endpoint coincide con la que usa el componente Front
-- El formato del JSON de respuesta (campos, tipos) coincide con lo que espera el Front
+- El formato del JSON de respuesta coincide con lo que espera el Front
 - Los códigos de error que devuelve el Back son los que el Front maneja
 
-Si hay alguna discrepancia, resolverla y mencionársela al desarrollador:
-
-> *"El frontend esperaba recibir `{ user: { id, name } }` pero el endpoint actualmente devuelve `{ data: { id, name } }`. Unifiqué el formato para que coincidan."*
+Si hay discrepancias, resolverlas y mencionárselas al desarrollador.
 
 ---
 
-### Paso 12 — Ciclo de revisión y ajustes
-
-Presentar un resumen de lo implementado y entrar en loop de revisión:
+### Paso 11 — Ciclo de revisión y ajustes
 
 > **✅ Lógica implementada.**
 >
 > Creé/modifiqué estos archivos:
-> - `routes/auth.routes.ts` — nueva ruta POST /api/auth/login
-> - `controllers/auth.controller.ts` — validación de entrada y manejo de errores
-> - `services/auth.service.ts` — lógica de verificación y generación de token
+> - `{archivo 1}` — {qué hace}
+> - `{archivo 2}` — {qué hace}
 >
 > Podés probar el endpoint con:
 > ```
-> POST http://localhost:{puerto}/api/auth/login
-> Body: { "email": "test@test.com", "password": "123456" }
+> {METHOD} http://localhost:{puerto}/{endpoint}
+> Body: {ejemplo de body si aplica}
 > ```
 >
 > ¿Funciona como esperabas, o necesitás algún ajuste?
 
 **Por cada ronda de feedback:**
 
-1. Escuchar los ajustes solicitados
-2. Implementarlos
+1. Escuchar los ajustes
+2. Implementarlos con `str_replace` quirúrgico — no releer el archivo completo antes de editar salvo que sea estrictamente necesario
 3. Actualizar el resumen de archivos si corresponde
 4. Preguntar: *"¿Quedó bien, o ajustamos algo más?"*
 
-**Repetir hasta confirmación explícita.**
-
-Si el desarrollador pide algo que contradice los criterios de aceptación de la porción, mencionarlo antes de proceder:
-
-> Ese cambio entraría en conflicto con el criterio *"Debe devolver 401 si la contraseña es incorrecta"*. ¿Querés igualmente hacerlo y actualizar el criterio, o lo dejamos como estaba?
-
 ---
 
-### Paso 13 — Marcar la porción como completada
+### Paso 12 — Marcar la porción como completada
 
 Una vez confirmado, actualizar el `.md` de la porción:
 
@@ -351,9 +263,7 @@ Una vez confirmado, actualizar el `.md` de la porción:
 **Completada el:** {fecha actual}
 ```
 
-**Los checkboxes de `## Pruebas`** (unitarias y de integración) **NO se marcan**. Quedan pendientes para la etapa de testing.
-
-Confirmar al desarrollador:
+Los checkboxes de `## Pruebas` **NO se marcan**. Quedan pendientes para la etapa de testing.
 
 > ✅ Porción marcada como completada en `docs/historias-de-usuario/HU-{N}/porcion-{NNN}.md`
 >
@@ -372,11 +282,11 @@ Confirmar al desarrollador:
 - **Reutilizar antes de crear** — buscar lógica existente antes de escribir algo nuevo
 - **Validar siempre los datos de entrada** — nunca asumir que lo que llega del frontend es correcto
 - **Ningún valor hardcodeado** — todo configurable via variables de entorno
-- **El contrato con el Front es sagrado** — URLs, formatos de respuesta y códigos de error deben coincidir exactamente
-- **Nunca aplicar migraciones sin confirmación explícita** — siempre explicar primero qué cambia y por qué
-- **Nunca insertar datos de prueba sin confirmación explícita** — mostrar qué se va a insertar y esperar aprobación
-- **Seguridad no es opcional** — revisar inyección, exposición de datos, autorización y logs en cada porción
-- **Nunca loguear datos sensibles** — passwords, tokens e información personal nunca deben aparecer en logs
+- **El contrato con el Front es sagrado** — URLs, formatos de respuesta y códigos de error deben coincidir
+- **Nunca aplicar migraciones sin confirmación explícita**
+- **Nunca insertar datos de prueba sin confirmación explícita**
+- **Seguridad no es opcional** — revisar inyección, exposición de datos y autorización en cada porción
+- **Nunca loguear datos sensibles**
 - **Si algo es ambiguo**, preguntar antes de implementar
 
 ---
@@ -386,7 +296,7 @@ Confirmar al desarrollador:
 | Campo | Valor | Cuándo |
 |-------|-------|--------|
 | `**Estado:**` | *(ausente)* | Porción sin iniciar |
-| `**Estado:**` | `🔄 En progreso` | Se marca automáticamente al confirmar el inicio del desarrollo (Paso 5) |
+| `**Estado:**` | `🔄 En progreso` | Al confirmar el inicio del desarrollo (Paso 5) |
 | `**Estado:**` | `✅ Completada` | Cuando el desarrollador confirma que la lógica está lista |
 
 ---
@@ -396,4 +306,4 @@ Confirmar al desarrollador:
 - **Prerequisito directo**: la porción FRONT par debe estar `✅ Completada` antes de arrancar
 - **Prerequisito indirecto**: cualquier porción listada en `Prerequisitos` del `.md` debe estar `✅ Completada`
 - **Origen**: `story-decomposer` debe haber generado el `.md` de la porción
-- **Testing**: las pruebas unitarias y de integración definidas en la porción quedan para la skill de testing posterior
+- **Testing**: las pruebas unitarias y de integración quedan para la skill de testing posterior

@@ -14,17 +14,30 @@ Toma una porción de tipo FRONT y la lleva desde cero hasta confirmada: verifica
 
 ---
 
+## Reglas de eficiencia (NO negociables)
+
+Estas reglas tienen prioridad sobre cualquier otra instrucción del flujo.
+
+- **Un archivo, una lectura.** Si necesitás distintas partes de un archivo, leelo completo en una sola llamada. Nunca en rangos separados.
+- **Máximo 4 archivos leídos por porción:** el `.md` de la porción + `package.json` + el componente hermano más cercano + el archivo donde se integra. Cualquier lectura adicional requiere justificación explícita.
+- **No usar glob patterns.** Las rutas convencionales del proyecto están documentadas al final de esta skill. Usarlas directamente sin explorar.
+- **No releer después de editar.** Si el `str_replace` o la escritura fue exitosa, asumir que está bien. No verificar releyendo el archivo.
+- **No leer para confirmar que algo existe.** Si la porción menciona un componente, usarlo directamente. El error de compilación indicará si no existe.
+- **No leer archivos de UI genéricos** (Button, Input, Badge, etc.) salvo que el componente hermano los importe y su interfaz sea ambigua para el uso concreto que se necesita.
+
+---
+
 ## Flujo de trabajo
 
 ### Paso 1 — Leer la porción
 
-Lee el archivo `.md` de la porción FRONT proporcionada. Extrae:
+Leer el archivo `.md` de la porción FRONT proporcionada. Extraer:
 
 - **Título y descripción** de lo que hay que implementar
 - **Prerequisitos**: lista de porciones que deben estar completas antes de arrancar
 - **Par Back**: número de la porción Back asociada (para tenerla en cuenta como referencia de contratos)
 - **Criterios de aceptación**: qué debe cumplir el componente
-- **Pruebas**: las guarda en mente pero NO las marca como completadas en ningún momento
+- **Pruebas**: guardarlas en mente pero NO marcarlas como completadas en ningún momento
 
 ---
 
@@ -52,29 +65,29 @@ Si todos los prerequisitos están completos, continuar al Paso 3.
 
 ---
 
-### Paso 3 — Analizar la estructura del proyecto
+### Paso 3 — Leer la estructura del proyecto (máximo 3 lecturas)
 
-Antes de escribir una sola línea de código, explorar el proyecto para entender cómo está organizado.
+Leer ÚNICAMENTE estos archivos en este orden:
 
-**Qué analizar:**
+1. `package.json` → detectar framework, versión y comando dev
+2. El **componente hermano más cercano** al que se va a crear (mismo directorio destino, tipo similar)
+3. El **archivo donde se va a integrar** el nuevo componente (la página o layout que lo va a contener)
 
-1. **Framework y versión**: detectar desde `package.json` (React, Vue, Angular, Svelte, etc.)
-2. **Comando para levantar el servidor**: leer scripts en `package.json` (dev, start, serve, etc.)
-3. **Estructura de carpetas**: explorar `src/` o el directorio principal para entender dónde viven los componentes, páginas, layouts, estilos, etc.
-4. **Convenciones de naming**: observar cómo se llaman los archivos existentes (PascalCase, kebab-case, etc.)
-5. **Sistema de estilos**: detectar si usan CSS modules, Tailwind, styled-components, SCSS, etc.
-6. **Manejo de rutas**: detectar si usan React Router, Next.js, Vue Router, etc., y cómo están declaradas las rutas existentes
+**STOP. No leer ningún archivo más en este paso.**
 
-**Si el proyecto no tiene estructura todavía:**
+La estructura de carpetas, convenciones de naming, sistema de estilos y patrones se infieren de esos 3 archivos. Si algo es ambiguo, preguntar al desarrollador antes de leer más archivos.
 
-> No encontré una estructura de proyecto existente. Para crear el componente de la forma correcta necesito saber:
->
-> 1. ¿Qué framework vas a usar? (React, Vue, Next.js, etc.)
-> 2. ¿Cómo preferís organizar los componentes? (por feature, por tipo, etc.)
->
-> Con eso armo la estructura base y arranco.
+**Rutas convencionales — usar directamente sin explorar:**
 
-Esperar respuesta antes de continuar.
+| Qué | Ruta |
+|-----|------|
+| Componentes de operaciones | `src/components/operations/` |
+| Componentes UI reutilizables | `src/components/ui/` |
+| Página de detalle de operación | `src/app/operaciones/[id]/page.tsx` |
+| Página de edición de operación | `src/app/operaciones/[id]/edit/page.tsx` |
+| API de operaciones | `src/app/api/operations/[id]/route.ts` |
+
+*(Actualizar esta tabla cuando se agreguen nuevas secciones del proyecto.)*
 
 ---
 
@@ -86,11 +99,11 @@ Con toda la información recolectada, presentar un resumen y pedir la referencia
 >
 > **Qué:** {descripción de la porción en lenguaje simple, 1-2 oraciones}
 >
-> **Dónde:** `src/components/forms/LoginForm.tsx` *(o la ruta que corresponda según la estructura del proyecto)*
+> **Dónde:** `src/components/operations/NombreComponente.tsx` *(ruta exacta según las convenciones del proyecto)*
 >
-> **Ruta en la app:** `/login` *(la URL donde se podrá ver una vez levantado el servidor)*
+> **Ruta en la app:** `/operaciones/[id]` *(la URL donde se podrá ver una vez levantado el servidor)*
 >
-> **Framework/estilos:** React + Tailwind *(o lo que corresponda)*
+> **Framework/estilos:** Next.js + Tailwind *(o lo que corresponda)*
 >
 > **🎨 ¿Cómo debe verse?** Antes de arrancar, compartí una referencia visual:
 > - Una **imagen o screenshot** (mockup, Figma, boceto, referencia de otro producto)
@@ -100,17 +113,15 @@ Con toda la información recolectada, presentar un resumen y pedir la referencia
 
 **Comportamiento según la respuesta:**
 
-- **Imagen**: analizarla y confirmar brevemente cómo se va a traducir al código. Ejemplo: *"Entendido, veo un formulario centrado con dos campos apilados, botón primario azul y link de recuperación debajo."*
+- **Imagen**: analizarla y confirmar brevemente cómo se va a traducir al código.
 - **Descripción textual**: parafrasear el entendimiento para confirmar antes de arrancar.
-- **"A tu criterio"**: diseñar siguiendo las convenciones del proyecto, mencionando brevemente las decisiones de diseño tomadas.
+- **"A tu criterio"**: diseñar siguiendo las convenciones del proyecto, mencionando brevemente las decisiones tomadas.
 
 Una vez recibida la referencia, marcar la porción como en progreso en el `.md`:
 
 ```markdown
 **Estado:** 🔄 En progreso
 ```
-
-Esto asegura que si la sesión se interrumpe, la porción no queda sin estado y es fácil retomar desde donde se dejó.
 
 ---
 
@@ -123,41 +134,34 @@ Una vez confirmado, implementar el componente siguiendo estrictamente las conven
 - Seguir el mismo naming, estructura de carpetas y sistema de estilos que ya existe en el proyecto
 - Implementar todos los criterios de aceptación de la porción
 - Contemplar los estados relevantes: cargando, error, vacío, éxito
-- No conectar con el backend todavía (eso es responsabilidad de la porción Back); usar datos mock o props si hace falta mostrar contenido dinámico
+- No conectar con el backend todavía; usar datos mock o props si hace falta mostrar contenido dinámico
 - Si la porción necesita una nueva ruta, declararla siguiendo el sistema de routing existente
 - Mantener el componente lo más simple posible: solo lo que describe la porción, nada más
 
 **Reutilización de componentes existentes:**
 
-Antes de crear cualquier elemento UI (botón, input, modal, tabla, etc.), explorar el proyecto para ver si ya existe un componente que cumpla esa función. Si existe, usarlo. No duplicar. Si existe pero necesita una pequeña variación, extenderlo o usar sus props — nunca copiarlo y modificarlo en otro archivo.
+Antes de crear cualquier elemento UI, verificar si ya existe un componente que cumpla esa función. Si existe, usarlo. No duplicar. Mencionarlo brevemente:
 
-> Si encontrás un componente existente que aplica, mencionarlo al desarrollador:
-> *"Para el campo de email voy a reutilizar el componente `Input` que ya existe en `src/components/ui/Input.tsx`."*
+> *"Para el campo de monto voy a reutilizar el componente `NumericInput` que ya existe en `src/components/ui/NumericInput.tsx`."*
 
 **Ruta de la app — verificar que exista:**
 
-Antes de indicar la URL de revisión, verificar que la página o layout donde va el componente ya existe en el proyecto. Si no existe:
-
-> La ruta `/home` todavía no está creada en el proyecto. Para que puedas ver el componente necesito crearla también. ¿La creo como página vacía con el componente adentro, o preferís que la arme de otra forma?
-
-Esperar confirmación antes de crear la página contenedora.
+Antes de indicar la URL de revisión, verificar que la página o layout donde va el componente ya existe. Si no existe, preguntar antes de crear la página contenedora.
 
 **Accesibilidad mínima obligatoria:**
 
-Todo componente debe cumplir estas reglas básicas sin excepción:
 - Imágenes con atributo `alt` descriptivo
-- Inputs de formulario con `label` asociado (via `for`/`htmlFor` o wrapping)
+- Inputs con `label` asociado (`htmlFor` o wrapping)
 - Botones con texto descriptivo o `aria-label` si son solo íconos
-- Contraste de colores suficiente (no usar texto gris claro sobre fondo blanco)
-- Elementos interactivos accesibles por teclado (no bloquear foco)
+- Elementos interactivos accesibles por teclado
 
 **Variables de entorno:**
 
-Si el componente referencia una URL de API, una clave externa o cualquier valor configurable, nunca hardcodearlo. Usar variables de entorno siguiendo el sistema del proyecto (`.env`, `VITE_`, `NEXT_PUBLIC_`, etc.). Si no existe un archivo `.env`, crearlo y mencionárselo al desarrollador.
+Si el componente referencia una URL de API u otro valor configurable, usar variables de entorno siguiendo el sistema del proyecto. Nunca hardcodear.
 
 **Responsividad:**
 
-Por defecto, todo componente debe ser responsive (adaptarse a mobile, tablet y desktop) a menos que la porción `.md` indique explícitamente lo contrario. Seguir los breakpoints ya definidos en el proyecto (Tailwind, CSS variables, etc.).
+Todo componente debe ser responsive por defecto, salvo que la porción `.md` indique explícitamente lo contrario.
 
 ---
 
@@ -172,7 +176,7 @@ Una vez creado el componente, dar las instrucciones de revisión:
 > {comando detectado del package.json, ej: npm run dev}
 > ```
 >
-> Luego abrí: `{URL completa, ej: http://localhost:3000/login}`
+> Luego abrí: `{URL completa, ej: http://localhost:3000/operaciones/[id]}`
 >
 > *Si ya tenés el servidor corriendo, recargá la página.*
 >
@@ -187,30 +191,26 @@ Entrar en un loop de revisión hasta que el desarrollador confirme que el compon
 **Por cada ronda de feedback:**
 
 1. Escuchar los ajustes solicitados
-2. Implementarlos
+2. Implementarlos con `str_replace` quirúrgico — no releer el archivo completo antes de editar salvo que sea estrictamente necesario
 3. Volver a indicar la URL para revisión
 4. Preguntar: *"¿Quedó bien, o ajustamos algo más?"*
 
-**Repetir hasta confirmación.** No asumir que está listo hasta que el desarrollador lo diga explícitamente.
+Si el desarrollador pide algo que contradice los criterios de aceptación:
 
-Si el desarrollador pide algo que contradice los criterios de aceptación de la porción, mencionarlo:
-
-> Ese cambio entraría en conflicto con el criterio *"El botón debe estar deshabilitado si el campo está vacío"* de la porción. ¿Querés igualmente hacerlo y actualizar el criterio, o lo dejamos como estaba?
+> Ese cambio entraría en conflicto con el criterio *"..."* de la porción. ¿Querés igualmente hacerlo y actualizar el criterio, o lo dejamos como estaba?
 
 ---
 
 ### Paso 8 — Marcar la porción como completada
 
-Una vez que el desarrollador confirma que el componente está listo, actualizar el archivo `.md` de la porción agregando el campo `Estado` en el encabezado y la fecha de completado:
+Una vez confirmado, actualizar el `.md` de la porción:
 
 ```markdown
 **Estado:** ✅ Completada
 **Completada el:** {fecha actual}
 ```
 
-**Importante:** Los checkboxes de las secciones `## Pruebas` (unitarias y de integración) **NO se marcan**. Quedan pendientes para la etapa de testing posterior.
-
-Confirmar al desarrollador:
+Los checkboxes de `## Pruebas` **NO se marcan**. Quedan pendientes para la etapa de testing.
 
 > ✅ Porción marcada como completada en `docs/historias-de-usuario/HU-{N}/porcion-{NNN}.md`
 >
@@ -228,10 +228,10 @@ Confirmar al desarrollador:
 - **Siempre seguir las convenciones del proyecto** — si hay dudas, preguntar antes de inventar
 - **Un componente por porción** — no adelantar lógica que corresponde a la porción Back
 - **Si algo es ambiguo**, preguntar antes de implementar; mejor una pregunta que rehacer todo
-- **Reutilizar antes de crear** — buscar componentes existentes antes de crear uno nuevo
+- **Reutilizar antes de crear** — verificar componentes existentes antes de crear uno nuevo
 - **Verificar que la ruta exista** — si la página contenedora no existe, crearla con confirmación
 - **Accesibilidad siempre** — labels, alt, aria-label y navegación por teclado son obligatorios
-- **Variables de entorno** — ningún valor configurable hardcodeado, siempre via `.env`
+- **Variables de entorno** — ningún valor configurable hardcodeado
 - **Responsive por defecto** — todo componente se adapta a distintos tamaños salvo indicación contraria
 
 ---
@@ -241,7 +241,7 @@ Confirmar al desarrollador:
 | Campo | Valor | Cuándo |
 |-------|-------|--------|
 | `**Estado:**` | *(ausente)* | Porción sin iniciar |
-| `**Estado:**` | `🔄 En progreso` | Se marca automáticamente al confirmar el inicio del desarrollo (Paso 4) |
+| `**Estado:**` | `🔄 En progreso` | Al confirmar el inicio del desarrollo (Paso 4) |
 | `**Estado:**` | `✅ Completada` | Cuando el desarrollador confirma que el componente está listo |
 
 ---
@@ -249,5 +249,5 @@ Confirmar al desarrollador:
 ## Relación con otras skills
 
 - **Prerequisito**: `story-decomposer` debe haber generado el `.md` de la porción antes de usar esta skill
-- **Siguiente paso**: una vez completada la porción FRONT, la porción BACK par puede ser desarrollada con la skill `backend-developer`
-- **Testing**: las pruebas unitarias y de integración definidas en la porción quedan para la skill de testing posterior
+- **Siguiente paso**: una vez completada la porción FRONT, la porción BACK par puede desarrollarse con `backend-developer`
+- **Testing**: las pruebas unitarias y de integración quedan para la skill de testing posterior
