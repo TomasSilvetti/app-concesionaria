@@ -1,41 +1,39 @@
-# porcion-007 — Vista previa/editor de documento con campos autocompletados [FRONT]
+# porcion-007 — API asignación de plantillas a empresas [BACK]
 
-**Historia de usuario:** HU-9: Módulo de Documentos — Generación y Gestión de Documentos por Operación
-**Par:** porcion-008
-**Tipo:** FRONT
-**Prerequisitos:** porcion-006
+**Historia de usuario:** HU-9: Módulo de Documentos — Backoffice de Plantillas y Generación Contextual
+**Par:** porcion-006
+**Tipo:** BACK
+**Prerequisitos:** porcion-001
 
 ## Descripción
 
-Implementar la pantalla de revisión y edición del documento a generar. Se muestra la vista previa del documento con los placeholders reemplazados: los campos mapeados aparecen autocompletados con los datos reales de la operación; los campos sin mapeo aparecen como inputs editables directamente sobre la vista previa (inline), para que el empleado pueda completarlos antes de confirmar. Al confirmar, se envía el documento con todos los valores al backend para su guardado.
+Crear los endpoints para leer y actualizar las asignaciones de una plantilla a empresas (clientes). Permite al panel de porcion-006 cargar el estado actual de las asignaciones y aplicar cambios de activación/desactivación.
 
 ## Ejemplo de uso
 
-El vendedor seleccionó "Contrato de compraventa". Ve el documento renderizado: los campos nombre del comprador, marca, modelo y precio ya están completados con los datos de la operación (resaltados en verde). El campo "número de cuotas" aparece en blanco como un input editable dentro del documento. El vendedor escribe "12", revisa el resultado y hace clic en "Generar". El documento se guarda y aparece en la sección de documentos de la operación.
+El panel de asignación llama a `GET /api/admin/document-templates/[id]/assignments` y recibe qué empresas tienen la plantilla activa. Luego el admin guarda cambios con `PUT /api/admin/document-templates/[id]/assignments` enviando el array con los nuevos estados y el servidor actualiza (o crea) los registros `DocumentAssignment` correspondientes.
 
 ## Criterios de aceptación
 
-- [ ] La vista muestra la plantilla renderizada con los placeholders mapeados reemplazados por los valores reales de la operación
-- [ ] Los valores autocompletados se distinguen visualmente de los campos en blanco (ej: color de fondo diferente)
-- [ ] Los placeholders sin mapeo (o mapeados pero sin valor en la operación) se muestran como inputs de texto editables superpuestos sobre la posición del placeholder en el documento
-- [ ] Los inputs inline permiten escribir el valor que falta directamente sobre la vista previa
-- [ ] El botón "Generar" está siempre habilitado; los campos en blanco se guardan vacíos si el usuario no los completa
-- [ ] Hay un botón "Cancelar" o "Volver" que descarta los cambios y regresa al modal de selección
-- [ ] Se muestra un indicador de carga mientras se obtiene la plantilla y los datos de la operación
-- [ ] El componente es responsive y se visualiza correctamente en mobile, tablet y desktop
+- [ ] `GET /api/admin/document-templates/[id]/assignments` devuelve la lista de todos los clientes, cada uno con el campo `activo` que indica si tienen la plantilla asignada y activa
+- [ ] `PUT /api/admin/document-templates/[id]/assignments` recibe un array de `{ clienteId, activo }` y hace upsert en `DocumentAssignment` para cada entrada
+- [ ] Solo los registros incluidos en el body se modifican; los no incluidos permanecen sin cambios
+- [ ] Solo accesible para usuarios con rol `admin`; devuelve 403 si no
+- [ ] Si el `templateId` no existe, devuelve 404
+- [ ] El upsert se realiza en una única transacción; si falla parcialmente, no se aplica ningún cambio
 
 ## Pruebas
 
 ### Pruebas unitarias
 
-- [ ] Los placeholders con valor mapeado se renderizan como texto estático con el valor de la operación
-- [ ] Los placeholders sin valor (sin mapeo o datos faltantes) se renderizan como inputs editables
-- [ ] Al escribir en un input inline, el estado del componente se actualiza con el nuevo valor
-- [ ] El botón "Generar" invoca el callback de confirmación con el payload completo (valores mapeados + valores ingresados manualmente)
-- [ ] Si todos los campos están completos, no se muestra ningún indicador de campos faltantes
+- [ ] El servicio de upsert crea un `DocumentAssignment` nuevo cuando no existe para esa combinación `(templateId, clienteId)`
+- [ ] El servicio de upsert actualiza `activo` cuando ya existe el registro
+- [ ] El servicio devuelve la lista completa de clientes con el campo `activo` correctamente resuelto (incluyendo los que no tienen asignación, que se devuelven con `activo: false`)
 
 ### Pruebas de integración
 
-- [ ] Al montar el componente, se llama al servicio con el `plantillaId` y el `operacionId` para obtener la plantilla y los datos de la operación
-- [ ] Los datos de la operación (nombre comprador, marca, modelo, precio, etc.) se inyectan correctamente en los placeholders mapeados
-- [ ] Al hacer clic en "Generar", se llama al servicio de generación (`POST /api/documentos/generados`) con el payload correcto y todos los valores finales
+- [ ] `GET /api/admin/document-templates/[id]/assignments` devuelve todos los clientes con su estado correcto
+- [ ] `PUT /api/admin/document-templates/[id]/assignments` con `[{ clienteId: "A", activo: true }]` crea la asignación si no existía
+- [ ] `PUT /api/admin/document-templates/[id]/assignments` con `[{ clienteId: "A", activo: false }]` desactiva la asignación existente
+- [ ] Tras el PUT, `GET` devuelve los estados actualizados
+- [ ] `PUT` con `templateId` inexistente devuelve 404

@@ -1,41 +1,42 @@
-# porcion-010 — API de documentos generados — listar, descargar y borrar [BACK]
+# porcion-010 — Modal de generación: preview con campos autocompletados y formulario manual [FRONT]
 
-**Historia de usuario:** HU-9: Módulo de Documentos — Generación y Gestión de Documentos por Operación
-**Par:** porcion-009
-**Tipo:** BACK
-**Prerequisitos:** porcion-001
+**Historia de usuario:** HU-9: Módulo de Documentos — Backoffice de Plantillas y Generación Contextual
+**Par:** porcion-011
+**Tipo:** FRONT
+**Prerequisitos:** porcion-008
 
 ## Descripción
 
-Implementar los endpoints para gestionar los documentos ya generados de una operación: listarlos (sin el binario), descargar el archivo de un documento específico y eliminar un documento. Estos endpoints son consumidos por la sección "Documentos generados" del detalle de la operación.
+Crear el modal que se abre tras seleccionar una plantilla, muestra una vista previa del PDF con los campos Auto y Fijo ya completados visualmente sobre el documento, los campos Manual como inputs editables superpuestos, y un botón de confirmación para generar y guardar el documento.
 
 ## Ejemplo de uso
 
-La sección "Documentos generados" llama a `GET /api/documentos/generados?operacionId=xxx` y recibe la lista de documentos de esa operación. Al hacer clic en "Descargar", el navegador llama a `GET /api/documentos/generados/:id/archivo` y recibe el binario del documento para descargarlo. Al confirmar el borrado, llama a `DELETE /api/documentos/generados/:id` y el documento se elimina de la BD.
+El empleado selecciona "Contrato de compraventa". Se abre el modal mostrando el PDF con "Juan Pérez" y "DNI 28.456.789" ya escritos en sus recuadros correspondientes. El recuadro "Número de cuotas" aparece como un input en blanco. El empleado escribe "12", revisa el documento y hace clic en "Generar documento".
 
 ## Criterios de aceptación
 
-- [ ] `GET /api/documentos/generados?operacionId=:id` devuelve todos los documentos generados para esa operación, sin incluir el campo `datos` (binario)
-- [ ] La respuesta incluye: `id`, `nombreArchivo`, `mimeType`, `plantillaId`, nombre de la plantilla, `creadoEn`
-- [ ] El endpoint verifica que la operación pertenezca al cliente autenticado; si no, devuelve 403
-- [ ] `GET /api/documentos/generados/:id/archivo` devuelve el binario del documento con el `Content-Type` y `Content-Disposition` correctos para forzar la descarga
-- [ ] `DELETE /api/documentos/generados/:id` elimina el documento si pertenece al cliente autenticado
-- [ ] Si el `id` no existe o pertenece a otro cliente, el endpoint devuelve 404
-- [ ] Todos los endpoints requieren autenticación; sin sesión válida devuelven 401
+- [ ] El modal recibe `templateId`, `contextType` y `contextId` y carga la vista previa del PDF con los campos superpuestos
+- [ ] Los campos de tipo Auto y Fijo aparecen con sus valores ya escritos sobre el recuadro en la posición configurada
+- [ ] Si un campo Auto no tiene datos disponibles en la entidad (campo nulo o inexistente), el recuadro aparece en blanco sin bloquear la generación
+- [ ] Los campos de tipo Manual aparecen como inputs de texto editables en la posición del recuadro
+- [ ] El botón "Generar documento" está deshabilitado si algún campo Manual está vacío
+- [ ] Al hacer clic en "Generar documento" con todos los campos completados, se envía al servicio la información necesaria para generar el PDF
+- [ ] Mientras se procesa la generación, el botón muestra un estado de carga y está deshabilitado
+- [ ] Tras generarse con éxito, el modal se cierra y se actualiza la sección de documentos generados
+- [ ] El componente es responsive y se visualiza correctamente en mobile, tablet y desktop
 
 ## Pruebas
 
 ### Pruebas unitarias
 
-- [ ] El servicio de listado filtra por `operacionId` y no retorna el campo `datos` en la respuesta
-- [ ] El servicio de listado verifica que el `operacionId` pertenezca al `clienteId` del usuario autenticado antes de retornar datos
-- [ ] El servicio de eliminación retorna error si el `id` del documento no pertenece al cliente autenticado
-- [ ] El servicio de descarga retorna el buffer con el `mimeType` correcto según el tipo de archivo (PDF o DOCX)
+- [ ] Los campos Auto y Fijo se renderizan con sus valores pre-cargados en la posición correcta del canvas
+- [ ] Un campo Auto con valor nulo se renderiza como recuadro vacío sin mostrar error
+- [ ] El botón "Generar documento" está deshabilitado cuando hay al menos un campo Manual vacío
+- [ ] El botón "Generar documento" está habilitado cuando todos los campos Manual tienen valor
 
 ### Pruebas de integración
 
-- [ ] `GET /api/documentos/generados?operacionId=xxx` sin sesión devuelve 401
-- [ ] `GET /api/documentos/generados?operacionId=xxx` con operación válida devuelve 200 y la lista de documentos sin el binario
-- [ ] `GET /api/documentos/generados/:id/archivo` con id válido devuelve 200 con el archivo y los headers de descarga correctos
-- [ ] `DELETE /api/documentos/generados/:id` con id válido devuelve 200 y el registro se elimina de la BD
-- [ ] `DELETE /api/documentos/generados/:id` con id de documento de otro cliente devuelve 404
+- [ ] Al montar el modal, se llama al servicio para obtener los datos de la plantilla y los valores del contexto (operación o vehículo) y se renderizan sobre el PDF
+- [ ] Al confirmar la generación, se envía al servicio el `templateId`, `contextType`, `contextId` y los valores de los campos Manual ingresados por el usuario
+- [ ] Si el servicio de generación falla, se muestra un mensaje de error y el modal permanece abierto
+- [ ] Si el servicio responde con éxito, el modal se cierra y el componente padre recibe la notificación para actualizar la sección de documentos

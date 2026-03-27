@@ -27,17 +27,20 @@ model Client {
   modulos         Json
   creadoEn        DateTime          @default(now())
   actualizadoEn   DateTime
-  Category        Category[]
-  Expense         Expense[]
-  Inversor        Inversor[]
-  Operation       Operation[]
-  Origin          Origin[]
-  Pago            Pago[]
-  PaymentMethod   PaymentMethod[]
-  Pendiente       Pendiente[]
-  User            User[]
-  VehicleBrand    VehicleBrand[]
-  VehicleCategory VehicleCategory[]
+  Category           Category[]
+  Expense            Expense[]
+  Inversor           Inversor[]
+  Operation          Operation[]
+  Origin             Origin[]
+  Pago               Pago[]
+  PaymentMethod      PaymentMethod[]
+  Pendiente          Pendiente[]
+  User               User[]
+  VehicleBrand       VehicleBrand[]
+  VehicleCategory    VehicleCategory[]
+  DocumentTemplate   DocumentTemplate[]
+  DocumentAssignment DocumentAssignment[]
+  GeneratedDocument  GeneratedDocument[]
 }
 
 model Expense {
@@ -317,4 +320,85 @@ model VehiclePhoto {
   Vehicle       Vehicle  @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@index([stockId])
+}
+
+// ─── Módulo de Documentos ────────────────────────────────────────────────────
+
+enum DocumentContext {
+  operacion
+  vehiculo
+}
+
+enum DocumentFieldType {
+  auto
+  fijo
+  manual
+}
+
+model DocumentTemplate {
+  id                 String               @id
+  clienteId          String
+  nombre             String
+  contexto           DocumentContext
+  pdfOriginal        Bytes
+  mimeType           String
+  creadoEn           DateTime             @default(now())
+  actualizadoEn      DateTime
+  Client             Client               @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  DocumentField      DocumentField[]
+  DocumentAssignment DocumentAssignment[]
+  GeneratedDocument  GeneratedDocument[]
+
+  @@index([clienteId])
+}
+
+model DocumentField {
+  id               String            @id
+  templateId       String
+  nombre           String
+  tipo             DocumentFieldType
+  valorFijo        String?
+  rutaAuto         String?
+  posX             Float
+  posY             Float
+  ancho            Float
+  alto             Float
+  orden            Int
+  DocumentTemplate DocumentTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+}
+
+model DocumentAssignment {
+  id               String           @id
+  templateId       String
+  clienteId        String
+  activo           Boolean          @default(true)
+  creadoEn         DateTime         @default(now())
+  actualizadoEn    DateTime
+  DocumentTemplate DocumentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  Client           Client           @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, clienteId])
+  @@index([templateId])
+  @@index([clienteId])
+}
+
+model GeneratedDocument {
+  id               String           @id
+  templateId       String
+  clienteId        String
+  contexto         DocumentContext
+  contextId        String
+  pdfGenerado      Bytes
+  nombreArchivo    String
+  mimeType         String
+  creadoEn         DateTime         @default(now())
+  actualizadoEn    DateTime
+  DocumentTemplate DocumentTemplate @relation(fields: [templateId], references: [id])
+  Client           Client           @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([clienteId])
+  @@index([contextId])
 }

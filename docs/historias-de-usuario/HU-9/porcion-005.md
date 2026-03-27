@@ -1,41 +1,39 @@
-# porcion-005 — API de upload, detección de campos y guardado de plantilla [BACK]
+# porcion-005 — API crear plantilla con campos y PDF [BACK]
 
-**Historia de usuario:** HU-9: Módulo de Documentos — Generación y Gestión de Documentos por Operación
+**Historia de usuario:** HU-9: Módulo de Documentos — Backoffice de Plantillas y Generación Contextual
 **Par:** porcion-004
 **Tipo:** BACK
 **Prerequisitos:** porcion-001
 
 ## Descripción
 
-Implementar el endpoint que recibe el archivo de plantilla (PDF o DOCX), lo procesa para detectar automáticamente los placeholders `{{campo}}` que contiene, y devuelve la lista de campos detectados al frontend. Un segundo endpoint guarda la plantilla junto con el mapeo de campos configurado por el empleado. Librerías: `mammoth` para DOCX y `pdfjs-dist` para PDF.
+Crear el endpoint que recibe el PDF, el nombre, el contexto y todos los recuadros configurados, y los persiste como un `DocumentTemplate` con sus `DocumentField` asociados. Incluye la lógica de validación de campos según su tipo y el esquema centralizado de rutas Auto por contexto.
 
 ## Ejemplo de uso
 
-El frontend envía el archivo PDF como `FormData` a `POST /api/documentos/plantillas/procesar`. El servidor extrae el texto, detecta los placeholders `{{nombre_cliente}}`, `{{precio}}`, `{{fecha}}` y los devuelve. Luego el frontend envía el mapeo configurado a `POST /api/documentos/plantillas` para guardar la plantilla completa en la BD.
+El editor de porcion-004 envía un `POST /api/admin/document-templates` con el PDF en binario, nombre "Contrato de compraventa", contexto `operacion` y un array de campos. El servidor valida que los campos Auto referencien rutas válidas del esquema de `operacion`, guarda todo y devuelve el `id` de la nueva plantilla.
 
 ## Criterios de aceptación
 
-- [ ] `POST /api/documentos/plantillas/procesar` acepta un archivo PDF o DOCX como `multipart/form-data`
-- [ ] El endpoint extrae todos los placeholders con formato `{{nombre}}` del contenido del archivo y los devuelve en la respuesta como array de strings únicos
-- [ ] Si no se detectan placeholders, devuelve un array vacío (no es un error)
-- [ ] `POST /api/documentos/plantillas` recibe: `nombre` (string), el archivo binario, y `campos` (objeto JSON con el mapeo `{ "{{placeholder}}": "campo_operacion" }`)
-- [ ] La plantilla se guarda en la tabla `DocumentTemplate` asociada al `clienteId` del usuario autenticado
-- [ ] Si ya existe una plantilla con el mismo nombre para ese cliente, devuelve error 409
-- [ ] Ambos endpoints requieren autenticación; sin sesión válida devuelven 401
-- [ ] Se valida que el archivo sea PDF o DOCX; cualquier otro formato devuelve 400
+- [ ] `POST /api/admin/document-templates` acepta `multipart/form-data` con: el archivo PDF, `nombre` (string), `contexto` (`operacion` | `vehiculo`), y un array de campos con `nombre`, `tipo`, `valorFijo`/`rutaAuto` según tipo, `posX`, `posY`, `ancho`, `alto`, `orden`
+- [ ] El endpoint valida que los campos de tipo `auto` referencien una ruta definida en el esquema de rutas del contexto correspondiente; devuelve 400 si la ruta no existe
+- [ ] El endpoint valida que los campos de tipo `fijo` tengan `valorFijo` no vacío; devuelve 400 si falta
+- [ ] La plantilla y todos sus campos se guardan en una única transacción (o nada se guarda si algo falla)
+- [ ] El endpoint devuelve 201 con el `id` y `nombre` de la plantilla creada
+- [ ] Solo accesible para usuarios con rol `admin`; devuelve 403 si no
 
 ## Pruebas
 
 ### Pruebas unitarias
 
-- [ ] La función de extracción de placeholders sobre un texto con `{{campo_a}}` y `{{campo_b}}` retorna `["{{campo_a}}", "{{campo_b}}"]`
-- [ ] La función de extracción retorna un array vacío si el texto no contiene ningún placeholder `{{}}`
-- [ ] La función de extracción elimina duplicados (si `{{campo}}` aparece dos veces, lo retorna una sola vez)
-- [ ] El servicio de guardado lanza error si el `mimeType` del archivo no es `application/pdf` ni `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+- [ ] El validador de rutas Auto aprueba `operacion.cliente.nombre` para contexto `operacion`
+- [ ] El validador de rutas Auto rechaza `vehiculo.patente` cuando el contexto es `operacion`
+- [ ] El validador rechaza una ruta que no existe en el esquema (ej: `operacion.campoInexistente`)
+- [ ] Un campo de tipo `fijo` con `valorFijo` vacío o nulo falla la validación con mensaje descriptivo
 
 ### Pruebas de integración
 
-- [ ] `POST /api/documentos/plantillas/procesar` con un DOCX que contiene `{{nombre}}` y `{{precio}}` retorna 200 con esos dos placeholders
-- [ ] `POST /api/documentos/plantillas/procesar` con un archivo sin placeholders retorna 200 con array vacío
-- [ ] `POST /api/documentos/plantillas` con datos válidos persiste el registro en `DocumentTemplate` y retorna 201 con el id generado
-- [ ] `POST /api/documentos/plantillas` con nombre duplicado para el mismo cliente retorna 409
+- [ ] `POST /api/admin/document-templates` con datos válidos crea `DocumentTemplate` y sus `DocumentField` en la BD y devuelve 201
+- [ ] Si falla la validación de un campo, no se crea ningún registro (rollback de transacción) y devuelve 400
+- [ ] `POST /api/admin/document-templates` con rol `usuario` devuelve 403
+- [ ] Tras crear una plantilla, `GET /api/admin/document-templates/[id]` devuelve la plantilla con todos sus campos correctamente almacenados

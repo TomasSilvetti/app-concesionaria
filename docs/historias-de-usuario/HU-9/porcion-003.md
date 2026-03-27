@@ -1,38 +1,39 @@
-# porcion-003 — API de plantillas — listar y eliminar [BACK]
+# porcion-003 — API CRUD básico de plantillas [BACK]
 
-**Historia de usuario:** HU-9: Módulo de Documentos — Generación y Gestión de Documentos por Operación
+**Historia de usuario:** HU-9: Módulo de Documentos — Backoffice de Plantillas y Generación Contextual
 **Par:** porcion-002
 **Tipo:** BACK
 **Prerequisitos:** porcion-001
 
 ## Descripción
 
-Implementar los endpoints necesarios para que la página de Documentos pueda listar las plantillas del cliente y eliminar una plantilla existente. Los endpoints devuelven los metadatos de la plantilla (sin el binario del archivo) para no sobrecargar la respuesta del listado.
+Crear los endpoints para listar, obtener el detalle y eliminar plantillas de documentos, accesibles únicamente para el rol `admin`. Estos endpoints alimentan el listado de la página `/admin/documentos`.
 
 ## Ejemplo de uso
 
-La página "Documentos" llama a `GET /api/documentos/plantillas` y recibe la lista de plantillas del cliente con nombre, tipo y fecha de creación. Al confirmar el borrado, llama a `DELETE /api/documentos/plantillas/:id` y la plantilla desaparece de la BD.
+La página `/admin/documentos` llama a `GET /api/admin/document-templates` y recibe la lista de plantillas con nombre, contexto y conteo de empresas asignadas. Al confirmar la eliminación de una plantilla, llama a `DELETE /api/admin/document-templates/[id]` y la plantilla desaparece.
 
 ## Criterios de aceptación
 
-- [ ] `GET /api/documentos/plantillas` devuelve todas las plantillas del cliente autenticado, sin incluir el campo `archivoDatos` (binario)
-- [ ] La respuesta incluye: `id`, `nombre`, `archivoNombre`, `archivoMimeType`, `campos`, `creadoEn`
-- [ ] `DELETE /api/documentos/plantillas/:id` elimina la plantilla si pertenece al cliente autenticado
-- [ ] Si el `id` no existe o pertenece a otro cliente, el endpoint devuelve 404
-- [ ] Ambos endpoints requieren autenticación; sin sesión válida devuelven 401
-- [ ] Al eliminar una plantilla, los `GeneratedDocument` asociados se eliminan en cascada (o se maneja según la política definida en porcion-001)
+- [ ] `GET /api/admin/document-templates` devuelve la lista de plantillas con `id`, `nombre`, `contexto`, y cantidad de `DocumentAssignment` activos
+- [ ] `GET /api/admin/document-templates/[id]` devuelve el detalle completo de una plantilla incluyendo sus `DocumentField` ordenados por `orden`
+- [ ] `DELETE /api/admin/document-templates/[id]` elimina la plantilla y todos sus datos asociados en cascada
+- [ ] Todos los endpoints verifican que el usuario autenticado tiene rol `admin`; devuelven 403 si no
+- [ ] `DELETE` sobre un `id` inexistente devuelve 404
+- [ ] Los endpoints no exponen el campo `pdfOriginal` (Bytes) en el listado ni en el detalle para evitar transferencias innecesarias
 
 ## Pruebas
 
 ### Pruebas unitarias
 
-- [ ] El servicio de listado filtra plantillas por `clienteId` y no retorna el campo `archivoDatos`
-- [ ] El servicio de eliminación retorna error si el `id` no pertenece al `clienteId` del usuario autenticado
-- [ ] El servicio de eliminación retorna error si el `id` no existe en la BD
+- [ ] El servicio de listado devuelve las plantillas con el conteo de asignaciones activas correctamente calculado
+- [ ] El servicio de eliminación lanza un error reconocible si la plantilla no existe
+- [ ] El middleware de autorización bloquea el acceso a usuarios con rol distinto de `admin`
 
 ### Pruebas de integración
 
-- [ ] `GET /api/documentos/plantillas` sin sesión devuelve 401
-- [ ] `GET /api/documentos/plantillas` con sesión válida devuelve 200 y lista solo las plantillas del cliente
-- [ ] `DELETE /api/documentos/plantillas/:id` con id de otro cliente devuelve 404
-- [ ] `DELETE /api/documentos/plantillas/:id` con id válido devuelve 200 y el registro se elimina de la BD
+- [ ] `GET /api/admin/document-templates` con rol `admin` devuelve 200 y array de plantillas
+- [ ] `GET /api/admin/document-templates` con rol `usuario` devuelve 403
+- [ ] `DELETE /api/admin/document-templates/[id]` con rol `admin` elimina la plantilla y devuelve 200
+- [ ] `DELETE /api/admin/document-templates/[id-inexistente]` devuelve 404
+- [ ] Tras eliminar una plantilla, `GET /api/admin/document-templates` ya no la incluye en la lista
