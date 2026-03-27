@@ -7,6 +7,7 @@ import { OperationExpensesSection } from "@/components/operations/OperationExpen
 import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
 import { OperationInversionSection } from "@/components/operations/OperationInversionSection";
 import { GenerarDocumentoButton } from "@/components/operations/GenerarDocumentoButton";
+import { DocumentosGeneradosSection } from "@/components/operations/DocumentosGeneradosSection";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -91,6 +92,7 @@ export default function OperacionDetailPage() {
   const [showOperacionCerradaModal, setShowOperacionCerradaModal] = useState(false);
   const [showReabrirModal, setShowReabrirModal] = useState(false);
   const [reabriendo, setReabriendo] = useState(false);
+  const [docsRefreshKey, setDocsRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchOperation = async () => {
@@ -688,12 +690,14 @@ export default function OperacionDetailPage() {
               <GenerarDocumentoButton
                 contextType="operacion"
                 contextId={operation.idOperacion}
-                onDocumentGenerated={() => {/* TODO: actualizar lista al completar porcion-011 */}}
+                onDocumentGenerated={() => setDocsRefreshKey((k) => k + 1)}
               />
             </div>
-            <p className="text-sm text-zinc-400">
-              Los documentos generados aparecerán aquí.
-            </p>
+            <DocumentosGeneradosSection
+              contextType="operacion"
+              contextId={operation.idOperacion}
+              refreshKey={docsRefreshKey}
+            />
           </div>
 
           {/* Cerrar operación */}

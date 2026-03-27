@@ -4,6 +4,8 @@
 **Par:** porcion-013
 **Tipo:** FRONT
 **Prerequisitos:** porcion-008
+**Estado:** completada
+**Completada el:** 2026-03-27
 
 ## Descripción
 
