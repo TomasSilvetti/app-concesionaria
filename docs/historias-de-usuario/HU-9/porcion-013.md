@@ -3,6 +3,8 @@
 **Historia de usuario:** HU-9: Módulo de Documentos — Backoffice de Plantillas y Generación Contextual
 **Par:** porcion-012
 **Tipo:** BACK
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-27
 **Prerequisitos:** porcion-001, porcion-011
 
 ## Descripción

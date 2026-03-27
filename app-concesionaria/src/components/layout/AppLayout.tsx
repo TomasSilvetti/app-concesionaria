@@ -56,6 +56,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       label: "Usuarios",
       icon: "group",
       path: "/usuarios",
+    }, {
+      label: "Documentos",
+      icon: "description",
+      path: "/admin/documentos",
     }] : []),
   ];
 
