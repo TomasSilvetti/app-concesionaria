@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PlantillasTable } from "@/components/documents/PlantillasTable";
 import { PlantillaEditorModal } from "@/components/documents/PlantillaEditorModal";
+import { AsignarEmpresasModal } from "@/components/documents/AsignarEmpresasModal";
 
 export default function DocumentosAdminPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
+  const [asignandoPlantilla, setAsignandoPlantilla] = useState<{ id: string; nombre: string } | null>(null);
 
   const handleCreatePlantilla = () => {
     setIsCreating(true);
@@ -19,8 +21,7 @@ export default function DocumentosAdminPage() {
   };
 
   const handleAsignarEmpresas = (plantilla: { id: string; nombre: string }) => {
-    // porcion-008: modal de asignación de empresas
-    alert(`Asignar empresas a "${plantilla.nombre}" — próximamente (porcion-008)`);
+    setAsignandoPlantilla(plantilla);
   };
 
   return (
@@ -31,6 +32,13 @@ export default function DocumentosAdminPage() {
         onAsignarEmpresas={handleAsignarEmpresas}
         refreshTrigger={refreshTrigger}
       />
+      {asignandoPlantilla && (
+        <AsignarEmpresasModal
+          plantillaId={asignandoPlantilla.id}
+          plantillaNombre={asignandoPlantilla.nombre}
+          onClose={() => setAsignandoPlantilla(null)}
+        />
+      )}
       {isCreating && (
         <PlantillaEditorModal
           onClose={() => setIsCreating(false)}
