@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GenerarDocumentoModal } from "./GenerarDocumentoModal";
 
 interface DocumentTemplate {
   id: string;
@@ -10,17 +11,18 @@ interface DocumentTemplate {
 interface GenerarDocumentoButtonProps {
   contextType: "operacion" | "vehiculo";
   contextId: string;
-  onTemplateSelected: (templateId: string) => void;
+  onDocumentGenerated?: () => void;
 }
 
 export function GenerarDocumentoButton({
   contextType,
   contextId,
-  onTemplateSelected,
+  onDocumentGenerated,
 }: GenerarDocumentoButtonProps) {
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +56,15 @@ export function GenerarDocumentoButton({
 
   function handleSelect(templateId: string) {
     setModalOpen(false);
-    onTemplateSelected(templateId);
+    setSelectedTemplateId(templateId);
+  }
+
+  function handleGenerarClose() {
+    setSelectedTemplateId(null);
+  }
+
+  function handleGenerated() {
+    onDocumentGenerated?.();
   }
 
   return (
@@ -67,6 +77,16 @@ export function GenerarDocumentoButton({
         <span className="material-symbols-outlined text-lg">description</span>
         Generar documento
       </button>
+
+      {selectedTemplateId && (
+        <GenerarDocumentoModal
+          templateId={selectedTemplateId}
+          contextType={contextType}
+          contextId={contextId}
+          onClose={handleGenerarClose}
+          onGenerated={handleGenerated}
+        />
+      )}
 
       {modalOpen && (
         <div

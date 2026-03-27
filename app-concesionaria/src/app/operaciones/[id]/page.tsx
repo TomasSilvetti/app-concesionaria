@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
 import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
 import { OperationInversionSection } from "@/components/operations/OperationInversionSection";
+import { GenerarDocumentoButton } from "@/components/operations/GenerarDocumentoButton";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -673,6 +674,26 @@ export default function OperacionDetailPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Sección: Documentos */}
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-blue-600">
+                  folder_open
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">Documentos</h2>
+              </div>
+              <GenerarDocumentoButton
+                contextType="operacion"
+                contextId={operation.idOperacion}
+                onDocumentGenerated={() => {/* TODO: actualizar lista al completar porcion-011 */}}
+              />
+            </div>
+            <p className="text-sm text-zinc-400">
+              Los documentos generados aparecerán aquí.
+            </p>
           </div>
 
           {/* Cerrar operación */}
