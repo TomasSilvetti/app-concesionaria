@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { PdfCanvas } from "@/components/documents/PdfCanvas";
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ interface TemplateField {
 interface PreviewData {
   templateName: string;
   fields: TemplateField[];
+  pdfBase64?: string;
 }
 
 interface GenerarDocumentoModalProps {
@@ -44,9 +46,20 @@ export function GenerarDocumentoModal({
   const [loadingPreview, setLoadingPreview] = useState(true);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [manualValues, setManualValues] = useState<Record<string, string>>({});
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+
+  // Crear blob URL del PDF template para la vista previa
+  useEffect(() => {
+    if (!previewData?.pdfBase64) return;
+    const bytes = Uint8Array.from(atob(previewData.pdfBase64), (c) => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    setPdfBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [previewData?.pdfBase64]);
 
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -114,10 +127,10 @@ export function GenerarDocumentoModal({
     setGenerating(true);
     setGenerateError(null);
     try {
-      const res = await fetch(`/api/document-templates/${templateId}/generate`, {
+      const res = await fetch(`/api/documents/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contextType, contextId, manualFields: manualValues }),
+        body: JSON.stringify({ templateId, contextType, contextId, manualFields: manualValues }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -187,7 +200,7 @@ export function GenerarDocumentoModal({
               </div>
 
               {/* Página del documento */}
-              <DocumentPage fields={previewData.fields} manualValues={manualValues} onManualChange={handleManualChange} />
+              <DocumentPage fields={previewData.fields} manualValues={manualValues} onManualChange={handleManualChange} pdfBlobUrl={pdfBlobUrl} />
 
               {/* Error de generación */}
               {generateError && (
@@ -256,28 +269,32 @@ interface DocumentPageProps {
   fields: TemplateField[];
   manualValues: Record<string, string>;
   onManualChange: (fieldId: string, value: string) => void;
+  pdfBlobUrl: string | null;
 }
 
-function DocumentPage({ fields, manualValues, onManualChange }: DocumentPageProps) {
+function DocumentPage({ fields, manualValues, onManualChange, pdfBlobUrl }: DocumentPageProps) {
   return (
-    /* Proporción A4 aprox. 1:1.414. Usamos padding-top para mantener aspect ratio */
     <div className="mx-auto w-full max-w-xl">
       <div
-        className="relative w-full rounded border border-zinc-300 bg-white shadow-md"
-        style={{ paddingTop: "141.4%" }}
+        className="relative w-full rounded border border-zinc-300 bg-white shadow-md overflow-hidden"
         aria-label="Vista previa del documento"
       >
-        <div className="absolute inset-0 overflow-hidden rounded">
-          {/* Fondo con líneas sutiles para simular página */}
+        {/* Fondo: PDF renderizado con pdf.js (sin iframe, sin toolbar del browser) */}
+        {pdfBlobUrl ? (
+          <PdfCanvas src={pdfBlobUrl} className="w-full" />
+        ) : (
           <div
-            className="absolute inset-0"
+            className="w-full"
             style={{
+              paddingTop: "141.4%",
               backgroundImage:
                 "repeating-linear-gradient(0deg, transparent, transparent 27px, #f4f4f5 27px, #f4f4f5 28px)",
             }}
           />
+        )}
 
-          {/* Campos superpuestos */}
+        {/* Campos superpuestos — absolute inset-0 sobre el canvas */}
+        <div className="absolute inset-0">
           {fields.map((field) => (
             <FieldOverlay
               key={field.id}
@@ -322,7 +339,7 @@ function FieldOverlay({ field, manualValue, onManualChange }: FieldOverlayProps)
           value={manualValue}
           onChange={(e) => onManualChange(field.id, e.target.value)}
           placeholder={field.label}
-          className="h-full w-full rounded border border-amber-400 bg-amber-50/80 px-1.5 text-xs text-zinc-800 placeholder-amber-400 focus:border-amber-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+          className="h-full w-full rounded border border-amber-400 bg-white px-1.5 text-xs text-zinc-800 placeholder-amber-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
         />
       </div>
     );
@@ -331,12 +348,14 @@ function FieldOverlay({ field, manualValue, onManualChange }: FieldOverlayProps)
   return (
     <div
       style={style}
-      className="flex items-center overflow-hidden rounded border border-blue-300 bg-blue-50/70 px-1.5"
+      className="overflow-hidden rounded border border-blue-300"
       aria-label={`${field.label}: ${field.value ?? "sin datos"}`}
     >
-      <span className="truncate text-xs text-zinc-700">
-        {hasValue ? field.value : ""}
-      </span>
+      <div className="flex h-full w-full items-center bg-white px-1.5">
+        <span className="truncate text-xs text-zinc-700">
+          {hasValue ? field.value : ""}
+        </span>
+      </div>
     </div>
   );
 }

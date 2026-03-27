@@ -318,6 +318,11 @@ export default function OperacionDetailPage() {
               <span className="material-symbols-outlined text-xl">edit</span>
               Editar
             </button>
+            <GenerarDocumentoButton
+              contextType="operacion"
+              contextId={operation.idOperacion}
+              onDocumentGenerated={() => setDocsRefreshKey((k) => k + 1)}
+            />
           </div>
         </div>
 

@@ -44,12 +44,12 @@ export async function GET(req: NextRequest) {
       where: {
         clienteId,
         activo: true,
-        template: {
+        DocumentTemplate: {
           contexto: contextType as ContextType,
         },
       },
       select: {
-        template: {
+        DocumentTemplate: {
           select: {
             id: true,
             nombre: true,
@@ -58,9 +58,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const templates = assignments.map((a) => a.template);
+    const templates = assignments.map((a) => a.DocumentTemplate);
 
-    return NextResponse.json(templates, { status: 200 });
+    return NextResponse.json({ templates }, { status: 200 });
   } catch (error) {
     console.error("Error al obtener plantillas disponibles:", error);
     return NextResponse.json(

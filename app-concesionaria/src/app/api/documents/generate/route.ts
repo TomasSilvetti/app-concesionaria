@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     const assignment = await prisma.documentAssignment.findFirst({
       where: { templateId, clienteId, activo: true },
       include: {
-        template: {
+        DocumentTemplate: {
           include: { DocumentField: { orderBy: { orden: "asc" } } },
         },
       },
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const template = assignment.template;
+    const template = assignment.DocumentTemplate;
 
     // Cargar entidad de contexto
     let entityObj: Record<string, unknown> | null = null;
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const pages = pdfDoc.getPages();
     const page = pages[0]; // Se trabaja sobre la primera página
-    const { height: pageHeight } = page.getSize();
+    const { width: pageWidth, height: pageHeight } = page.getSize();
 
     const safeManualFields: Record<string, string> =
       manualFields && typeof manualFields === "object" ? manualFields : {};
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
       if (field.tipo === "fijo") {
         value = field.valorFijo ?? null;
       } else if (field.tipo === "manual") {
-        value = safeManualFields[field.nombre] ?? null;
+        value = safeManualFields[field.id] ?? null;
       } else if (field.tipo === "auto") {
         value = entityObj && field.rutaAuto
           ? resolveAutoPath(entityObj, field.rutaAuto)
@@ -183,10 +183,12 @@ export async function POST(req: NextRequest) {
 
       if (!value) continue;
 
-      // pdf-lib: origen en esquina inferior izquierda; convertimos posY desde esquina superior
-      const x = field.posX;
-      const y = pageHeight - field.posY - field.alto;
-      const fontSize = Math.max(8, Math.min(field.alto * 0.7, 14));
+      // posX/posY/ancho/alto se guardan como porcentajes (0-100) relativos al PDF.
+      // pdf-lib: origen en esquina inferior izquierda; convertimos posY desde esquina superior.
+      const x = (field.posX / 100) * pageWidth;
+      const fieldHeightPts = (field.alto / 100) * pageHeight;
+      const y = pageHeight - (field.posY / 100) * pageHeight - fieldHeightPts;
+      const fontSize = Math.max(6, Math.min(fieldHeightPts * 0.75, 14));
 
       page.drawText(value, {
         x,
@@ -194,7 +196,7 @@ export async function POST(req: NextRequest) {
         size: fontSize,
         font,
         color: rgb(0, 0, 0),
-        maxWidth: field.ancho,
+        maxWidth: (field.ancho / 100) * pageWidth,
       });
     }
 

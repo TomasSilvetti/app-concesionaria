@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import "material-symbols/outlined.css";
+import { PdfCanvas } from "./PdfCanvas";
 
 interface Recuadro {
   id: string;
@@ -318,79 +319,73 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
               </div>
 
               {/* PDF + drawing overlay */}
-              <div
-                className="relative flex-1 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm"
-                style={{ minHeight: 400 }}
-              >
-                <iframe
-                  src={pdfUrl}
-                  title="Vista previa del PDF"
-                  className="h-full w-full"
-                  style={{ minHeight: 400 }}
-                />
-                <div
-                  ref={overlayRef}
-                  className="absolute inset-0"
-                  style={{ cursor: "crosshair" }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={finishDraw}
-                  onMouseLeave={finishDraw}
-                >
-                  {recuadros.map((r, i) => {
-                    const isSelected = r.id === selectedId;
-                    const hasError = !r.nombre.trim() || !r.tipo;
-                    return (
+              <div className="flex-1 overflow-auto rounded-xl border border-zinc-200 bg-zinc-100 shadow-sm">
+                <div className="relative w-full bg-white">
+                  <PdfCanvas src={pdfUrl} className="w-full" />
+                  <div
+                    ref={overlayRef}
+                    className="absolute inset-0"
+                    style={{ cursor: "crosshair" }}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={finishDraw}
+                    onMouseLeave={finishDraw}
+                  >
+                    {recuadros.map((r, i) => {
+                      const isSelected = r.id === selectedId;
+                      const hasError = !r.nombre.trim() || !r.tipo;
+                      return (
+                        <div
+                          key={r.id}
+                          style={{
+                            position: "absolute",
+                            left: `${r.x}%`,
+                            top: `${r.y}%`,
+                            width: `${r.width}%`,
+                            height: `${r.height}%`,
+                          }}
+                          className={`cursor-pointer rounded-sm border-2 transition-colors ${
+                            isSelected
+                              ? "border-blue-500 bg-blue-500/15"
+                              : hasError
+                              ? "border-red-400 bg-red-500/10 hover:border-red-500"
+                              : "border-emerald-500 bg-emerald-500/10 hover:border-emerald-600"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedId(r.id);
+                          }}
+                        >
+                          <div
+                            className={`absolute left-0.5 top-0.5 max-w-[90%] truncate rounded px-1.5 py-0.5 text-xs font-semibold text-white ${
+                              isSelected
+                                ? "bg-blue-500"
+                                : hasError
+                                ? "bg-red-400"
+                                : "bg-emerald-500"
+                            }`}
+                          >
+                            {r.nombre || `#${i + 1}`}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {isDrawing && currentDraw && (
                       <div
-                        key={r.id}
                         style={{
                           position: "absolute",
-                          left: `${r.x}%`,
-                          top: `${r.y}%`,
-                          width: `${r.width}%`,
-                          height: `${r.height}%`,
+                          left: `${currentDraw.x}%`,
+                          top: `${currentDraw.y}%`,
+                          width: `${currentDraw.w}%`,
+                          height: `${currentDraw.h}%`,
+                          border: "2px dashed #3b82f6",
+                          backgroundColor: "rgba(59,130,246,0.1)",
+                          pointerEvents: "none",
                         }}
-                        className={`cursor-pointer rounded-sm border-2 transition-colors ${
-                          isSelected
-                            ? "border-blue-500 bg-blue-500/15"
-                            : hasError
-                            ? "border-red-400 bg-red-500/10 hover:border-red-500"
-                            : "border-emerald-500 bg-emerald-500/10 hover:border-emerald-600"
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedId(r.id);
-                        }}
-                      >
-                        <div
-                          className={`absolute left-0.5 top-0.5 max-w-[90%] truncate rounded px-1.5 py-0.5 text-xs font-semibold text-white ${
-                            isSelected
-                              ? "bg-blue-500"
-                              : hasError
-                              ? "bg-red-400"
-                              : "bg-emerald-500"
-                          }`}
-                        >
-                          {r.nombre || `#${i + 1}`}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {isDrawing && currentDraw && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: `${currentDraw.x}%`,
-                        top: `${currentDraw.y}%`,
-                        width: `${currentDraw.w}%`,
-                        height: `${currentDraw.h}%`,
-                        border: "2px dashed #3b82f6",
-                        backgroundColor: "rgba(59,130,246,0.1)",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  )}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
