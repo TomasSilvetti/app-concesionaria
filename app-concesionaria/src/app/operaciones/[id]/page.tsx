@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
 import { OperationCobranzasSection } from "@/components/operations/OperationCobranzasSection";
+import { OperationInversionSection } from "@/components/operations/OperationInversionSection";
 import "material-symbols/outlined.css";
 
 interface VehicleExchange {
@@ -61,6 +62,17 @@ interface OperationDetail {
   tipoOperacionNombre: string;
   vehiculosIntercambiados: VehicleExchange[];
   gastos: Expense[];
+  inversion: {
+    participantes: {
+      id: string;
+      esConcecionaria: boolean;
+      inversorId: string | null;
+      inversorNombre: string | null;
+      montoAporte: number;
+      porcentajeParticipacion: number;
+      porcentajeUtilidad: number | null;
+    }[];
+  } | null;
 }
 
 export default function OperacionDetailPage() {
@@ -516,6 +528,20 @@ export default function OperacionDetailPage() {
               </div>
             </dl>
           </div>
+
+          {/* Sección: Distribución de utilidades */}
+          {operation.inversion && (
+            <div className="lg:col-span-3">
+              <OperationInversionSection
+                operacionId={operation.idOperacion}
+                inversion={operation.inversion}
+                precioVentaTotal={operation.precioVentaTotal}
+                precioToma={operation.precioToma}
+                gastosAsociados={gastosTotal ?? operation.gastosAsociados}
+                estado={operation.estado}
+              />
+            </div>
+          )}
 
           {/* Sección: Estado y tipo */}
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
