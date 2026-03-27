@@ -125,6 +125,26 @@ export function OperationInversionSection({
     setSaveError(null);
   };
 
+  const sumaMontos = participantesEdit.reduce(
+    (acc, p) => acc + (parseFloat(p.montoUtilidad) || 0),
+    0
+  );
+  const sumaPct = participantesEdit.reduce(
+    (acc, p) => acc + (parseFloat(p.porcentajeUtilidad) || 0),
+    0
+  );
+
+  const errorMonto =
+    sumaMontos > utilidadNeta
+      ? `La suma de montos (${formatCurrency(sumaMontos)}) supera la utilidad neta (${formatCurrency(utilidadNeta)})`
+      : null;
+  const errorPct =
+    sumaPct > 100
+      ? `La suma de porcentajes (${sumaPct.toFixed(2)}%) supera el 100%`
+      : null;
+
+  const hayErrores = !!errorMonto || !!errorPct;
+
   const handleSave = async () => {
     setSaving(true);
     setSaveError(null);
@@ -195,7 +215,7 @@ export function OperationInversionSection({
             <button
               type="button"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || hayErrores}
               className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
               {saving && (
@@ -309,7 +329,11 @@ export function OperationInversionSection({
                           onChange={(e) => handleMontoChange(p.id, e.target.value)}
                           placeholder="0"
                           disabled={saving}
-                          className="h-9 w-32 rounded-lg border border-zinc-300 bg-zinc-50 px-3 text-right text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                          className={`h-9 w-32 rounded-lg border bg-zinc-50 px-3 text-right text-sm text-zinc-900 transition-colors focus:bg-white focus:outline-none focus:ring-2 disabled:opacity-50 ${
+                            errorMonto
+                              ? "border-red-400 focus:border-red-500 focus:ring-red-500/20"
+                              : "border-zinc-300 focus:border-blue-500 focus:ring-blue-500/20"
+                          }`}
                           aria-label={`Monto de utilidad de ${p.nombre}`}
                         />
                       )}
@@ -327,7 +351,11 @@ export function OperationInversionSection({
                           onChange={(e) => handlePorcentajeChange(p.id, e.target.value)}
                           placeholder="0"
                           disabled={saving}
-                          className="h-9 w-24 rounded-lg border border-zinc-300 bg-zinc-50 px-3 text-right text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                          className={`h-9 w-24 rounded-lg border bg-zinc-50 px-3 text-right text-sm text-zinc-900 transition-colors focus:bg-white focus:outline-none focus:ring-2 disabled:opacity-50 ${
+                            errorPct
+                              ? "border-red-400 focus:border-red-500 focus:ring-red-500/20"
+                              : "border-zinc-300 focus:border-blue-500 focus:ring-blue-500/20"
+                          }`}
                           aria-label={`Porcentaje de utilidad de ${p.nombre}`}
                         />
                       )}
@@ -409,6 +437,21 @@ export function OperationInversionSection({
             </table>
           )}
         </div>
+
+        {(errorMonto || errorPct) && (
+          <div className="flex flex-col gap-1.5">
+            {errorMonto && (
+              <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                {errorMonto}
+              </p>
+            )}
+            {errorPct && (
+              <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                {errorPct}
+              </p>
+            )}
+          </div>
+        )}
 
         {saveError && (
           <p className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
