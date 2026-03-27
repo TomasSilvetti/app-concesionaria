@@ -4,6 +4,7 @@
 **Par:** porcion-005
 **Tipo:** FRONT
 **Prerequisitos:** Ninguno
+**Estado:** completado
 
 ## Descripción
 
