@@ -4,7 +4,7 @@
 **Par:** —
 **Tipo:** FRONT
 **Prerequisitos:** Ninguno
-**Estado:** ⬜ Pendiente
+**Estado:** 🔄 En progreso
 
 ## Descripción
 

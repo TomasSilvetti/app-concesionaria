@@ -16,7 +16,8 @@ interface VehicleCategory {
 
 export interface PhotoFile {
   id: string;
-  file: File;
+  file: Blob;       // versión full comprimida (1280px WebP)
+  thumbBlob: Blob;  // versión thumbnail comprimida (400px WebP)
   preview: string;
 }
 
@@ -167,24 +168,61 @@ export function VehicleFieldsForm({
     }
   };
 
+  const compressImage = (file: File, maxPx: number, quality: number): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("No se pudo comprimir la imagen"));
+          },
+          "image/webp",
+          quality
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("No se pudo cargar la imagen"));
+      };
+      img.src = url;
+    });
+  };
+
   const handlePhotoSelect = async (files: FileList | null) => {
     if (!files) return;
-    const validFiles: File[] = [];
-
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) continue;
-      validFiles.push(file);
-    }
-
     setPhotoErrors([]);
+
+    const validFiles = Array.from(files).filter(
+      (f) => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024
+    );
+
+    const compressed = await Promise.all(
+      validFiles.map(async (file) => {
+        const [full, thumb] = await Promise.all([
+          compressImage(file, 1280, 0.85),
+          compressImage(file, 400, 0.85),
+        ]);
+        return { full, thumb };
+      })
+    );
 
     handlers.setPhotos((prev) => {
       const existingCount = (stockPhotoIds?.length ?? 0) + prev.length;
       const slots = Math.max(0, 10 - existingCount);
-      const toAdd = validFiles.slice(0, slots).map((file) => ({
+      const toAdd = compressed.slice(0, slots).map(({ full, thumb }) => ({
         id: crypto.randomUUID(),
-        file,
-        preview: URL.createObjectURL(file),
+        file: full,
+        thumbBlob: thumb,
+        preview: URL.createObjectURL(full),
       }));
       return [...prev, ...toAdd];
     });
@@ -1081,7 +1119,7 @@ export function VehicleFieldsForm({
                 >
                   <img
                     src={photo.preview}
-                    alt={photo.file.name}
+                    alt="Foto de vehículo"
                     className="h-full w-full object-cover"
                   />
                   <button
@@ -1092,7 +1130,7 @@ export function VehicleFieldsForm({
                     }}
                     className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow-lg transition-opacity hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 group-hover:opacity-100"
                     disabled={disabled}
-                    aria-label={`Eliminar foto ${photo.file.name}`}
+                    aria-label={`Eliminar foto ${photo.id}`}
                   >
                     <span className="material-symbols-outlined text-lg">
                       close
@@ -1125,7 +1163,7 @@ export function VehicleFieldsForm({
                   {index > 0 && (
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                       <p className="truncate text-xs text-white">
-                        {photo.file.name}
+                        Foto de vehículo
                       </p>
                     </div>
                   )}

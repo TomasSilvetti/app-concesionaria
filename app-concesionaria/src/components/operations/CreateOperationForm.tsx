@@ -1555,13 +1555,13 @@ export function CreateOperationForm({
                           key={photo.id}
                           className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
                         >
-                          <img src={photo.preview} alt={photo.file.name} className="h-full w-full object-cover" />
+                          <img src={photo.preview} alt="Foto de vehículo" className="h-full w-full object-cover" />
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleTradeInRemovePhoto(photo.id); }}
                             className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow transition-opacity hover:bg-red-700 focus:outline-none group-hover:opacity-100"
                             disabled={isSubmitting}
-                            aria-label={`Eliminar foto ${photo.file.name}`}
+                            aria-label={`Eliminar foto ${photo.id}`}
                           >
                             <span className="material-symbols-outlined text-sm">close</span>
                           </button>
