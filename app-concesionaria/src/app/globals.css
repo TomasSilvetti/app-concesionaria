@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 html {
-  zoom: 0.75;
+  font-size: 13px;
 }
 
 :root {

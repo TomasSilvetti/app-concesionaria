@@ -200,9 +200,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Sidebar */}
         <aside
           className={`
-            fixed inset-y-0 left-0 top-16 z-40 flex flex-col border-r border-zinc-200 bg-white transition-transform duration-300 ease-in-out w-64
+            fixed inset-y-0 left-0 top-16 z-40 flex flex-col border-r border-zinc-200 bg-white transition-all duration-300 ease-in-out w-64
             ${isOpen ? "translate-x-0" : "-translate-x-full"}
             md:relative md:top-0 md:translate-x-0
+            ${isOpen ? "md:w-64" : "md:w-0 md:overflow-hidden md:border-r-0"}
           `}
         >
           {/* Sidebar Menu */}
