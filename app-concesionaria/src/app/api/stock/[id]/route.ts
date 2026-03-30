@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
-import { processVehiclePhoto, ImageTooSmallError } from "@/lib/imageProcessor";
+import { processVehiclePhoto } from "@/lib/imageProcessor";
 
 const vehicleInclude = {
   VehicleBrand: {
@@ -331,27 +331,17 @@ export async function PUT(
       const photosData = [];
       for (const [index, foto] of fotos.entries()) {
         const buffer = Buffer.from(await foto.arrayBuffer());
-        try {
-          const { full, thumb } = await processVehiclePhoto(buffer);
-          photosData.push({
-            id: randomUUID(),
-            stockId: vehicle.id,
-            nombreArchivo: foto.name,
-            mimeType: "image/webp",
-            datos: full,
-            datosThumb: thumb,
-            orden: fotoReorden.length + index,
-            creadoEn: now,
-          });
-        } catch (error) {
-          if (error instanceof ImageTooSmallError) {
-            return NextResponse.json(
-              { message: `La foto "${foto.name}" no cumple el mínimo de 800px en su lado más largo.` },
-              { status: 400 }
-            );
-          }
-          throw error;
-        }
+        const { full, thumb } = await processVehiclePhoto(buffer);
+        photosData.push({
+          id: randomUUID(),
+          stockId: vehicle.id,
+          nombreArchivo: foto.name,
+          mimeType: "image/webp",
+          datos: full,
+          datosThumb: thumb,
+          orden: fotoReorden.length + index,
+          creadoEn: now,
+        });
       }
 
       await prisma.vehiclePhoto.createMany({
