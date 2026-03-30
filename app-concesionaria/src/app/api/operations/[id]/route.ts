@@ -761,3 +761,66 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+
+    const clienteId = session.user.clienteId;
+
+    if (!clienteId) {
+      return NextResponse.json(
+        { message: "Usuario sin cliente asociado" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    if (!id) {
+      return NextResponse.json(
+        { message: "ID de operación requerido" },
+        { status: 400 }
+      );
+    }
+
+    const operation = await prisma.operation.findFirst({
+      where: { idOperacion: id, clienteId },
+      select: { id: true, tipoOperacion: true, vehiculoVendidoId: true },
+    });
+
+    if (!operation) {
+      return NextResponse.json(
+        { message: "Operación no encontrada" },
+        { status: 404 }
+      );
+    }
+
+    // Si es venta desde stock, restaurar el vehículo al stock antes de borrar
+    if (operation.tipoOperacion === "Venta desde stock") {
+      await prisma.vehicle.update({
+        where: { id: operation.vehiculoVendidoId },
+        data: { estado: "disponible", actualizadoEn: new Date() },
+      });
+    }
+
+    await prisma.operation.delete({
+      where: { id: operation.id },
+    });
+
+    return NextResponse.json({ message: "Operación eliminada" }, { status: 200 });
+  } catch (error) {
+    console.error("Error al eliminar operación:", error);
+    return NextResponse.json(
+      { message: "Error al eliminar operación" },
+      { status: 500 }
+    );
+  }
+}

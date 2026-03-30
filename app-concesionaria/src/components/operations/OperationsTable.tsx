@@ -53,6 +53,8 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
   const [isCancelling, setIsCancelling] = useState(false);
   const [reopenOp, setReopenOp] = useState<Operation | null>(null);
   const [isReopening, setIsReopening] = useState(false);
+  const [deleteOp, setDeleteOp] = useState<Operation | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -280,6 +282,26 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
     }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, operation: Operation) => {
+    e.stopPropagation();
+    setDeleteOp(operation);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteOp) return;
+    setIsDeleting(true);
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      await fetch(`${baseUrl}/api/operations/${deleteOp.idOperacion}`, {
+        method: "DELETE",
+      });
+      setDeleteOp(null);
+      fetchOperations();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handlePaymentSave = async (data: {
     fecha: string;
     metodoPagoId: string;
@@ -464,6 +486,60 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                 className="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60"
               >
                 {isReopening ? "Reabriendo..." : "Sí, reabrir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteOp && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setDeleteOp(null)}
+        >
+          <div
+            className="flex w-full max-w-sm flex-col rounded-xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-2xl text-red-600">
+                  delete
+                </span>
+                <h2 className="text-lg font-semibold text-zinc-900">Eliminar operación</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteOp(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                aria-label="Cerrar"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-zinc-700">
+                ¿Estás seguro que querés eliminar la operación{" "}
+                <span className="font-semibold">#{deleteOp.idOperacion}</span>? Esta acción es permanente y no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setDeleteOp(null)}
+                className="flex h-10 items-center rounded-lg border border-zinc-300 px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2"
+              >
+                No, volver
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="flex h-10 items-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-60"
+              >
+                {isDeleting ? "Eliminando..." : "Sí, eliminar"}
               </button>
             </div>
           </div>
@@ -721,6 +797,15 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                               </span>
                             </button>
                           )}
+                          <button
+                            onClick={(e) => handleDeleteClick(e, operation)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            aria-label={`Eliminar operación ${operation.idOperacion}`}
+                          >
+                            <span className="material-symbols-outlined text-lg">
+                              delete
+                            </span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -899,6 +984,16 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                             Reabrir
                           </button>
                         )}
+                        <button
+                          onClick={(e) => handleDeleteClick(e, operation)}
+                          className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                          aria-label={`Eliminar operación ${operation.idOperacion}`}
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            delete
+                          </span>
+                          Eliminar
+                        </button>
                       </div>
                     </div>
                   </div>
