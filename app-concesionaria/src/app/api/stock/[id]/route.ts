@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
-import { processVehiclePhoto } from "@/lib/imageProcessor";
+
 
 const vehicleInclude = {
   VehicleBrand: {
@@ -330,15 +330,18 @@ export async function PUT(
     if (fotos.length > 0) {
       const photosData = [];
       for (const [index, foto] of fotos.entries()) {
-        const buffer = Buffer.from(await foto.arrayBuffer());
-        const { full, thumb } = await processVehiclePhoto(buffer);
+        const fullBuffer = Buffer.from(await foto.arrayBuffer());
+        const thumbFile = formData.get(`fotosThumb_${index}`) as File | null;
+        const thumbBuffer = thumbFile
+          ? Buffer.from(await thumbFile.arrayBuffer())
+          : fullBuffer;
         photosData.push({
           id: randomUUID(),
           stockId: vehicle.id,
           nombreArchivo: foto.name,
           mimeType: "image/webp",
-          datos: full,
-          datosThumb: thumb,
+          datos: fullBuffer,
+          datosThumb: thumbBuffer,
           orden: fotoReorden.length + index,
           creadoEn: now,
         });

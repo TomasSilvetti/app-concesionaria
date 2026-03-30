@@ -439,23 +439,62 @@ export function CreateOperationForm({
     }
   };
 
+  const compressImage = (file: File, maxPx: number, quality: number): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("No se pudo comprimir la imagen"));
+          },
+          "image/webp",
+          quality
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("No se pudo cargar la imagen"));
+      };
+      img.src = url;
+    });
+  };
+
   const handleTradeInPhotoSelect = async (files: FileList | null) => {
     if (!files) return;
-    const validFiles: File[] = [];
-
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) continue;
-      validFiles.push(file);
-    }
-
     setTradeInPhotoErrors([]);
 
-    const newPhotos = validFiles.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    setTradeInPhotos((prev) => [...prev, ...newPhotos]);
+    const validFiles = Array.from(files).filter(
+      (f) => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024
+    );
+
+    const compressed = await Promise.all(
+      validFiles.map(async (file) => {
+        const [full, thumb] = await Promise.all([
+          compressImage(file, 1280, 0.85),
+          compressImage(file, 400, 0.85),
+        ]);
+        return { full, thumb };
+      })
+    );
+
+    setTradeInPhotos((prev) => [
+      ...prev,
+      ...compressed.map(({ full, thumb }) => ({
+        id: crypto.randomUUID(),
+        file: full,
+        thumbBlob: thumb,
+        preview: URL.createObjectURL(full),
+      })),
+    ]);
   };
 
   const handleTradeInRemovePhoto = (id: string) => {
@@ -567,14 +606,16 @@ export function CreateOperationForm({
         formData.append("vehiculosUsados", JSON.stringify(vehiculosData));
 
         tradeInVehicles.forEach((vehicle, index) => {
-          vehicle.photos.forEach((photo) => {
+          vehicle.photos.forEach((photo, photoIndex) => {
             formData.append(`vehiculosUsadoFotos_${index}`, photo.file);
+            formData.append(`vehiculosUsadoFotosThumb_${index}_${photoIndex}`, photo.thumbBlob);
           });
         });
       }
 
-      photos.forEach((photo) => {
+      photos.forEach((photo, index) => {
         formData.append("fotos", photo.file);
+        formData.append(`fotosThumb_${index}`, photo.thumbBlob);
       });
 
       if (hayInversion && inversionParticipantes.length > 0) {

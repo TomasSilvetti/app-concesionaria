@@ -226,6 +226,7 @@ export function EditVehicleForm({
 
       photos.forEach((photo, index) => {
         formData.append("fotos", photo.file);
+        formData.append(`fotosThumb_${index}`, photo.thumbBlob);
         formData.append(`foto_orden_${index}`, index.toString());
       });
 

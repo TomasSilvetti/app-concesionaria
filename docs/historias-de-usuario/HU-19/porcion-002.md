@@ -4,7 +4,8 @@
 **Par:** —
 **Tipo:** FRONT + BACK
 **Prerequisitos:** porcion-001
-**Estado:** ⬜ Pendiente
+**Estado:** ✅ Completada
+**Completada el:** 2026-03-30
 
 ## Descripción
 

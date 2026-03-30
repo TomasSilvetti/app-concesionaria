@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
-import { processVehiclePhoto } from "@/lib/imageProcessor";
 import { Prisma } from "@prisma/client";
 
 const ALLOWED_ORDER_BY_FIELDS = [
@@ -397,25 +396,21 @@ export async function POST(req: NextRequest) {
     if (fotos.length > 0) {
       const photosData = [];
       for (const [index, foto] of fotos.entries()) {
-        const buffer = Buffer.from(await foto.arrayBuffer());
-        try {
-          const { full, thumb } = await processVehiclePhoto(buffer);
-          photosData.push({
-            id: randomUUID(),
-            stockId: vehicle.id,
-            nombreArchivo: foto.name,
-            mimeType: "image/webp",
-            datos: full,
-            datosThumb: thumb,
-            orden: index,
-            creadoEn: now,
-          });
-        } catch {
-          return NextResponse.json(
-            { message: `No se pudo procesar la foto "${foto.name}". Verificá que sea un archivo de imagen válido (JPG, PNG, WEBP).` },
-            { status: 400 }
-          );
-        }
+        const fullBuffer = Buffer.from(await foto.arrayBuffer());
+        const thumbFile = formData.get(`fotosThumb_${index}`) as File | null;
+        const thumbBuffer = thumbFile
+          ? Buffer.from(await thumbFile.arrayBuffer())
+          : fullBuffer; // fallback: usar full si no hay thumb
+        photosData.push({
+          id: randomUUID(),
+          stockId: vehicle.id,
+          nombreArchivo: foto.name,
+          mimeType: "image/webp",
+          datos: fullBuffer,
+          datosThumb: thumbBuffer,
+          orden: index,
+          creadoEn: now,
+        });
       }
 
       await prisma.vehiclePhoto.createMany({

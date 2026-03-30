@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { isValidOperationTypeName } from "@/lib/operation-types";
 import { calcularIngresosNetos, calcularComision } from "@/lib/calculations";
-import { processVehiclePhoto } from "@/lib/imageProcessor";
 
 const ALLOWED_SORT_FIELDS = [
   "fechaInicio",
@@ -550,15 +549,18 @@ export async function POST(req: NextRequest) {
     const fotosVendidoProcesadas: ProcessedPhoto[] = [];
     if (!stockVehicleId && fotos.length > 0) {
       for (const [index, foto] of fotos.entries()) {
-        const buffer = Buffer.from(await foto.arrayBuffer());
-        const { full, thumb } = await processVehiclePhoto(buffer);
+        const fullBuffer = Buffer.from(await foto.arrayBuffer());
+        const thumbFile = formData.get(`fotosThumb_${index}`) as File | null;
+        const thumbBuffer = thumbFile
+          ? Buffer.from(await thumbFile.arrayBuffer())
+          : fullBuffer;
         fotosVendidoProcesadas.push({
           id: randomUUID(),
           stockId: vehicleId,
           nombreArchivo: foto.name,
           mimeType: "image/webp",
-          datos: full,
-          datosThumb: thumb,
+          datos: fullBuffer,
+          datosThumb: thumbBuffer,
           orden: index,
           creadoEn: now,
         });
@@ -570,17 +572,20 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < vehiculosUsados.length; i++) {
       const vuFotos = formData.getAll(`vehiculosUsadoFotos_${i}`) as File[];
       const processed: ProcessedPhoto[] = [];
-      for (const [index, foto] of vuFotos.entries()) {
-        const buffer = Buffer.from(await foto.arrayBuffer());
-        const { full, thumb } = await processVehiclePhoto(buffer);
+      for (const [photoIndex, foto] of vuFotos.entries()) {
+        const fullBuffer = Buffer.from(await foto.arrayBuffer());
+        const thumbFile = formData.get(`vehiculosUsadoFotosThumb_${i}_${photoIndex}`) as File | null;
+        const thumbBuffer = thumbFile
+          ? Buffer.from(await thumbFile.arrayBuffer())
+          : fullBuffer;
         processed.push({
           id: randomUUID(),
           stockId: "", // se asigna dentro de la transacción al conocer el id del vehículo
           nombreArchivo: foto.name,
           mimeType: "image/webp",
-          datos: full,
-          datosThumb: thumb,
-          orden: index,
+          datos: fullBuffer,
+          datosThumb: thumbBuffer,
+          orden: photoIndex,
           creadoEn: now,
         });
       }
