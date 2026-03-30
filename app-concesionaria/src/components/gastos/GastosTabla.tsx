@@ -113,6 +113,8 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   const [formMonto, setFormMonto] = useState("");
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Origins y categories
   const [origins, setOrigins] = useState<OpcionSelector[]>([]);
@@ -317,6 +319,18 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
       setFormError("Error al crear categoría");
     } finally {
       setCreatingCat(false);
+    }
+  };
+
+  const handleEliminarGasto = async (gastoId: string) => {
+    setConfirmDeleteId(null);
+    setDeletingId(gastoId);
+    try {
+      const res = await fetch(`/api/gastos/${gastoId}`, { method: "DELETE" });
+      if (!res.ok) return;
+      setGastos((prev) => prev.filter((g) => g.id !== gastoId));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -588,6 +602,7 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                               <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
                                 Fecha
                               </td>
+                              <td className="w-10" />
                             </tr>
                             {gastosVisibles.map((gasto) => {
                               const colorQuien = getQuienPagoColor(gasto.quienPago);
@@ -616,6 +631,43 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                                   </td>
                                   <td className="px-5 py-3 text-sm text-zinc-500">
                                     {formatFecha(gasto.fecha)}
+                                  </td>
+                                  <td className="px-2 py-3">
+                                    {gasto.operacionId === null && (
+                                      confirmDeleteId === gasto.id ? (
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleEliminarGasto(gasto.id)}
+                                            disabled={deletingId === gasto.id}
+                                            aria-label="Confirmar eliminación"
+                                            className="flex h-7 items-center rounded-lg bg-red-50 px-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+                                          >
+                                            Sí
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setConfirmDeleteId(null)}
+                                            aria-label="Cancelar eliminación"
+                                            className="flex h-7 items-center rounded-lg bg-zinc-100 px-2 text-xs font-semibold text-zinc-500 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-1"
+                                          >
+                                            No
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => setConfirmDeleteId(gasto.id)}
+                                          disabled={deletingId === gasto.id}
+                                          aria-label="Eliminar gasto"
+                                          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+                                        >
+                                          <span className="material-symbols-outlined text-base" aria-hidden="true">
+                                            {deletingId === gasto.id ? "hourglass_empty" : "delete"}
+                                          </span>
+                                        </button>
+                                      )
+                                    )}
                                   </td>
                                 </tr>
                               );
