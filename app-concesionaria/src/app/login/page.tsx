@@ -3,7 +3,6 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import "material-symbols/outlined.css";
 
 function LoginForm() {
   const router = useRouter();

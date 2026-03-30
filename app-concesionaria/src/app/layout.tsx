@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "material-symbols/outlined.css";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import PreventNumberInputScroll from "@/components/providers/PreventNumberInputScroll";
@@ -27,6 +28,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/material-symbols-outlined.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning={true}
