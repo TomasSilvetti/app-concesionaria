@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
-import { processVehiclePhoto, ImageTooSmallError } from "@/lib/imageProcessor";
+import { processVehiclePhoto } from "@/lib/imageProcessor";
+import { Prisma } from "@prisma/client";
 
 const ALLOWED_ORDER_BY_FIELDS = [
   "marca",
@@ -409,14 +410,11 @@ export async function POST(req: NextRequest) {
             orden: index,
             creadoEn: now,
           });
-        } catch (error) {
-          if (error instanceof ImageTooSmallError) {
-            return NextResponse.json(
-              { message: `La foto "${foto.name}" no cumple el mínimo de 800px en su lado más largo.` },
-              { status: 400 }
-            );
-          }
-          throw error;
+        } catch {
+          return NextResponse.json(
+            { message: `No se pudo procesar la foto "${foto.name}". Verificá que sea un archivo de imagen válido (JPG, PNG, WEBP).` },
+            { status: 400 }
+          );
         }
       }
 
@@ -460,8 +458,31 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.error("Error al crear vehículo:", error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        const fields = (error.meta?.target as string[]) ?? [];
+        if (fields.includes("patente")) {
+          return NextResponse.json(
+            { message: "Ya existe un vehículo con esa patente." },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json(
+          { message: `Ya existe un registro con el mismo valor en: ${fields.join(", ")}.` },
+          { status: 409 }
+        );
+      }
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { message: "La marca o categoría seleccionada no es válida." },
+          { status: 400 }
+        );
+      }
+    }
+
     return NextResponse.json(
-      { message: "Error al crear vehículo" },
+      { message: "Error interno del servidor. Intentá nuevamente." },
       { status: 500 }
     );
   }

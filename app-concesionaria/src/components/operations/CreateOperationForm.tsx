@@ -66,21 +66,6 @@ interface CreateOperationFormProps {
   onCancel?: () => void;
 }
 
-async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new window.Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("No se pudo leer la imagen"));
-    };
-    img.src = url;
-  });
-}
 
 export function CreateOperationForm({
   onSuccess,
@@ -456,26 +441,14 @@ export function CreateOperationForm({
 
   const handleTradeInPhotoSelect = async (files: FileList | null) => {
     if (!files) return;
-    const rejected: string[] = [];
     const validFiles: File[] = [];
 
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) continue;
-      try {
-        const { width, height } = await getImageDimensions(file);
-        if (Math.max(width, height) < 800) {
-          rejected.push(file.name);
-        } else {
-          validFiles.push(file);
-        }
-      } catch {
-        rejected.push(file.name);
-      }
+      validFiles.push(file);
     }
 
-    setTradeInPhotoErrors(
-      rejected.map((name) => `"${name}" no cumple el mínimo de 800px en su lado más largo.`)
-    );
+    setTradeInPhotoErrors([]);
 
     const newPhotos = validFiles.map((file) => ({
       id: crypto.randomUUID(),
