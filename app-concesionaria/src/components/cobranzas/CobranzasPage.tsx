@@ -43,7 +43,7 @@ export function CobranzasPage() {
   const [operaciones, setOperaciones] = useState<OperacionCobranza[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mostrarTodas, setMostrarTodas] = useState(false);
+  const [mostrarTodas, setMostrarTodas] = useState(true);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const router = useRouter();
 

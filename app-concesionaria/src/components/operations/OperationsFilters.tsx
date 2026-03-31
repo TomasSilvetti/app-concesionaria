@@ -26,7 +26,7 @@ export function OperationsFilters({
   onApplyFilters,
   onClearFilters,
 }: OperationsFiltersProps) {
-  const [estado, setEstado] = useState<string>("abierta");
+  const [estado, setEstado] = useState<string>("");
   const [fechaDesde, setFechaDesde] = useState<string>("");
   const [fechaHasta, setFechaHasta] = useState<string>("");
   const [marcaId, setMarcaId] = useState<string>("");
