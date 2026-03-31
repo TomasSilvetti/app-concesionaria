@@ -18,15 +18,21 @@ interface InversionSubformProps {
   onToggle: (value: boolean) => void;
   participantes: InversionParticipante[];
   onParticipantesChange: (participantes: InversionParticipante[]) => void;
+  onValidationChange?: (hasError: boolean) => void;
   disabled?: boolean;
   variant?: "card" | "inline";
+  precioToma?: string | number;
 }
 
-function calcularPorcentajes(participantes: InversionParticipante[]): number[] {
-  const montos = participantes.map((p) => parseFloat(p.montoAporte) || 0);
-  const total = montos.reduce((acc, m) => acc + m, 0);
-  if (total === 0) return participantes.map(() => 0);
-  return montos.map((m) => (m / total) * 100);
+function calcularPorcentajesSobreToma(
+  participantes: InversionParticipante[],
+  precioToma: number
+): number[] {
+  if (precioToma <= 0) return participantes.map(() => 0);
+  return participantes.map((p) => {
+    const monto = parseFloat(p.montoAporte) || 0;
+    return (monto / precioToma) * 100;
+  });
 }
 
 interface InversorOption {
@@ -39,8 +45,10 @@ export function InversionSubform({
   onToggle,
   participantes,
   onParticipantesChange,
+  onValidationChange,
   disabled = false,
   variant = "card",
+  precioToma,
 }: InversionSubformProps) {
   const [showAddInversor, setShowAddInversor] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,11 +59,14 @@ export function InversionSubform({
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const porcentajes = calcularPorcentajes(participantes);
-  const totalMontos = participantes.reduce(
-    (acc, p) => acc + (parseFloat(p.montoAporte) || 0),
-    0
-  );
+  const precioTomaNum = parseFloat(String(precioToma ?? "")) || 0;
+  const porcentajes = calcularPorcentajesSobreToma(participantes, precioTomaNum);
+  const totalParticipacion = porcentajes.reduce((sum, p) => sum + p, 0);
+  const participacionExcede = hayInversion && precioTomaNum > 0 && totalParticipacion > 100;
+
+  useEffect(() => {
+    onValidationChange?.(participacionExcede);
+  }, [participacionExcede, onValidationChange]);
 
   // Cerrar dropdown al hacer click afuera
   useEffect(() => {
@@ -96,8 +107,10 @@ export function InversionSubform({
     return () => clearTimeout(timer);
   }, [searchQuery, showAddInversor]);
 
+  const toggleBloqueado = !hayInversion && precioTomaNum <= 0;
+
   const handleToggle = () => {
-    if (disabled) return;
+    if (disabled || toggleBloqueado) return;
     if (!hayInversion) {
       onParticipantesChange([
         {
@@ -183,7 +196,7 @@ export function InversionSubform({
   };
 
   const formatPorcentaje = (idx: number): string => {
-    if (totalMontos === 0) return "—";
+    if (precioTomaNum === 0) return "—";
     return `${porcentajes[idx].toFixed(2).replace(".", ",")}%`;
   };
 
@@ -217,7 +230,9 @@ export function InversionSubform({
             ¿Hay inversión en esta operación?
           </p>
           <p className="text-xs text-zinc-500 mt-0.5">
-            {hayInversion
+            {toggleBloqueado
+              ? "Ingresá el precio de toma antes de registrar inversores"
+              : hayInversion
               ? "Completá los aportes de cada participante"
               : "Activá para registrar inversores y sus participaciones"}
           </p>
@@ -225,7 +240,7 @@ export function InversionSubform({
         <button
           type="button"
           onClick={handleToggle}
-          disabled={disabled}
+          disabled={disabled || toggleBloqueado}
           role="switch"
           aria-checked={hayInversion}
           aria-label="Activar inversión en esta operación"
@@ -244,131 +259,126 @@ export function InversionSubform({
       {/* Subform */}
       {hayInversion && (
         <div className="mt-5 flex flex-col gap-3">
-          {/* Column headers — visible en sm+ */}
-          <div className="hidden sm:grid sm:grid-cols-[1fr_160px_110px_160px_48px] sm:gap-3 sm:px-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              Participante
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              Monto de aporte
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              Participación
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              % Utilidad (opc.)
-            </span>
-            <span />
-          </div>
-
-          {/* Participant rows */}
+          {/* Participant rows — 2 renglones por participante */}
           {participantes.map((p, idx) => (
             <div
               key={p.localId}
-              className={`rounded-lg border bg-zinc-50 p-4 sm:grid sm:grid-cols-[1fr_160px_110px_160px_48px] sm:items-center sm:gap-3 sm:rounded-lg sm:p-2 sm:pl-3 ${
+              className={`rounded-lg border p-3 ${
                 p.esConcecionaria
                   ? "border-blue-200 bg-blue-50/40"
-                  : "border-zinc-200"
+                  : "border-zinc-200 bg-zinc-50"
               }`}
             >
-              {/* Nombre */}
-              <div className="mb-3 flex items-center gap-2 sm:mb-0 sm:min-w-0">
-                <span className="material-symbols-outlined shrink-0 text-lg text-zinc-400">
-                  {p.esConcecionaria ? "store" : "person"}
-                </span>
-                <span className="truncate text-sm font-medium text-zinc-900">
-                  {p.nombre}
-                </span>
-                {p.esConcecionaria && (
-                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                    Concesionaria
+              {/* Fila 1: Nombre + botón quitar */}
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="material-symbols-outlined shrink-0 text-lg text-zinc-400">
+                    {p.esConcecionaria ? "store" : "person"}
                   </span>
-                )}
-              </div>
-
-              {/* Monto de aporte */}
-              <div className="mb-3 flex flex-col gap-1 sm:mb-0">
-                <span className="text-xs text-zinc-500 sm:hidden">
-                  Monto de aporte
-                </span>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-base text-zinc-400">
-                    attach_money
+                  <span className="truncate text-sm font-semibold text-zinc-900">
+                    {p.nombre}
                   </span>
-                  <NumericInput
-                    value={p.montoAporte}
-                    onChange={(v) => handleMontoChange(p.localId, v)}
-                    placeholder="0"
-                    disabled={disabled}
-                    aria-label={`Monto de aporte de ${p.nombre}`}
-                    className="h-10 w-full rounded-lg border border-zinc-300 bg-white pl-8 pr-3 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-purple-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:bg-zinc-100 disabled:opacity-60"
-                  />
+                  {p.esConcecionaria && (
+                    <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      Concesionaria
+                    </span>
+                  )}
                 </div>
-              </div>
-
-              {/* % Participación (read-only) */}
-              <div className="mb-3 flex flex-col gap-1 sm:mb-0">
-                <span className="text-xs text-zinc-500 sm:hidden">
-                  Participación
-                </span>
-                <div
-                  className={`flex h-10 items-center justify-center rounded-lg border px-2 text-sm font-semibold ${
-                    totalMontos > 0
-                      ? "border-purple-200 bg-purple-50 text-purple-700"
-                      : "border-zinc-200 bg-zinc-100 text-zinc-400"
-                  }`}
-                  aria-label={`Porcentaje de participación de ${p.nombre}`}
-                >
-                  {formatPorcentaje(idx)}
-                </div>
-              </div>
-
-              {/* % Utilidad (opcional) */}
-              <div className="mb-3 flex flex-col gap-1 sm:mb-0">
-                <span className="text-xs text-zinc-500 sm:hidden">
-                  % Utilidad (opc.)
-                </span>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={p.porcentajeUtilidad}
-                    onChange={(e) =>
-                      handleUtilidadChange(p.localId, e.target.value)
-                    }
-                    placeholder="—"
-                    disabled={disabled}
-                    aria-label={`Porcentaje de utilidad de ${p.nombre}`}
-                    className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 pr-7 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-purple-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:bg-zinc-100 disabled:opacity-60"
-                  />
-                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400">
-                    %
-                  </span>
-                </div>
-              </div>
-
-              {/* Botón quitar */}
-              <div className="flex justify-end sm:justify-center">
                 {!p.esConcecionaria ? (
                   <button
                     type="button"
                     onClick={() => handleRemove(p.localId)}
                     disabled={disabled}
                     aria-label={`Quitar a ${p.nombre}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 disabled:opacity-50"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1 disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-lg">
                       person_remove
                     </span>
                   </button>
                 ) : (
-                  <div className="h-9 w-9" aria-hidden="true" />
+                  <div className="h-8 w-8 shrink-0" aria-hidden="true" />
                 )}
+              </div>
+
+              {/* Fila 2: Monto | Participación | % Utilidad */}
+              <div className="grid grid-cols-3 gap-2">
+                {/* Monto de aporte */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    Monto aporte
+                  </span>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-base text-zinc-400">
+                      attach_money
+                    </span>
+                    <NumericInput
+                      value={p.montoAporte}
+                      onChange={(v) => handleMontoChange(p.localId, v)}
+                      placeholder="0"
+                      disabled={disabled}
+                      aria-label={`Monto de aporte de ${p.nombre}`}
+                      className="h-10 w-full rounded-lg border border-zinc-300 bg-white pl-7 pr-2 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-purple-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:bg-zinc-100 disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                {/* % Participación (read-only) */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    Participación
+                  </span>
+                  <div
+                    className={`flex h-10 items-center justify-center rounded-lg border text-sm font-semibold ${
+                      precioTomaNum > 0
+                        ? "border-purple-200 bg-purple-50 text-purple-700"
+                        : "border-zinc-200 bg-zinc-100 text-zinc-400"
+                    }`}
+                    aria-label={`Porcentaje de participación de ${p.nombre}`}
+                  >
+                    {formatPorcentaje(idx)}
+                  </div>
+                </div>
+
+                {/* % Utilidad (opcional) */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    % Utilidad (opc.)
+                  </span>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={p.porcentajeUtilidad}
+                      onChange={(e) =>
+                        handleUtilidadChange(p.localId, e.target.value)
+                      }
+                      placeholder="—"
+                      disabled={disabled}
+                      aria-label={`Porcentaje de utilidad de ${p.nombre}`}
+                      className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 pr-7 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-purple-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:bg-zinc-100 disabled:opacity-60"
+                    />
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400">
+                      %
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
+
+          {/* Error participación total */}
+          {participacionExcede && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <span className="material-symbols-outlined text-base shrink-0">error</span>
+              <span>
+                La participación total es{" "}
+                <strong>{totalParticipacion.toFixed(2).replace(".", ",")}%</strong> y no puede superar el 100%. Ajustá los montos de aporte.
+              </span>
+            </div>
+          )}
 
           {/* Buscador de inversores */}
           {!disabled && (

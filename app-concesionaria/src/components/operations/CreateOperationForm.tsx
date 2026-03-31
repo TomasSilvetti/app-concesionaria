@@ -151,6 +151,7 @@ export function CreateOperationForm({
   // Inversión
   const [hayInversion, setHayInversion] = useState(false);
   const [inversionParticipantes, setInversionParticipantes] = useState<InversionParticipante[]>([]);
+  const [inversionExcede, setInversionExcede] = useState(false);
 
   // UI states
   const [error, setError] = useState<string | null>(null);
@@ -548,6 +549,10 @@ export function CreateOperationForm({
       errors.precioToma = "El precio de toma es requerido";
     } else if (parseFloat(precioToma) <= 0) {
       errors.precioToma = "El precio debe ser mayor a 0";
+    }
+
+    if (hayInversion && inversionExcede) {
+      errors.inversion = "La participación total de inversores supera el 100%";
     }
 
     setFieldErrors(errors);
@@ -990,7 +995,9 @@ export function CreateOperationForm({
             onToggle={setHayInversion}
             participantes={inversionParticipantes}
             onParticipantesChange={setInversionParticipantes}
+            onValidationChange={setInversionExcede}
             disabled={isSubmitting}
+            precioToma={precioToma}
           />
         }
       />

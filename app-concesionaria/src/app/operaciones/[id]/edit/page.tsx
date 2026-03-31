@@ -173,6 +173,7 @@ export default function OperacionEditPage() {
   // Inversión
   const [hayInversion, setHayInversion] = useState(false);
   const [inversionParticipantes, setInversionParticipantes] = useState<InversionParticipante[]>([]);
+  const [inversionExcede, setInversionExcede] = useState(false);
 
   // Validation errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -472,6 +473,10 @@ export default function OperacionEditPage() {
       errors.ingresosBrutos = "El ingreso bruto es requerido";
     } else if (parseFloat(ingresosBrutos) <= 0) {
       errors.ingresosBrutos = "El ingreso debe ser mayor a 0";
+    }
+
+    if (hayInversion && inversionExcede) {
+      errors.inversion = "La participación total de inversores supera el 100%";
     }
 
     setFieldErrors(errors);
@@ -1259,7 +1264,9 @@ export default function OperacionEditPage() {
               onToggle={setHayInversion}
               participantes={inversionParticipantes}
               onParticipantesChange={setInversionParticipantes}
+              onValidationChange={setInversionExcede}
               disabled={isCerrada || isSaving}
+              precioToma={precioToma}
             />
           </div>
 
