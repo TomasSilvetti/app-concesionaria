@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import "material-symbols/outlined.css";
 import { NumericInput } from "@/components/ui/NumericInput";
 import {
@@ -71,6 +72,8 @@ export function CreateOperationForm({
   onSuccess,
   onCancel,
 }: CreateOperationFormProps) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.rol === "admin";
   // Operation-specific fields
   const [tipoOperacion, setTipoOperacion] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -777,15 +780,17 @@ export function CreateOperationForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {/* Botón de autocompletado - TEMPORAL PARA TESTING */}
-      <button
-        type="button"
-        onClick={handleAutofill}
-        className="flex h-10 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 text-xs font-semibold text-purple-700 transition-all hover:border-purple-400 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-        disabled={isSubmitting}
-      >
-        <span className="material-symbols-outlined text-lg">auto_fix_high</span>
-        <span>AUTOCOMPLETAR (temporal para testing)</span>
-      </button>
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={handleAutofill}
+          className="flex h-10 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 text-xs font-semibold text-purple-700 transition-all hover:border-purple-400 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          disabled={isSubmitting}
+        >
+          <span className="material-symbols-outlined text-lg">auto_fix_high</span>
+          <span>AUTOCOMPLETAR (temporal para testing)</span>
+        </button>
+      )}
 
       {/* Mensajes globales */}
       {successMessage && (

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import "material-symbols/outlined.css";
 import {
   VehicleFieldsForm,
@@ -28,6 +29,8 @@ export function CreateVehicleForm({
   onSuccess,
   onCancel,
 }: CreateVehicleFormProps) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.rol === "admin";
   const [marcaId, setMarcaId] = useState("");
   const [modelo, setModelo] = useState("");
   const [anio, setAnio] = useState("");
@@ -300,15 +303,17 @@ export function CreateVehicleForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {/* Botón de autocompletado - TEMPORAL PARA TESTING */}
-      <button
-        type="button"
-        onClick={handleAutofill}
-        className="flex h-10 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 text-xs font-semibold text-purple-700 transition-all hover:border-purple-400 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-        disabled={isSubmitting}
-      >
-        <span className="material-symbols-outlined text-lg">auto_fix_high</span>
-        <span>AUTOCOMPLETAR (temporal para testing)</span>
-      </button>
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={handleAutofill}
+          className="flex h-10 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 text-xs font-semibold text-purple-700 transition-all hover:border-purple-400 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          disabled={isSubmitting}
+        >
+          <span className="material-symbols-outlined text-lg">auto_fix_high</span>
+          <span>AUTOCOMPLETAR (temporal para testing)</span>
+        </button>
+      )}
 
       {successMessage && (
         <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
