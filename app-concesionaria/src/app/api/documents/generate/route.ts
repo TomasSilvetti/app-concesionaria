@@ -24,7 +24,7 @@ function resolveAutoPath(obj: Record<string, unknown>, path: string): string | n
 
 async function loadOperacionContext(contextId: string, clienteId: string) {
   return prisma.operation.findFirst({
-    where: { id: contextId, clienteId },
+    where: { idOperacion: contextId, clienteId },
     include: {
       Client: true,
       VehiculoVendido: {
@@ -105,54 +105,52 @@ export async function POST(req: NextRequest) {
     if (contextType === "operacion") {
       const op = await loadOperacionContext(contextId, clienteId);
       if (op) {
-        // Mapear a un objeto plano para la resolución de rutas auto
         entityObj = {
-          id: op.id,
-          idOperacion: op.idOperacion,
-          fechaInicio: op.fechaInicio?.toISOString().split("T")[0] ?? null,
-          fechaVenta: op.fechaVenta?.toISOString().split("T")[0] ?? null,
-          precioVentaTotal: op.precioVentaTotal,
-          ingresosBrutos: op.ingresosBrutos,
-          comision: op.comision,
-          gastosAsociados: op.gastosAsociados,
-          ingresosNetos: op.ingresosNetos,
-          estado: op.estado,
-          tipoOperacion: op.tipoOperacion,
-          nombreComprador: op.nombreComprador,
-          precioToma: op.precioToma,
-          cliente: op.Client
-            ? { id: op.Client.id, nombre: op.Client.nombre }
-            : null,
-          vehiculo: op.VehiculoVendido
-            ? {
-                id: op.VehiculoVendido.id,
-                modelo: op.VehiculoVendido.modelo,
-                version: op.VehiculoVendido.version,
-                color: op.VehiculoVendido.color,
-                anio: op.VehiculoVendido.anio,
-                patente: op.VehiculoVendido.patente,
-                kilometros: op.VehiculoVendido.kilometros,
-                marca: op.VehiculoVendido.VehicleBrand?.nombre ?? null,
-                categoria: op.VehiculoVendido.VehicleCategory?.nombre ?? null,
-              }
-            : null,
-          marca: op.VehicleBrand?.nombre ?? null,
-          categoria: op.VehicleCategory?.nombre ?? null,
+          operacion: {
+            id: op.id,
+            idOperacion: op.idOperacion,
+            fechaInicio: op.fechaInicio?.toISOString().split("T")[0] ?? null,
+            fechaVenta: op.fechaVenta?.toISOString().split("T")[0] ?? null,
+            precioVentaTotal: op.precioVentaTotal,
+            ingresosBrutos: op.ingresosBrutos,
+            comision: op.comision,
+            gastosAsociados: op.gastosAsociados,
+            ingresosNetos: op.ingresosNetos,
+            estado: op.estado,
+            tipoOperacion: op.tipoOperacion,
+            nombreComprador: op.nombreComprador,
+            precioToma: op.precioToma,
+            vehiculo: op.VehiculoVendido
+              ? {
+                  id: op.VehiculoVendido.id,
+                  modelo: op.VehiculoVendido.modelo,
+                  version: op.VehiculoVendido.version,
+                  color: op.VehiculoVendido.color,
+                  anio: op.VehiculoVendido.anio,
+                  patente: op.VehiculoVendido.patente,
+                  kilometros: op.VehiculoVendido.kilometros,
+                }
+              : null,
+            marca: op.VehicleBrand ? { nombre: op.VehicleBrand.nombre } : null,
+            categoria: op.VehicleCategory ? { nombre: op.VehicleCategory.nombre } : null,
+          },
         } as Record<string, unknown>;
       }
     } else {
       const vehiculo = await loadVehiculoContext(contextId, clienteId);
       if (vehiculo) {
         entityObj = {
-          id: vehiculo.id,
-          modelo: vehiculo.modelo,
-          version: vehiculo.version,
-          color: vehiculo.color,
-          anio: vehiculo.anio,
-          patente: vehiculo.patente,
-          kilometros: vehiculo.kilometros,
-          marca: vehiculo.VehicleBrand?.nombre ?? null,
-          categoria: vehiculo.VehicleCategory?.nombre ?? null,
+          vehiculo: {
+            id: vehiculo.id,
+            modelo: vehiculo.modelo,
+            version: vehiculo.version,
+            color: vehiculo.color,
+            anio: vehiculo.anio,
+            patente: vehiculo.patente,
+            kilometros: vehiculo.kilometros,
+            marca: vehiculo.VehicleBrand ? { nombre: vehiculo.VehicleBrand.nombre } : null,
+            categoria: vehiculo.VehicleCategory ? { nombre: vehiculo.VehicleCategory.nombre } : null,
+          },
         } as Record<string, unknown>;
       }
     }

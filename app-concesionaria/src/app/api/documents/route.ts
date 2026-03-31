@@ -45,11 +45,12 @@ export async function GET(req: NextRequest) {
         nombreArchivo: true,
         creadoEn: true,
         actualizadoEn: true,
+        templateId: true,
       },
       orderBy: { creadoEn: "desc" },
     });
 
-    return NextResponse.json(documents, { status: 200 });
+    return NextResponse.json({ documents }, { status: 200 });
   } catch (error) {
     console.error("Error al listar documentos generados:", error);
     return NextResponse.json(
