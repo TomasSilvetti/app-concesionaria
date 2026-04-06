@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { NumericInput } from "@/components/ui/NumericInput";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
@@ -410,220 +410,185 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
         </div>
       ) : (
         <>
-          {/* Tabla */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-zinc-100 bg-zinc-50">
-                  <th className="w-10 px-4 py-3" />
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    ID Operación
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Vehículo
-                  </th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Total gastado
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Último gasto
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="border-b border-zinc-100" aria-hidden="true">
-                      {Array.from({ length: 5 }).map((_, j) => (
-                        <td key={j} className="px-5 py-4">
-                          <div className="h-4 animate-pulse rounded bg-zinc-200" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : gruposPagina.length === 0 ? (
-                  <tr>
-                    <td colSpan={5}>
-                      <div
-                        className="flex flex-col items-center justify-center gap-2 py-14 text-zinc-400"
-                        role="status"
-                        aria-label="Sin gastos para los filtros aplicados"
+          {/* Cards */}
+          <div className="flex flex-col gap-3 p-4">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-zinc-200 bg-white p-4" aria-hidden="true">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-14 animate-pulse rounded-md bg-zinc-200 flex-shrink-0" />
+                    <div className="flex flex-1 flex-col gap-2">
+                      <div className="h-4 w-24 animate-pulse rounded bg-zinc-200" />
+                      <div className="h-3 w-32 animate-pulse rounded bg-zinc-200" />
+                    </div>
+                    <div className="h-5 w-20 animate-pulse rounded bg-zinc-200" />
+                  </div>
+                </div>
+              ))
+            ) : gruposPagina.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center gap-2 py-14 text-zinc-400"
+                role="status"
+                aria-label="Sin gastos para los filtros aplicados"
+              >
+                <span className="material-symbols-outlined text-4xl">
+                  receipt_long
+                </span>
+                <p className="text-sm">
+                  {filtroQuienPago
+                    ? "No hay gastos para los filtros aplicados"
+                    : "No hay gastos en este período"}
+                </p>
+              </div>
+            ) : (
+              gruposPagina.map((grupo) => {
+                const key = grupo.operacionId ?? "__sin_operacion__";
+                const isExpanded = expanded.has(key);
+                const gastosVisibles = filtroQuienPago
+                  ? grupo.gastos.filter((g) => g.quienPago === filtroQuienPago)
+                  : grupo.gastos;
+
+                return (
+                  <div
+                    key={key}
+                    className="rounded-xl border border-zinc-200 bg-white shadow-sm"
+                  >
+                    {/* Cabecera card */}
+                    <button
+                      onClick={() => toggleExpand(key)}
+                      className="flex w-full items-center gap-3 p-4 text-left"
+                      aria-expanded={isExpanded}
+                      aria-label={`Expandir grupo ${grupo.operacionId ?? "sin operación"}`}
+                    >
+                      <span
+                        className={`material-symbols-outlined text-xl text-zinc-400 transition-transform duration-200 flex-shrink-0 ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
                       >
-                        <span className="material-symbols-outlined text-4xl">
-                          receipt_long
+                        expand_more
+                      </span>
+
+                      {/* Thumbnail */}
+                      {grupo.vehiculoFotoId ? (
+                        <img
+                          src={`/api/photos/${grupo.vehiculoFotoId}`}
+                          alt="Miniatura del vehículo"
+                          className="h-10 w-14 rounded-md object-cover border border-zinc-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-14 flex-shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100">
+                          <span className="material-symbols-outlined text-base text-zinc-300">
+                            directions_car
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Info */}
+                      <div className="flex flex-1 flex-col gap-1 min-w-0">
+                        {grupo.operacionId != null ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/operaciones/${grupo.operacionId}`);
+                            }}
+                            className="w-fit text-base font-semibold text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                          >
+                            #OP-{grupo.operacionId}
+                          </button>
+                        ) : (
+                          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+                            <span className="material-symbols-outlined text-xs" aria-hidden="true">link_off</span>
+                            Sin operación
+                          </span>
+                        )}
+                        <span className="text-xs text-zinc-400">
+                          Último gasto: {formatFecha(grupo.fechaUltimoGasto)}
                         </span>
-                        <p className="text-sm">
-                          {filtroQuienPago
-                            ? "No hay gastos para los filtros aplicados"
-                            : "No hay gastos en este período"}
-                        </p>
                       </div>
-                    </td>
-                  </tr>
-                ) : (
-                  gruposPagina.map((grupo) => {
-                    const key = grupo.operacionId ?? "__sin_operacion__";
-                    const isExpanded = expanded.has(key);
-                    const gastosVisibles = filtroQuienPago
-                      ? grupo.gastos.filter((g) => g.quienPago === filtroQuienPago)
-                      : grupo.gastos;
 
-                    return (
-                      <React.Fragment key={key}>
-                        {/* Fila padre */}
-                        <tr
-                          className={`cursor-pointer border-b border-zinc-100 transition-colors hover:bg-zinc-50 ${
-                            isExpanded ? "bg-blue-50/40" : ""
-                          }`}
-                          onClick={() => toggleExpand(key)}
-                        >
-                          <td className="px-4 py-4 text-center">
-                            <span
-                              className={`material-symbols-outlined text-lg text-zinc-400 transition-transform duration-200 ${
-                                isExpanded ? "rotate-180" : ""
-                              }`}
-                            >
-                              expand_more
-                            </span>
-                          </td>
-                          <td className="px-5 py-4">
-                            {grupo.operacionId != null ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(`/operaciones/${grupo.operacionId}`);
-                                }}
-                                className="text-sm font-semibold text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                      {/* Total */}
+                      <span className="flex-shrink-0 text-sm font-semibold text-red-800">
+                        {formatPesos(grupo.totalGastado)}
+                      </span>
+                    </button>
+
+                    {/* Gastos expandidos */}
+                    {isExpanded && (
+                      <div className="border-t border-zinc-100 px-4 pb-4 pt-3">
+                        <div className="flex flex-col gap-2">
+                          {gastosVisibles.map((gasto) => {
+                            const colorQuien = getQuienPagoColor(gasto.quienPago);
+                            return (
+                              <div
+                                key={gasto.id}
+                                className="flex items-center gap-2 rounded-lg bg-zinc-50 p-3"
                               >
-                                #OP-{grupo.operacionId}
-                              </button>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
-                                <span className="material-symbols-outlined text-xs" aria-hidden="true">link_off</span>
-                                Sin operación
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4">
-                            {grupo.vehiculoFotoId ? (
-                              <img
-                                src={`/api/photos/${grupo.vehiculoFotoId}`}
-                                alt="Miniatura del vehículo"
-                                className="h-10 w-14 rounded-md object-cover border border-zinc-200"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-14 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100">
-                                <span className="material-symbols-outlined text-base text-zinc-300">
-                                  directions_car
-                                </span>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 text-right font-semibold text-red-800">
-                            {formatPesos(grupo.totalGastado)}
-                          </td>
-                          <td className="px-5 py-4 text-zinc-500">
-                            {formatFecha(grupo.fechaUltimoGasto)}
-                          </td>
-                        </tr>
-
-                        {/* Filas hijas */}
-                        {isExpanded && (
-                          <>
-                            {/* Sub-encabezado */}
-                            <tr className="bg-zinc-50/80">
-                              <td />
-                              <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                                Descripción
-                              </td>
-                              <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                                Quién pagó
-                              </td>
-                              <td className="px-5 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                                Monto
-                              </td>
-                              <td className="px-5 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                                Fecha
-                              </td>
-                              <td className="w-10" />
-                            </tr>
-                            {gastosVisibles.map((gasto) => {
-                              const colorQuien = getQuienPagoColor(gasto.quienPago);
-                              return (
-                                <tr
-                                  key={gasto.id}
-                                  className="border-t border-zinc-100 bg-blue-50/20"
-                                >
-                                  <td className="px-4 py-3">
-                                    <div className="flex justify-center">
-                                      <div className="h-1.5 w-1.5 rounded-full bg-zinc-300" />
-                                    </div>
-                                  </td>
-                                  <td className="px-5 py-3 text-sm text-zinc-700">
-                                    {gasto.descripcion}
-                                  </td>
-                                  <td className="px-5 py-3">
-                                    <span
-                                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${colorQuien.bg} ${colorQuien.text}`}
-                                    >
+                                <div className="flex flex-1 items-start gap-4 min-w-0">
+                                  <div className="flex flex-col gap-0.5 min-w-0">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Fecha</span>
+                                    <span className="text-sm text-zinc-700 whitespace-nowrap">{formatFecha(gasto.fecha)}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Categoría</span>
+                                    <span className="text-sm text-zinc-700 truncate">{gasto.descripcion}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Quién pagó</span>
+                                    <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-semibold ${colorQuien.bg} ${colorQuien.text}`}>
                                       {gasto.quienPago}
                                     </span>
-                                  </td>
-                                  <td className="px-5 py-3 text-right text-sm font-medium text-red-500">
-                                    {formatPesos(gasto.monto)}
-                                  </td>
-                                  <td className="px-5 py-3 text-sm text-zinc-500">
-                                    {formatFecha(gasto.fecha)}
-                                  </td>
-                                  <td className="px-2 py-3">
-                                    {gasto.operacionId === null && (
-                                      confirmDeleteId === gasto.id ? (
-                                        <div className="flex items-center gap-1">
-                                          <button
-                                            type="button"
-                                            onClick={() => handleEliminarGasto(gasto.id)}
-                                            disabled={deletingId === gasto.id}
-                                            aria-label="Confirmar eliminación"
-                                            className="flex h-7 items-center rounded-lg bg-red-50 px-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
-                                          >
-                                            Sí
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => setConfirmDeleteId(null)}
-                                            aria-label="Cancelar eliminación"
-                                            className="flex h-7 items-center rounded-lg bg-zinc-100 px-2 text-xs font-semibold text-zinc-500 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-1"
-                                          >
-                                            No
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={() => setConfirmDeleteId(gasto.id)}
-                                          disabled={deletingId === gasto.id}
-                                          aria-label="Eliminar gasto"
-                                          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
-                                        >
-                                          <span className="material-symbols-outlined text-base" aria-hidden="true">
-                                            {deletingId === gasto.id ? "hourglass_empty" : "delete"}
-                                          </span>
-                                        </button>
-                                      )
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </>
-                        )}
-                      </React.Fragment>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 items-end">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Monto</span>
+                                    <span className="text-sm font-medium text-red-500 whitespace-nowrap">{formatPesos(gasto.monto)}</span>
+                                  </div>
+                                </div>
+                                {gasto.operacionId === null && (
+                                  confirmDeleteId === gasto.id ? (
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEliminarGasto(gasto.id)}
+                                        disabled={deletingId === gasto.id}
+                                        aria-label="Confirmar eliminación"
+                                        className="flex h-7 items-center rounded-lg bg-red-50 px-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+                                      >
+                                        Sí
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmDeleteId(null)}
+                                        aria-label="Cancelar eliminación"
+                                        className="flex h-7 items-center rounded-lg bg-zinc-100 px-2 text-xs font-semibold text-zinc-500 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-1"
+                                      >
+                                        No
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmDeleteId(gasto.id)}
+                                      disabled={deletingId === gasto.id}
+                                      aria-label="Eliminar gasto"
+                                      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
+                                    >
+                                      <span className="material-symbols-outlined text-base" aria-hidden="true">
+                                        {deletingId === gasto.id ? "hourglass_empty" : "delete"}
+                                      </span>
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* Footer con conteo y paginación */}
