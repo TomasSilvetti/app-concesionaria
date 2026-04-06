@@ -870,7 +870,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                         </span>
                       </div>
                     )}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <button
@@ -937,7 +937,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                         </div>
                       </div>
 
-                      <div className="mt-3 flex justify-end gap-2 border-t border-zinc-200 pt-3">
+                      <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-zinc-200 pt-3">
                         <button
                           onClick={(e) =>
                             handleEditClick(e, operation.idOperacion)

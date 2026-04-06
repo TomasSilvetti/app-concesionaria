@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
       const x = (field.posX / 100) * pageWidth;
       const fieldHeightPts = (field.alto / 100) * pageHeight;
       const y = pageHeight - (field.posY / 100) * pageHeight - fieldHeightPts;
-      const fontSize = Math.max(6, Math.min(fieldHeightPts * 0.75, 14));
+      const fontSize = 13;
 
       page.drawText(value, {
         x,

@@ -73,24 +73,6 @@ function formatFecha(fechaStr: string): string {
   }
 }
 
-function exportarCSV(gastos: Gasto[]) {
-  const headers = ["ID Operación", "Descripción", "Quién pagó", "Monto", "Fecha"];
-  const rows = gastos.map((g) => [
-    g.operacionId != null ? `#OP-${g.operacionId}` : "—",
-    `"${g.descripcion.replace(/"/g, '""')}"`,
-    g.quienPago,
-    g.monto,
-    g.fecha,
-  ]);
-  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `gastos.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 // ─── Componente principal ────────────────────────────────────────────────────
 
@@ -101,7 +83,6 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const [filtroOperacion, setFiltroOperacion] = useState("");
   const [filtroQuienPago, setFiltroQuienPago] = useState("");
   const [pagina, setPagina] = useState(1);
 
@@ -193,15 +174,12 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   // Filtrado sobre grupos
   const gruposFiltrados = useMemo(() => {
     return grupos.filter((gr) => {
-      const matchOp =
-        filtroOperacion.trim() === "" ||
-        (gr.operacionId ?? "").toLowerCase().includes(filtroOperacion.trim().toLowerCase());
       const matchQuien =
         filtroQuienPago === "" ||
         gr.gastos.some((g) => g.quienPago === filtroQuienPago);
-      return matchOp && matchQuien;
+      return matchQuien;
     });
-  }, [grupos, filtroOperacion, filtroQuienPago]);
+  }, [grupos, filtroQuienPago]);
 
   // Paginación sobre grupos
   const totalPaginas = Math.max(1, Math.ceil(gruposFiltrados.length / PAGE_SIZE));
@@ -213,12 +191,7 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   // Resetear página al cambiar filtros
   useEffect(() => {
     setPagina(1);
-  }, [filtroOperacion, filtroQuienPago]);
-
-  const gastosFiltradosFlat = useMemo(
-    () => gruposFiltrados.flatMap((gr) => gr.gastos),
-    [gruposFiltrados]
-  );
+  }, [filtroQuienPago]);
 
   const fetchOrigins = useCallback(async () => {
     try {
@@ -388,24 +361,6 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
           Listado de Gastos
         </h2>
         <div className="flex flex-wrap items-center gap-2">
-          {/* Buscador operación */}
-          <div className="relative">
-            <span
-              className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-base text-zinc-400"
-              aria-hidden="true"
-            >
-              search
-            </span>
-            <input
-              type="text"
-              value={filtroOperacion}
-              onChange={(e) => setFiltroOperacion(e.target.value)}
-              placeholder="ID Operación..."
-              aria-label="Filtrar por ID de operación"
-              className="h-9 w-44 rounded-lg border border-zinc-300 bg-white pl-8 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            />
-          </div>
-
           {/* Selector quién pagó */}
           <div className="relative">
             <select
@@ -428,17 +383,6 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
               expand_more
             </span>
           </div>
-
-          {/* Exportar CSV */}
-          <button
-            type="button"
-            onClick={() => exportarCSV(gastosFiltradosFlat)}
-            disabled={gastosFiltradosFlat.length === 0}
-            aria-label="Exportar gastos a CSV"
-            className="h-9 rounded-lg px-3 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-          >
-            Exportar CSV
-          </button>
 
           {/* Agregar gasto */}
           <button
@@ -509,7 +453,7 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                           receipt_long
                         </span>
                         <p className="text-sm">
-                          {filtroOperacion || filtroQuienPago
+                          {filtroQuienPago
                             ? "No hay gastos para los filtros aplicados"
                             : "No hay gastos en este período"}
                         </p>
