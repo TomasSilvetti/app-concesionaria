@@ -21,14 +21,15 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [companyName, setCompanyName] = useState<string>("");
 
   useEffect(() => {
+    const clienteId = session?.user?.clienteId || "admin";
     const load = () => {
-      setCompanyLogo(localStorage.getItem("company_logo") || "");
-      setCompanyName(localStorage.getItem("company_name") || "");
+      setCompanyLogo(localStorage.getItem(`company_logo_${clienteId}`) || "");
+      setCompanyName(localStorage.getItem(`company_name_${clienteId}`) || "");
     };
     load();
     window.addEventListener("company_settings_updated", load);
     return () => window.removeEventListener("company_settings_updated", load);
-  }, []);
+  }, [session]);
 
   const isAdmin = session?.user?.rol === "admin";
 

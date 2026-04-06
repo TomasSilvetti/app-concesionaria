@@ -33,9 +33,10 @@ export default function PerfilPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setCompanyLogo(localStorage.getItem("company_logo") || "");
-    setCompanyName(localStorage.getItem("company_name") || "");
-  }, []);
+    const clienteId = session?.user?.clienteId || "admin";
+    setCompanyLogo(localStorage.getItem(`company_logo_${clienteId}`) || "");
+    setCompanyName(localStorage.getItem(`company_name_${clienteId}`) || "");
+  }, [session]);
 
   const handleImageFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -54,8 +55,9 @@ export default function PerfilPage() {
   };
 
   const handleSave = () => {
-    localStorage.setItem("company_logo", companyLogo);
-    localStorage.setItem("company_name", companyName);
+    const clienteId = session?.user?.clienteId || "admin";
+    localStorage.setItem(`company_logo_${clienteId}`, companyLogo);
+    localStorage.setItem(`company_name_${clienteId}`, companyName);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
     window.dispatchEvent(new Event("company_settings_updated"));
