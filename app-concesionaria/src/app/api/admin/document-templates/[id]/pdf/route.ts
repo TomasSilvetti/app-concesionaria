@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ message: "Plantilla no encontrada" }, { status: 404 });
     }
 
-    return new NextResponse(template.pdfOriginal, {
+    return new NextResponse(new Uint8Array(template.pdfOriginal), {
       status: 200,
       headers: {
         "Content-Type": template.mimeType ?? "application/pdf",
