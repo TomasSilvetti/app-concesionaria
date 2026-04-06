@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function LoginForm() {
@@ -61,17 +61,7 @@ function LoginForm() {
           setError("Nombre de usuario o contraseña incorrectos");
         }
       } else if (result?.ok) {
-        const session = await getSession();
-        if (session?.user?.rol === "admin") {
-          router.push("/dashboard");
-        } else if (
-          session?.user?.rol === "usuario" &&
-          session?.user?.clienteId
-        ) {
-          router.push(`/cliente/${session.user.clienteId}/dashboard`);
-        } else {
-          router.push("/");
-        }
+        router.push("/operaciones");
         router.refresh();
       }
     } catch (err) {

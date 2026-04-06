@@ -120,7 +120,7 @@ export function GastosPage() {
           </div>
           <div>
             <h1 className="text-3xl font-semibold text-zinc-900">
-              Gastos Operativos
+              Finanzas
             </h1>
             <p className="text-sm text-zinc-500">
               Gestión detallada de egresos y rentabilidad de inventario.
