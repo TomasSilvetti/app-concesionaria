@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,42 @@ export default function PerfilPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Empresa
+  const [companyLogo, setCompanyLogo] = useState<string>("");
+  const [companyName, setCompanyName] = useState<string>("");
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setCompanyLogo(localStorage.getItem("company_logo") || "");
+    setCompanyName(localStorage.getItem("company_name") || "");
+  }, []);
+
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCompanyLogo(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageFile(file);
+  };
+
+  const handleSave = () => {
+    localStorage.setItem("company_logo", companyLogo);
+    localStorage.setItem("company_name", companyName);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+    window.dispatchEvent(new Event("company_settings_updated"));
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -151,6 +187,105 @@ export default function PerfilPage() {
             <p className="text-sm text-zinc-500">
               Información de tu cuenta
             </p>
+          </div>
+        </div>
+
+        {/* Sección Empresa */}
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="material-symbols-outlined text-2xl text-blue-600">
+              business
+            </span>
+            <h2 className="text-lg font-semibold text-zinc-900">Empresa</h2>
+          </div>
+
+          <div className="flex flex-col gap-5">
+            {/* Logo */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                Logo de la empresa
+              </label>
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={() => setIsDragOver(false)}
+                onClick={() => fileInputRef.current?.click()}
+                className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 transition-colors ${
+                  isDragOver
+                    ? "border-blue-400 bg-blue-50"
+                    : "border-zinc-300 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50"
+                }`}
+              >
+                {companyLogo ? (
+                  <img
+                    src={companyLogo}
+                    alt="Logo empresa"
+                    className="h-20 w-20 rounded-xl object-contain"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-zinc-200">
+                    <span className="material-symbols-outlined text-4xl text-zinc-400">
+                      add_photo_alternate
+                    </span>
+                  </div>
+                )}
+                <div className="text-center">
+                  <p className="text-sm font-medium text-zinc-700">
+                    {companyLogo ? "Cambiar logo" : "Arrastrá o hacé click para subir"}
+                  </p>
+                  <p className="text-xs text-zinc-400">PNG, JPG, SVG</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageFile(file);
+                  }}
+                />
+              </div>
+              {companyLogo && (
+                <button
+                  onClick={() => setCompanyLogo("")}
+                  className="self-start text-xs text-red-500 hover:text-red-700"
+                >
+                  Eliminar logo
+                </button>
+              )}
+            </div>
+
+            {/* Nombre */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                Nombre de la empresa
+              </label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Ej: Nordem"
+                className="rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
+
+            {/* Guardar */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <span className="material-symbols-outlined text-xl">save</span>
+                Guardar cambios
+              </button>
+              {saveSuccess && (
+                <span className="flex items-center gap-1 text-sm font-medium text-green-600">
+                  <span className="material-symbols-outlined text-lg">check_circle</span>
+                  Guardado
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

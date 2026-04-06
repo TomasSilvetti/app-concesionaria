@@ -17,6 +17,18 @@ export function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [companyLogo, setCompanyLogo] = useState<string>("");
+  const [companyName, setCompanyName] = useState<string>("");
+
+  useEffect(() => {
+    const load = () => {
+      setCompanyLogo(localStorage.getItem("company_logo") || "");
+      setCompanyName(localStorage.getItem("company_name") || "");
+    };
+    load();
+    window.addEventListener("company_settings_updated", load);
+    return () => window.removeEventListener("company_settings_updated", load);
+  }, []);
 
   const isAdmin = session?.user?.rol === "admin";
 
@@ -111,12 +123,25 @@ export function AppLayout({ children }: AppLayoutProps) {
             </button>
             
             <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-                <span className="material-symbols-outlined text-white text-xl">
-                  directions_car
-                </span>
-              </div>
-              <span className="text-xl font-bold text-zinc-900">NorDem</span>
+              {companyLogo ? (
+                <img
+                  src={companyLogo}
+                  alt="Logo"
+                  className="h-10 w-auto max-w-[140px] object-contain"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+                  <span className="material-symbols-outlined text-white text-xl">
+                    directions_car
+                  </span>
+                </div>
+              )}
+              <button
+                onClick={() => router.push("/gastos")}
+                className="text-xl font-bold text-zinc-900 hover:text-blue-600 transition-colors"
+              >
+                {companyName || "NorDem"}
+              </button>
             </div>
             
           </div>

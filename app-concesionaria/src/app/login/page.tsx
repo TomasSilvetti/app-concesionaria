@@ -14,6 +14,13 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState<string>("");
+  const [companyName, setCompanyName] = useState<string>("");
+
+  useEffect(() => {
+    setCompanyLogo(localStorage.getItem("company_logo") || "");
+    setCompanyName(localStorage.getItem("company_name") || "");
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("logout") === "success") {
@@ -85,14 +92,22 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="rounded-2xl bg-white px-8 py-10 shadow-xl">
           <div className="mb-8 flex flex-col items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg">
-              <span className="material-symbols-outlined text-4xl text-white">
-                directions_car
-              </span>
-            </div>
-            
+            {companyLogo ? (
+              <img
+                src={companyLogo}
+                alt="Logo"
+                className="h-20 w-auto max-w-[200px] object-contain"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg">
+                <span className="material-symbols-outlined text-4xl text-white">
+                  directions_car
+                </span>
+              </div>
+            )}
+
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-zinc-900">Nordem</h1>
+              <h1 className="text-2xl font-bold text-zinc-900">{companyName || "Nordem"}</h1>
               <p className="mt-1 text-sm text-zinc-500">
                 Portal de Gestión de Concesionario
               </p>
