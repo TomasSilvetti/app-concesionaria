@@ -18,6 +18,7 @@ interface Recuadro {
 interface PlantillaEditorModalProps {
   onClose: () => void;
   onSaved: () => void;
+  plantillaId?: string;
 }
 
 const CONTEXT_FIELDS: Record<string, { value: string; label: string }[]> = {
@@ -61,7 +62,7 @@ function generateId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalProps) {
+export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: PlantillaEditorModalProps) {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -81,6 +82,9 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
   const [contexto, setContexto] = useState<"operacion" | "vehiculo" | "">("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+
+  const isEditMode = !!plantillaId;
 
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +94,67 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
   }, [pdfUrl]);
+
+  useEffect(() => {
+    if (!plantillaId) return;
+    const loadTemplate = async () => {
+      setIsLoadingEdit(true);
+      try {
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+        const [templateRes, pdfRes] = await Promise.all([
+          fetch(`${baseUrl}/api/admin/document-templates/${plantillaId}`),
+          fetch(`${baseUrl}/api/admin/document-templates/${plantillaId}/pdf`),
+        ]);
+        if (templateRes.ok) {
+          const data = await templateRes.json();
+          const template = data.template;
+          setNombre(template.nombre);
+          setContexto(template.contexto);
+          setRecuadros(
+            (template.DocumentField ?? []).map(
+              (f: {
+                id: string;
+                nombre: string;
+                tipo: "auto" | "fijo" | "manual";
+                valorFijo: string | null;
+                rutaAuto: string | null;
+                posX: number;
+                posY: number;
+                ancho: number;
+                alto: number;
+              }) => ({
+                id: f.id,
+                x: f.posX,
+                y: f.posY,
+                width: f.ancho,
+                height: f.alto,
+                nombre: f.nombre,
+                tipo: f.tipo,
+                valor:
+                  f.tipo === "auto"
+                    ? (f.rutaAuto ?? "")
+                    : f.tipo === "fijo"
+                    ? (f.valorFijo ?? "")
+                    : "",
+              })
+            )
+          );
+        }
+        if (pdfRes.ok) {
+          const blob = await pdfRes.blob();
+          setPdfUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return URL.createObjectURL(blob);
+          });
+        }
+      } catch {
+        // error silencioso — el usuario puede recargar
+      } finally {
+        setIsLoadingEdit(false);
+      }
+    };
+    loadTemplate();
+  }, [plantillaId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,13 +246,14 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
     recuadrosInvalidos.length === 0;
 
   const handleSave = async () => {
-    if (!canSave || !pdfFile) return;
+    if (!canSave) return;
+    if (!isEditMode && !pdfFile) return;
     setIsSaving(true);
     setSaveError(null);
 
     try {
       const formData = new FormData();
-      formData.append("pdf", pdfFile);
+      if (pdfFile) formData.append("pdf", pdfFile);
       formData.append("nombre", nombre.trim());
       formData.append("contexto", contexto);
       formData.append(
@@ -208,8 +274,11 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
       );
 
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const res = await fetch(`${baseUrl}/api/admin/document-templates`, {
-        method: "POST",
+      const url = isEditMode
+        ? `${baseUrl}/api/admin/document-templates/${plantillaId}`
+        : `${baseUrl}/api/admin/document-templates`;
+      const res = await fetch(url, {
+        method: isEditMode ? "PUT" : "POST",
         body: formData,
       });
 
@@ -241,7 +310,7 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
             <span className="material-symbols-outlined text-lg text-blue-600">description</span>
           </div>
           <h1 id="editor-title" className="text-base font-semibold text-zinc-900">
-            Nueva plantilla
+            {isEditMode ? "Editar plantilla" : "Nueva plantilla"}
           </h1>
         </div>
         <button
@@ -269,28 +338,39 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
         <div className="flex min-h-0 flex-1 flex-col overflow-auto bg-zinc-100 p-4">
           {!pdfUrl ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4">
-              {pdfError && (
-                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  <span className="material-symbols-outlined text-base">error</span>
-                  {pdfError}
-                </div>
-              )}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-zinc-300 bg-white px-12 py-12 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
-                  <span className="material-symbols-outlined text-4xl text-zinc-400">
-                    upload_file
+              {isLoadingEdit ? (
+                <div className="flex flex-col items-center gap-3">
+                  <span className="material-symbols-outlined animate-spin text-4xl text-zinc-400">
+                    progress_activity
                   </span>
+                  <p className="text-sm text-zinc-500">Cargando plantilla...</p>
                 </div>
-                <div>
-                  <p className="text-base font-semibold text-zinc-900">Subir PDF</p>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    Hacé clic para seleccionar un archivo PDF
-                  </p>
-                </div>
-              </button>
+              ) : (
+                <>
+                  {pdfError && (
+                    <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      <span className="material-symbols-outlined text-base">error</span>
+                      {pdfError}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-zinc-300 bg-white px-12 py-12 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
+                      <span className="material-symbols-outlined text-4xl text-zinc-400">
+                        upload_file
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-zinc-900">Subir PDF</p>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        Hacé clic para seleccionar un archivo PDF
+                      </p>
+                    </div>
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex flex-1 flex-col gap-3">
@@ -301,7 +381,7 @@ export function PlantillaEditorModal({ onClose, onSaved }: PlantillaEditorModalP
                     description
                   </span>
                   <span className="max-w-[180px] truncate font-medium text-zinc-800 sm:max-w-xs">
-                    {pdfFile?.name}
+                    {pdfFile?.name ?? (isEditMode ? "PDF actual" : "")}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">

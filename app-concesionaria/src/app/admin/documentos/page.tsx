@@ -9,6 +9,7 @@ import { AsignarEmpresasModal } from "@/components/documents/AsignarEmpresasModa
 export default function DocumentosAdminPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isCreating, setIsCreating] = useState(false);
+  const [editandoPlantillaId, setEditandoPlantillaId] = useState<string | null>(null);
   const [asignandoPlantilla, setAsignandoPlantilla] = useState<{ id: string; nombre: string } | null>(null);
 
   const handleCreatePlantilla = () => {
@@ -16,8 +17,7 @@ export default function DocumentosAdminPage() {
   };
 
   const handleEditPlantilla = (plantilla: { id: string; nombre: string }) => {
-    // porcion-006: modal/página de edición de plantilla
-    alert(`Editar "${plantilla.nombre}" — próximamente (porcion-006)`);
+    setEditandoPlantillaId(plantilla.id);
   };
 
   const handleAsignarEmpresas = (plantilla: { id: string; nombre: string }) => {
@@ -37,6 +37,16 @@ export default function DocumentosAdminPage() {
           plantillaId={asignandoPlantilla.id}
           plantillaNombre={asignandoPlantilla.nombre}
           onClose={() => setAsignandoPlantilla(null)}
+        />
+      )}
+      {editandoPlantillaId && (
+        <PlantillaEditorModal
+          plantillaId={editandoPlantillaId}
+          onClose={() => setEditandoPlantillaId(null)}
+          onSaved={() => {
+            setEditandoPlantillaId(null);
+            setRefreshTrigger((n) => n + 1);
+          }}
         />
       )}
       {isCreating && (
