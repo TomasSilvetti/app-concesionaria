@@ -41,6 +41,8 @@ model Client {
   DocumentTemplate   DocumentTemplate[]
   DocumentAssignment DocumentAssignment[]
   GeneratedDocument  GeneratedDocument[]
+  KanbanColumna      KanbanColumna[]
+  KanbanTarjeta      KanbanTarjeta[]
 }
 
 model Expense {
@@ -401,4 +403,34 @@ model GeneratedDocument {
   @@index([templateId])
   @@index([clienteId])
   @@index([contextId])
+}
+
+model KanbanColumna {
+  id        String          @id
+  clienteId String
+  nombre    String
+  orden     Int
+  creadoEn  DateTime        @default(now())
+  Client    Client          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tarjetas  KanbanTarjeta[]
+
+  @@index([clienteId])
+}
+
+model KanbanTarjeta {
+  id              String        @id
+  clienteId       String
+  columnaId       String
+  titulo          String
+  cuerpo          String?
+  orden           Int
+  creadoPorId     String
+  creadoPorNombre String
+  creadoEn        DateTime      @default(now())
+  actualizadoEn   DateTime      @updatedAt
+  Columna         KanbanColumna @relation(fields: [columnaId], references: [id], onDelete: Cascade)
+  Client          Client        @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([columnaId])
+  @@index([clienteId])
 }
