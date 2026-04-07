@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         cuerpo: cuerpo && typeof cuerpo === "string" ? cuerpo : null,
         orden: nuevoOrden,
         creadoPorId: session.user.id,
-        creadoPorNombre: session.user.nombre,
+        creadoPorNombre: session.user.nombre ?? "",
       },
     });
 
