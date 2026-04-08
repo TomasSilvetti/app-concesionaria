@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { OperationExpensesSection } from "@/components/operations/OperationExpensesSection";
@@ -40,7 +40,9 @@ interface Category {
 interface ExchangeVehicleEdit {
   vehicleId: string;
   marcaId: string;
+  marcaQuery: string;
   categoriaId: string;
+  categoriaQuery: string;
   modelo: string;
   anio: string;
   patente: string;
@@ -160,15 +162,23 @@ export default function OperacionEditPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Exchange vehicles add brand/category inline
-  const [showAddExchangeBrand, setShowAddExchangeBrand] = useState(false);
-  const [newExchangeBrandName, setNewExchangeBrandName] = useState("");
+  // Main vehicle search
+  const [vehicleMarcaQuery, setVehicleMarcaQuery] = useState("");
+  const [vehicleMarcaDropdown, setVehicleMarcaDropdown] = useState(false);
+  const [vehicleCategoriaQuery, setVehicleCategoriaQuery] = useState("");
+  const [vehicleCategoriaDropdown, setVehicleCategoriaDropdown] = useState(false);
+  const [isSavingMarcaEdit, setIsSavingMarcaEdit] = useState(false);
+  const [isSavingCategoriaEdit, setIsSavingCategoriaEdit] = useState(false);
+  const vehicleMarcaInputRef = useRef<HTMLInputElement>(null);
+  const vehicleMarcaDropdownRef = useRef<HTMLDivElement>(null);
+  const vehicleCategoriaInputRef = useRef<HTMLInputElement>(null);
+  const vehicleCategoriaDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Exchange vehicles search dropdowns
+  const [activeMarcaDropdownVehicleId, setActiveMarcaDropdownVehicleId] = useState<string | null>(null);
+  const [activeCategoriaDropdownVehicleId, setActiveCategoriaDropdownVehicleId] = useState<string | null>(null);
   const [isSavingExchangeBrand, setIsSavingExchangeBrand] = useState(false);
-  const [localExchangeBrands, setLocalExchangeBrands] = useState<Brand[]>([]);
-  const [showAddExchangeCategory, setShowAddExchangeCategory] = useState(false);
-  const [newExchangeCategoryName, setNewExchangeCategoryName] = useState("");
   const [isSavingExchangeCategory, setIsSavingExchangeCategory] = useState(false);
-  const [localExchangeCategories, setLocalExchangeCategories] = useState<Category[]>([]);
 
   // Inversión
   const [hayInversion, setHayInversion] = useState(false);
@@ -220,14 +230,18 @@ export default function OperacionEditPage() {
           setVehicleNotasMecanicas(data.notasMecanicas || "");
           setVehicleNotasGenerales(data.notasGenerales || "");
           setVehicleMarcaId(data.marcaId || "");
+          setVehicleMarcaQuery(data.marcaNombre || "");
           setVehicleCategoriaId(data.categoriaId || "");
+          setVehicleCategoriaQuery(data.categoriaNombre || "");
 
           // Initialize exchange vehicles
           setExchangeVehicles(
             (data.vehiculosIntercambiados || []).map((v: VehicleExchange) => ({
               vehicleId: v.vehicleId,
               marcaId: v.marcaId,
+              marcaQuery: v.marca || "",
               categoriaId: v.categoriaId || "",
+              categoriaQuery: "",
               modelo: v.modelo,
               anio: v.anio?.toString() || "",
               patente: v.patente || "",
@@ -332,48 +346,106 @@ export default function OperacionEditPage() {
     }
   };
 
-  const handleAddExchangeBrandClick = async () => {
-    if (!showAddExchangeBrand) {
-      setShowAddExchangeBrand(true);
-      return;
+  // Outside click handler for main vehicle dropdowns
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        vehicleMarcaDropdownRef.current && !vehicleMarcaDropdownRef.current.contains(e.target as Node) &&
+        vehicleMarcaInputRef.current && !vehicleMarcaInputRef.current.contains(e.target as Node)
+      ) setVehicleMarcaDropdown(false);
+      if (
+        vehicleCategoriaDropdownRef.current && !vehicleCategoriaDropdownRef.current.contains(e.target as Node) &&
+        vehicleCategoriaInputRef.current && !vehicleCategoriaInputRef.current.contains(e.target as Node)
+      ) setVehicleCategoriaDropdown(false);
     }
-    if (!newExchangeBrandName.trim()) return;
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleCreateMarcaEdit = async (nombre: string) => {
+    setIsSavingMarcaEdit(true);
+    try {
+      const res = await fetch("/api/vehicle-brands", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nombre.trim().toUpperCase() }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        brands.push(json.brand);
+        setVehicleMarcaId(json.brand.id);
+        setVehicleMarcaQuery(json.brand.nombre);
+        setVehicleMarcaDropdown(false);
+      }
+    } finally {
+      setIsSavingMarcaEdit(false);
+    }
+  };
+
+  const handleCreateCategoriaEdit = async (nombre: string) => {
+    setIsSavingCategoriaEdit(true);
+    try {
+      const res = await fetch("/api/vehicle-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nombre.trim().toUpperCase() }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        categories.push(json.category);
+        setVehicleCategoriaId(json.category.id);
+        setVehicleCategoriaQuery(json.category.nombre);
+        setVehicleCategoriaDropdown(false);
+      }
+    } finally {
+      setIsSavingCategoriaEdit(false);
+    }
+  };
+
+  const handleCreateExchangeBrand = async (vehicleId: string, nombre: string) => {
     setIsSavingExchangeBrand(true);
     try {
       const res = await fetch("/api/vehicle-brands", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: newExchangeBrandName.trim() }),
+        body: JSON.stringify({ nombre: nombre.trim().toUpperCase() }),
       });
-      const data = await res.json();
+      const json = await res.json();
       if (res.ok) {
-        setLocalExchangeBrands((prev) => [...prev, data.brand]);
-        setNewExchangeBrandName("");
-        setShowAddExchangeBrand(false);
+        brands.push(json.brand);
+        setExchangeVehicles((prev) =>
+          prev.map((v) =>
+            v.vehicleId === vehicleId
+              ? { ...v, marcaId: json.brand.id, marcaQuery: json.brand.nombre }
+              : v
+          )
+        );
+        setActiveMarcaDropdownVehicleId(null);
       }
     } finally {
       setIsSavingExchangeBrand(false);
     }
   };
 
-  const handleAddExchangeCategoryClick = async () => {
-    if (!showAddExchangeCategory) {
-      setShowAddExchangeCategory(true);
-      return;
-    }
-    if (!newExchangeCategoryName.trim()) return;
+  const handleCreateExchangeCategory = async (vehicleId: string, nombre: string) => {
     setIsSavingExchangeCategory(true);
     try {
       const res = await fetch("/api/vehicle-categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: newExchangeCategoryName.trim() }),
+        body: JSON.stringify({ nombre: nombre.trim().toUpperCase() }),
       });
-      const data = await res.json();
+      const json = await res.json();
       if (res.ok) {
-        setLocalExchangeCategories((prev) => [...prev, data.category]);
-        setNewExchangeCategoryName("");
-        setShowAddExchangeCategory(false);
+        categories.push(json.category);
+        setExchangeVehicles((prev) =>
+          prev.map((v) =>
+            v.vehicleId === vehicleId
+              ? { ...v, categoriaId: json.category.id, categoriaQuery: json.category.nombre }
+              : v
+          )
+        );
+        setActiveCategoriaDropdownVehicleId(null);
       }
     } finally {
       setIsSavingExchangeCategory(false);
@@ -826,18 +898,42 @@ export default function OperacionEditPage() {
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-zinc-700">Marca</label>
                 <div className="relative">
-                  <select
-                    value={vehicleMarcaId}
-                    onChange={(e) => setVehicleMarcaId(e.target.value)}
+                  {vehicleMarcaId && !vehicleMarcaDropdown && (
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500 z-10">check_circle</span>
+                  )}
+                  <input
+                    ref={vehicleMarcaInputRef}
+                    type="text"
+                    value={vehicleMarcaQuery}
+                    onChange={(e) => { setVehicleMarcaQuery(e.target.value); setVehicleMarcaId(""); setVehicleMarcaDropdown(true); }}
+                    onFocus={() => setVehicleMarcaDropdown(true)}
+                    placeholder="Buscar marca..."
+                    autoComplete="off"
                     disabled={isSaving || isCerrada}
-                    className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                  >
-                    <option value="">Seleccioná una marca</option>
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>{b.nombre}</option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">expand_more</span>
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                  {vehicleMarcaDropdown && (() => {
+                    const resultados = brands.filter((b) => b.nombre.toLowerCase().includes(vehicleMarcaQuery.toLowerCase()));
+                    const puedeCrear = vehicleMarcaQuery.trim().length > 0 && !resultados.some((b) => b.nombre.toLowerCase() === vehicleMarcaQuery.trim().toLowerCase());
+                    return (resultados.length > 0 || puedeCrear) ? (
+                      <div ref={vehicleMarcaDropdownRef} className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
+                        {resultados.map((b) => (
+                          <button key={b.id} type="button" onMouseDown={() => { setVehicleMarcaId(b.id); setVehicleMarcaQuery(b.nombre); setVehicleMarcaDropdown(false); }}
+                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
+                            <span className="material-symbols-outlined text-base text-zinc-400">branding_watermark</span>
+                            {b.nombre}
+                          </button>
+                        ))}
+                        {puedeCrear && (
+                          <button type="button" onMouseDown={() => handleCreateMarcaEdit(vehicleMarcaQuery)} disabled={isSavingMarcaEdit}
+                            className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50">
+                            <span className="material-symbols-outlined text-base">add</span>
+                            {isSavingMarcaEdit ? "Creando..." : `Crear "${vehicleMarcaQuery.trim()}"`}
+                          </button>
+                        )}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 
@@ -881,18 +977,42 @@ export default function OperacionEditPage() {
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-zinc-700">Categoría</label>
                 <div className="relative">
-                  <select
-                    value={vehicleCategoriaId}
-                    onChange={(e) => setVehicleCategoriaId(e.target.value)}
+                  {vehicleCategoriaId && !vehicleCategoriaDropdown && (
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500 z-10">check_circle</span>
+                  )}
+                  <input
+                    ref={vehicleCategoriaInputRef}
+                    type="text"
+                    value={vehicleCategoriaQuery}
+                    onChange={(e) => { setVehicleCategoriaQuery(e.target.value); setVehicleCategoriaId(""); setVehicleCategoriaDropdown(true); }}
+                    onFocus={() => setVehicleCategoriaDropdown(true)}
+                    placeholder="Buscar categoría..."
+                    autoComplete="off"
                     disabled={isSaving || isCerrada}
-                    className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                  >
-                    <option value="">Seleccioná una categoría</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nombre}</option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">expand_more</span>
+                    className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                  {vehicleCategoriaDropdown && (() => {
+                    const resultados = categories.filter((c) => c.nombre.toLowerCase().includes(vehicleCategoriaQuery.toLowerCase()));
+                    const puedeCrear = vehicleCategoriaQuery.trim().length > 0 && !resultados.some((c) => c.nombre.toLowerCase() === vehicleCategoriaQuery.trim().toLowerCase());
+                    return (resultados.length > 0 || puedeCrear) ? (
+                      <div ref={vehicleCategoriaDropdownRef} className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
+                        {resultados.map((c) => (
+                          <button key={c.id} type="button" onMouseDown={() => { setVehicleCategoriaId(c.id); setVehicleCategoriaQuery(c.nombre); setVehicleCategoriaDropdown(false); }}
+                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
+                            <span className="material-symbols-outlined text-base text-zinc-400">label</span>
+                            {c.nombre}
+                          </button>
+                        ))}
+                        {puedeCrear && (
+                          <button type="button" onMouseDown={() => handleCreateCategoriaEdit(vehicleCategoriaQuery)} disabled={isSavingCategoriaEdit}
+                            className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50">
+                            <span className="material-symbols-outlined text-base">add</span>
+                            {isSavingCategoriaEdit ? "Creando..." : `Crear "${vehicleCategoriaQuery.trim()}"`}
+                          </button>
+                        )}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
 
@@ -1370,95 +1490,93 @@ export default function OperacionEditPage() {
                       {/* Marca */}
                       <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-zinc-700">Marca</label>
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <select
-                              value={vehicle.marcaId}
-                              onChange={(e) => {
-                                const updated = [...exchangeVehicles];
-                                updated[index] = { ...updated[index], marcaId: e.target.value };
-                                setExchangeVehicles(updated);
-                              }}
-                              disabled={isSaving || isCerrada}
-                              className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                            >
-                              <option value="">Seleccioná una marca</option>
-                              {[...brands, ...localExchangeBrands].map((b) => (
-                                <option key={b.id} value={b.id}>{b.nombre}</option>
-                              ))}
-                            </select>
-                            <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">expand_more</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleAddExchangeBrandClick}
-                            disabled={isSaving || isCerrada || isSavingExchangeBrand || (showAddExchangeBrand && !newExchangeBrandName.trim())}
-                            className={`flex h-12 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors disabled:opacity-40 focus:outline-none ${showAddExchangeBrand ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
-                            aria-label={showAddExchangeBrand ? "Confirmar nueva marca" : "Agregar nueva marca"}
-                          >
-                            <span className="material-symbols-outlined text-base">add</span>
-                            {showAddExchangeBrand ? "Confirmar" : "Agregar"}
-                          </button>
-                        </div>
-                        {showAddExchangeBrand && (
+                        <div className="relative">
+                          {vehicle.marcaId && activeMarcaDropdownVehicleId !== vehicle.vehicleId && (
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500 z-10">check_circle</span>
+                          )}
                           <input
                             type="text"
-                            value={newExchangeBrandName}
-                            onChange={(e) => setNewExchangeBrandName(e.target.value.toUpperCase())}
-                            onKeyDown={(e) => e.key === "Enter" && handleAddExchangeBrandClick()}
-                            placeholder="Nombre de la nueva marca..."
-                            autoFocus
-                            className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                            disabled={isSavingExchangeBrand}
+                            value={vehicle.marcaQuery}
+                            onChange={(e) => {
+                              setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, marcaQuery: e.target.value, marcaId: "" } : v));
+                              setActiveMarcaDropdownVehicleId(vehicle.vehicleId);
+                            }}
+                            onFocus={() => setActiveMarcaDropdownVehicleId(vehicle.vehicleId)}
+                            onBlur={() => setTimeout(() => setActiveMarcaDropdownVehicleId(null), 150)}
+                            placeholder="Buscar marca..."
+                            autoComplete="off"
+                            disabled={isSaving || isCerrada}
+                            className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                           />
-                        )}
+                          {activeMarcaDropdownVehicleId === vehicle.vehicleId && (() => {
+                            const resultados = brands.filter((b) => b.nombre.toLowerCase().includes(vehicle.marcaQuery.toLowerCase()));
+                            const puedeCrear = vehicle.marcaQuery.trim().length > 0 && !resultados.some((b) => b.nombre.toLowerCase() === vehicle.marcaQuery.trim().toLowerCase());
+                            return (resultados.length > 0 || puedeCrear) ? (
+                              <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
+                                {resultados.map((b) => (
+                                  <button key={b.id} type="button" onMouseDown={() => { setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, marcaId: b.id, marcaQuery: b.nombre } : v)); setActiveMarcaDropdownVehicleId(null); }}
+                                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
+                                    <span className="material-symbols-outlined text-base text-zinc-400">branding_watermark</span>
+                                    {b.nombre}
+                                  </button>
+                                ))}
+                                {puedeCrear && (
+                                  <button type="button" onMouseDown={() => handleCreateExchangeBrand(vehicle.vehicleId, vehicle.marcaQuery)} disabled={isSavingExchangeBrand}
+                                    className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50">
+                                    <span className="material-symbols-outlined text-base">add</span>
+                                    {isSavingExchangeBrand ? "Creando..." : `Crear "${vehicle.marcaQuery.trim()}"`}
+                                  </button>
+                                )}
+                              </div>
+                            ) : null;
+                          })()}
+                        </div>
                       </div>
 
                       {/* Categoría */}
                       <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-zinc-700">Categoría</label>
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <select
-                              value={vehicle.categoriaId}
-                              onChange={(e) => {
-                                const updated = [...exchangeVehicles];
-                                updated[index] = { ...updated[index], categoriaId: e.target.value };
-                                setExchangeVehicles(updated);
-                              }}
-                              disabled={isSaving || isCerrada}
-                              className="h-12 w-full appearance-none rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                            >
-                              <option value="">Seleccioná una categoría</option>
-                              {[...categories, ...localExchangeCategories].map((c) => (
-                                <option key={c.id} value={c.id}>{c.nombre}</option>
-                              ))}
-                            </select>
-                            <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">expand_more</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleAddExchangeCategoryClick}
-                            disabled={isSaving || isCerrada || isSavingExchangeCategory || (showAddExchangeCategory && !newExchangeCategoryName.trim())}
-                            className={`flex h-12 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors disabled:opacity-40 focus:outline-none ${showAddExchangeCategory ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
-                            aria-label={showAddExchangeCategory ? "Confirmar nueva categoría" : "Agregar nueva categoría"}
-                          >
-                            <span className="material-symbols-outlined text-base">add</span>
-                            {showAddExchangeCategory ? "Confirmar" : "Agregar"}
-                          </button>
-                        </div>
-                        {showAddExchangeCategory && (
+                        <div className="relative">
+                          {vehicle.categoriaId && activeCategoriaDropdownVehicleId !== vehicle.vehicleId && (
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500 z-10">check_circle</span>
+                          )}
                           <input
                             type="text"
-                            value={newExchangeCategoryName}
-                            onChange={(e) => setNewExchangeCategoryName(e.target.value.toUpperCase())}
-                            onKeyDown={(e) => e.key === "Enter" && handleAddExchangeCategoryClick()}
-                            placeholder="Nombre de la nueva categoría..."
-                            autoFocus
-                            className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                            disabled={isSavingExchangeCategory}
+                            value={vehicle.categoriaQuery}
+                            onChange={(e) => {
+                              setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, categoriaQuery: e.target.value, categoriaId: "" } : v));
+                              setActiveCategoriaDropdownVehicleId(vehicle.vehicleId);
+                            }}
+                            onFocus={() => setActiveCategoriaDropdownVehicleId(vehicle.vehicleId)}
+                            onBlur={() => setTimeout(() => setActiveCategoriaDropdownVehicleId(null), 150)}
+                            placeholder="Buscar categoría..."
+                            autoComplete="off"
+                            disabled={isSaving || isCerrada}
+                            className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                           />
-                        )}
+                          {activeCategoriaDropdownVehicleId === vehicle.vehicleId && (() => {
+                            const resultados = categories.filter((c) => c.nombre.toLowerCase().includes(vehicle.categoriaQuery.toLowerCase()));
+                            const puedeCrear = vehicle.categoriaQuery.trim().length > 0 && !resultados.some((c) => c.nombre.toLowerCase() === vehicle.categoriaQuery.trim().toLowerCase());
+                            return (resultados.length > 0 || puedeCrear) ? (
+                              <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
+                                {resultados.map((c) => (
+                                  <button key={c.id} type="button" onMouseDown={() => { setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, categoriaId: c.id, categoriaQuery: c.nombre } : v)); setActiveCategoriaDropdownVehicleId(null); }}
+                                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
+                                    <span className="material-symbols-outlined text-base text-zinc-400">label</span>
+                                    {c.nombre}
+                                  </button>
+                                ))}
+                                {puedeCrear && (
+                                  <button type="button" onMouseDown={() => handleCreateExchangeCategory(vehicle.vehicleId, vehicle.categoriaQuery)} disabled={isSavingExchangeCategory}
+                                    className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50">
+                                    <span className="material-symbols-outlined text-base">add</span>
+                                    {isSavingExchangeCategory ? "Creando..." : `Crear "${vehicle.categoriaQuery.trim()}"`}
+                                  </button>
+                                )}
+                              </div>
+                            ) : null;
+                          })()}
+                        </div>
                       </div>
 
                       {/* Modelo */}
