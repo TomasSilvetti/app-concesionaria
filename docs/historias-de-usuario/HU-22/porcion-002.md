@@ -4,7 +4,8 @@
 **Tipo de porción:** Fix
 **Porción original:** N/A
 **Prerequisitos:** Ninguno
-**estado**: completada
+**Estado:** ✅ Completada
+**Completada el:** 2026-04-08
 
 ## Descripción
 

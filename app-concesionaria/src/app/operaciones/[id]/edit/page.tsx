@@ -174,6 +174,14 @@ export default function OperacionEditPage() {
   const vehicleCategoriaInputRef = useRef<HTMLInputElement>(null);
   const vehicleCategoriaDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Delete state for brands/categories
+  const [confirmDeleteMarcaId, setConfirmDeleteMarcaId] = useState<string | null>(null);
+  const [isDeletingMarcaId, setIsDeletingMarcaId] = useState<string | null>(null);
+  const [deletedMarcaIds, setDeletedMarcaIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteCategoriaId, setConfirmDeleteCategoriaId] = useState<string | null>(null);
+  const [isDeletingCategoriaId, setIsDeletingCategoriaId] = useState<string | null>(null);
+  const [deletedCategoriaIds, setDeletedCategoriaIds] = useState<Set<string>>(new Set());
+
   // Exchange vehicles search dropdowns
   const [activeMarcaDropdownVehicleId, setActiveMarcaDropdownVehicleId] = useState<string | null>(null);
   const [activeCategoriaDropdownVehicleId, setActiveCategoriaDropdownVehicleId] = useState<string | null>(null);
@@ -399,6 +407,46 @@ export default function OperacionEditPage() {
       }
     } finally {
       setIsSavingCategoriaEdit(false);
+    }
+  };
+
+  const handleDeleteMarca = async (id: string) => {
+    setIsDeletingMarcaId(id);
+    try {
+      const res = await fetch(`/api/vehicle-brands/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeletedMarcaIds((prev) => new Set(prev).add(id));
+        if (vehicleMarcaId === id) {
+          setVehicleMarcaId("");
+          setVehicleMarcaQuery("");
+        }
+        setExchangeVehicles((prev) =>
+          prev.map((v) => v.marcaId === id ? { ...v, marcaId: "", marcaQuery: "" } : v)
+        );
+      }
+    } finally {
+      setIsDeletingMarcaId(null);
+      setConfirmDeleteMarcaId(null);
+    }
+  };
+
+  const handleDeleteCategoria = async (id: string) => {
+    setIsDeletingCategoriaId(id);
+    try {
+      const res = await fetch(`/api/vehicle-categories/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeletedCategoriaIds((prev) => new Set(prev).add(id));
+        if (vehicleCategoriaId === id) {
+          setVehicleCategoriaId("");
+          setVehicleCategoriaQuery("");
+        }
+        setExchangeVehicles((prev) =>
+          prev.map((v) => v.categoriaId === id ? { ...v, categoriaId: "", categoriaQuery: "" } : v)
+        );
+      }
+    } finally {
+      setIsDeletingCategoriaId(null);
+      setConfirmDeleteCategoriaId(null);
     }
   };
 
@@ -913,16 +961,39 @@ export default function OperacionEditPage() {
                     className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                   />
                   {vehicleMarcaDropdown && (() => {
-                    const resultados = brands.filter((b) => b.nombre.toLowerCase().includes(vehicleMarcaQuery.toLowerCase()));
+                    const resultados = brands.filter((b) => !deletedMarcaIds.has(b.id) && b.nombre.toLowerCase().includes(vehicleMarcaQuery.toLowerCase()));
                     const puedeCrear = vehicleMarcaQuery.trim().length > 0 && !resultados.some((b) => b.nombre.toLowerCase() === vehicleMarcaQuery.trim().toLowerCase());
                     return (resultados.length > 0 || puedeCrear) ? (
                       <div ref={vehicleMarcaDropdownRef} className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
                         {resultados.map((b) => (
-                          <button key={b.id} type="button" onMouseDown={() => { setVehicleMarcaId(b.id); setVehicleMarcaQuery(b.nombre); setVehicleMarcaDropdown(false); }}
-                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
-                            <span className="material-symbols-outlined text-base text-zinc-400">branding_watermark</span>
-                            {b.nombre}
-                          </button>
+                          <div key={b.id} className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg">
+                            {confirmDeleteMarcaId === b.id ? (
+                              <div className="flex flex-1 items-center gap-2 py-2">
+                                <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{b.nombre}</strong>?</span>
+                                <button type="button" onMouseDown={() => handleDeleteMarca(b.id)} disabled={isDeletingMarcaId === b.id}
+                                  className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                                  {isDeletingMarcaId === b.id ? "..." : "Sí"}
+                                </button>
+                                <button type="button" onMouseDown={() => setConfirmDeleteMarcaId(null)}
+                                  className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100">
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <button type="button" onMouseDown={() => { setVehicleMarcaId(b.id); setVehicleMarcaQuery(b.nombre); setVehicleMarcaDropdown(false); }}
+                                  className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800">
+                                  <span className="material-symbols-outlined text-base text-zinc-400">branding_watermark</span>
+                                  {b.nombre}
+                                </button>
+                                <button type="button" onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteMarcaId(b.id); }}
+                                  aria-label={`Eliminar marca ${b.nombre}`}
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500">
+                                  <span className="material-symbols-outlined text-base">delete</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
                         ))}
                         {puedeCrear && (
                           <button type="button" onMouseDown={() => handleCreateMarcaEdit(vehicleMarcaQuery)} disabled={isSavingMarcaEdit}
@@ -992,16 +1063,39 @@ export default function OperacionEditPage() {
                     className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                   />
                   {vehicleCategoriaDropdown && (() => {
-                    const resultados = categories.filter((c) => c.nombre.toLowerCase().includes(vehicleCategoriaQuery.toLowerCase()));
+                    const resultados = categories.filter((c) => !deletedCategoriaIds.has(c.id) && c.nombre.toLowerCase().includes(vehicleCategoriaQuery.toLowerCase()));
                     const puedeCrear = vehicleCategoriaQuery.trim().length > 0 && !resultados.some((c) => c.nombre.toLowerCase() === vehicleCategoriaQuery.trim().toLowerCase());
                     return (resultados.length > 0 || puedeCrear) ? (
                       <div ref={vehicleCategoriaDropdownRef} className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
                         {resultados.map((c) => (
-                          <button key={c.id} type="button" onMouseDown={() => { setVehicleCategoriaId(c.id); setVehicleCategoriaQuery(c.nombre); setVehicleCategoriaDropdown(false); }}
-                            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
-                            <span className="material-symbols-outlined text-base text-zinc-400">label</span>
-                            {c.nombre}
-                          </button>
+                          <div key={c.id} className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg">
+                            {confirmDeleteCategoriaId === c.id ? (
+                              <div className="flex flex-1 items-center gap-2 py-2">
+                                <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{c.nombre}</strong>?</span>
+                                <button type="button" onMouseDown={() => handleDeleteCategoria(c.id)} disabled={isDeletingCategoriaId === c.id}
+                                  className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                                  {isDeletingCategoriaId === c.id ? "..." : "Sí"}
+                                </button>
+                                <button type="button" onMouseDown={() => setConfirmDeleteCategoriaId(null)}
+                                  className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100">
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <button type="button" onMouseDown={() => { setVehicleCategoriaId(c.id); setVehicleCategoriaQuery(c.nombre); setVehicleCategoriaDropdown(false); }}
+                                  className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800">
+                                  <span className="material-symbols-outlined text-base text-zinc-400">label</span>
+                                  {c.nombre}
+                                </button>
+                                <button type="button" onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteCategoriaId(c.id); }}
+                                  aria-label={`Eliminar categoría ${c.nombre}`}
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500">
+                                  <span className="material-symbols-outlined text-base">delete</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
                         ))}
                         {puedeCrear && (
                           <button type="button" onMouseDown={() => handleCreateCategoriaEdit(vehicleCategoriaQuery)} disabled={isSavingCategoriaEdit}
@@ -1509,16 +1603,39 @@ export default function OperacionEditPage() {
                             className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                           />
                           {activeMarcaDropdownVehicleId === vehicle.vehicleId && (() => {
-                            const resultados = brands.filter((b) => b.nombre.toLowerCase().includes(vehicle.marcaQuery.toLowerCase()));
+                            const resultados = brands.filter((b) => !deletedMarcaIds.has(b.id) && b.nombre.toLowerCase().includes(vehicle.marcaQuery.toLowerCase()));
                             const puedeCrear = vehicle.marcaQuery.trim().length > 0 && !resultados.some((b) => b.nombre.toLowerCase() === vehicle.marcaQuery.trim().toLowerCase());
                             return (resultados.length > 0 || puedeCrear) ? (
                               <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
                                 {resultados.map((b) => (
-                                  <button key={b.id} type="button" onMouseDown={() => { setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, marcaId: b.id, marcaQuery: b.nombre } : v)); setActiveMarcaDropdownVehicleId(null); }}
-                                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
-                                    <span className="material-symbols-outlined text-base text-zinc-400">branding_watermark</span>
-                                    {b.nombre}
-                                  </button>
+                                  <div key={b.id} className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg">
+                                    {confirmDeleteMarcaId === b.id ? (
+                                      <div className="flex flex-1 items-center gap-2 py-2">
+                                        <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{b.nombre}</strong>?</span>
+                                        <button type="button" onMouseDown={() => handleDeleteMarca(b.id)} disabled={isDeletingMarcaId === b.id}
+                                          className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                                          {isDeletingMarcaId === b.id ? "..." : "Sí"}
+                                        </button>
+                                        <button type="button" onMouseDown={() => setConfirmDeleteMarcaId(null)}
+                                          className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100">
+                                          No
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <button type="button" onMouseDown={() => { setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, marcaId: b.id, marcaQuery: b.nombre } : v)); setActiveMarcaDropdownVehicleId(null); }}
+                                          className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800">
+                                          <span className="material-symbols-outlined text-base text-zinc-400">branding_watermark</span>
+                                          {b.nombre}
+                                        </button>
+                                        <button type="button" onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteMarcaId(b.id); }}
+                                          aria-label={`Eliminar marca ${b.nombre}`}
+                                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500">
+                                          <span className="material-symbols-outlined text-base">delete</span>
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
                                 ))}
                                 {puedeCrear && (
                                   <button type="button" onMouseDown={() => handleCreateExchangeBrand(vehicle.vehicleId, vehicle.marcaQuery)} disabled={isSavingExchangeBrand}
@@ -1555,16 +1672,39 @@ export default function OperacionEditPage() {
                             className="h-12 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                           />
                           {activeCategoriaDropdownVehicleId === vehicle.vehicleId && (() => {
-                            const resultados = categories.filter((c) => c.nombre.toLowerCase().includes(vehicle.categoriaQuery.toLowerCase()));
+                            const resultados = categories.filter((c) => !deletedCategoriaIds.has(c.id) && c.nombre.toLowerCase().includes(vehicle.categoriaQuery.toLowerCase()));
                             const puedeCrear = vehicle.categoriaQuery.trim().length > 0 && !resultados.some((c) => c.nombre.toLowerCase() === vehicle.categoriaQuery.trim().toLowerCase());
                             return (resultados.length > 0 || puedeCrear) ? (
                               <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg">
                                 {resultados.map((c) => (
-                                  <button key={c.id} type="button" onMouseDown={() => { setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, categoriaId: c.id, categoriaQuery: c.nombre } : v)); setActiveCategoriaDropdownVehicleId(null); }}
-                                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-zinc-800 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg">
-                                    <span className="material-symbols-outlined text-base text-zinc-400">label</span>
-                                    {c.nombre}
-                                  </button>
+                                  <div key={c.id} className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg">
+                                    {confirmDeleteCategoriaId === c.id ? (
+                                      <div className="flex flex-1 items-center gap-2 py-2">
+                                        <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{c.nombre}</strong>?</span>
+                                        <button type="button" onMouseDown={() => handleDeleteCategoria(c.id)} disabled={isDeletingCategoriaId === c.id}
+                                          className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                                          {isDeletingCategoriaId === c.id ? "..." : "Sí"}
+                                        </button>
+                                        <button type="button" onMouseDown={() => setConfirmDeleteCategoriaId(null)}
+                                          className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100">
+                                          No
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <button type="button" onMouseDown={() => { setExchangeVehicles((prev) => prev.map((v) => v.vehicleId === vehicle.vehicleId ? { ...v, categoriaId: c.id, categoriaQuery: c.nombre } : v)); setActiveCategoriaDropdownVehicleId(null); }}
+                                          className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800">
+                                          <span className="material-symbols-outlined text-base text-zinc-400">label</span>
+                                          {c.nombre}
+                                        </button>
+                                        <button type="button" onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteCategoriaId(c.id); }}
+                                          aria-label={`Eliminar categoría ${c.nombre}`}
+                                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500">
+                                          <span className="material-symbols-outlined text-base">delete</span>
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
                                 ))}
                                 {puedeCrear && (
                                   <button type="button" onMouseDown={() => handleCreateExchangeCategory(vehicle.vehicleId, vehicle.categoriaQuery)} disabled={isSavingExchangeCategory}

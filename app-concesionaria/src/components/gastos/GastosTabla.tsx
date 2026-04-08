@@ -522,7 +522,7 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                             return (
                               <div
                                 key={gasto.id}
-                                className="flex items-center gap-2 rounded-lg bg-zinc-50 p-3"
+                                className="flex items-center gap-2 rounded-lg bg-zinc-100 p-3"
                               >
                                 <div className="flex flex-1 items-start gap-4 min-w-0">
                                   <div className="flex flex-col gap-0.5 min-w-0">

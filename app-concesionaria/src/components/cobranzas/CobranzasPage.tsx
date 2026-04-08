@@ -280,7 +280,7 @@ export function CobranzasPage() {
                         {isExpanded && (
                           <>
                             {op.pagos.length === 0 ? (
-                              <tr className="bg-zinc-50/60">
+                              <tr className="bg-zinc-100/60">
                                 <td colSpan={7} className="px-12 py-3 text-sm text-zinc-400 italic">
                                   Sin pagos registrados
                                 </td>
@@ -288,7 +288,7 @@ export function CobranzasPage() {
                             ) : (
                               <>
                                 {/* Encabezado subfilas */}
-                                <tr className="bg-zinc-50/80">
+                                <tr className="bg-zinc-100/80">
                                   <td />
                                   <td className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
                                     Fecha
@@ -474,7 +474,7 @@ export function CobranzasPage() {
                             {op.pagos.map((pago, idx) => (
                               <div
                                 key={idx}
-                                className="flex flex-col gap-1 rounded-lg bg-zinc-50 p-3"
+                                className="flex flex-col gap-1 rounded-lg bg-zinc-100 p-3"
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-medium text-zinc-700">

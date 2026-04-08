@@ -1,11 +1,11 @@
 # porcion-001 — Reemplazar selects por buscador en modal "Agregar gasto" (OperationExpensesSection) [FRONT]
 
-**Estado:** completada
-
 **Módulo:** Operaciones
 **Tipo de porción:** Fix
 **Porción original:** N/A
 **Prerequisitos:** Ninguno
+**Estado:** ✅ Completada
+**Completada el:** 2026-04-08
 
 ## Descripción
 
