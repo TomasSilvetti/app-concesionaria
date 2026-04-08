@@ -169,25 +169,25 @@ export function PlantillasTable({
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden overflow-hidden rounded-lg border border-zinc-200 lg:block">
+            <div className="hidden overflow-hidden rounded-lg border border-border lg:block">
               <table className="w-full">
-                <thead className="bg-zinc-50">
+                <thead className="bg-primary">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Nombre
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Contexto
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Empresas asignadas
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Acciones
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-200 bg-white">
+                <tbody className="divide-y divide-border bg-white">
                   {plantillas.map((plantilla) => (
                     <tr key={plantilla.id} className="transition-colors hover:bg-zinc-50">
                       <td className="px-6 py-4">

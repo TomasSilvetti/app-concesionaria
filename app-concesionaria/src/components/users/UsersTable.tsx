@@ -318,31 +318,31 @@ export function UsersTable({ onCreateUser, refreshTrigger }: UsersTableProps) {
           </div>
         ) : (
           <>
-            <div className="hidden overflow-hidden rounded-lg border border-zinc-200 lg:block">
+            <div className="hidden overflow-hidden rounded-lg border border-border lg:block">
               <table className="w-full">
-                <thead className="bg-zinc-50">
+                <thead className="bg-primary">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Username
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Full Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Client/Branch
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-200 bg-white">
+                <tbody className="divide-y divide-border bg-white">
                   {users.map((user) => (
                     <tr
                       key={user.id}

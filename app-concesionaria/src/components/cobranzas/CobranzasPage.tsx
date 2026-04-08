@@ -140,32 +140,32 @@ export function CobranzasPage() {
       {/* Tabla desktop */}
       {!loading && !error && (
         <>
-          <div className="hidden overflow-hidden rounded-xl border border-zinc-200 lg:block">
+          <div className="hidden overflow-hidden rounded-xl border border-border lg:block">
             <table className="w-full">
-              <thead className="bg-zinc-50">
+              <thead className="bg-primary">
                 <tr>
                   <th className="w-10 px-4 py-3" />
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                     Operación
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                     Comprador
                   </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                     Precio Total
                   </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                     Saldado
                   </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                     Pendiente
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                     Estado
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y divide-border bg-white">
                 {operaciones.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-16">

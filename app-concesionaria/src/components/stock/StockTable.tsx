@@ -211,9 +211,9 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
   return (
     <>
       {/* Vista Desktop */}
-      <div className="hidden overflow-hidden rounded-lg border border-zinc-200 lg:block">
+      <div className="hidden overflow-hidden rounded-lg border border-border lg:block">
         <table className="w-full">
-          <thead className="bg-zinc-50">
+          <thead className="bg-primary">
             <tr>
               <th className="px-4 py-3 text-center w-10">
                 <input
@@ -221,7 +221,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                   checked={allSelected}
                   ref={(el) => { if (el) el.indeterminate = someSelected; }}
                   onChange={handleToggleAll}
-                  className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  className="h-4 w-4 rounded border-white/40 cursor-pointer"
                   aria-label="Seleccionar todos los vehículos"
                 />
               </th>
@@ -229,7 +229,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
               <th className="px-6 py-3 text-left">
                 <button
                   onClick={() => handleSort("marca")}
-                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Marca
                   {sortBy === "marca" && (
@@ -242,7 +242,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
               <th className="px-6 py-3 text-left">
                 <button
                   onClick={() => handleSort("modelo")}
-                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Modelo
                   {sortBy === "modelo" && (
@@ -252,16 +252,16 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                 Versión
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                 Color
               </th>
               <th className="px-6 py-3 text-right">
                 <button
                   onClick={() => handleSort("kilometros")}
-                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Kilómetros
                   {sortBy === "kilometros" && (
@@ -274,7 +274,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
               <th className="px-6 py-3 text-right">
                 <button
                   onClick={() => handleSort("precioRevista")}
-                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Precio Revista
                   {sortBy === "precioRevista" && (
@@ -287,7 +287,7 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
               <th className="px-6 py-3 text-right">
                 <button
                   onClick={() => handleSort("precioOferta")}
-                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Precio Oferta
                   {sortBy === "precioOferta" && (
@@ -297,12 +297,12 @@ export function StockTable({ refreshTrigger, filters = {}, onSelectionChange }: 
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 bg-white">
+          <tbody className="divide-y divide-border bg-white">
             {vehicles.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-6 py-16">

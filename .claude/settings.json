@@ -12,7 +12,11 @@
       "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrc -type f -iname *form*)",
       "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrc -type f \\\\\\(-iname *selector* -o -iname *select* -o -iname *picker* \\\\\\))",
       "Bash(grep -l \"edit\\\\|Edit\\\\|update\\\\|Update\" \"c:\\\\Users\\\\tomas\\\\Documents\\\\Proyectos\\\\App-Concesionaria\\\\app-concesionaria\\\\src/app/operaciones/\"*)",
-      "Bash(grep -r \"showAddInversor\\\\|searchResults\" c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrc/components --include=*.tsx)"
+      "Bash(grep -r \"showAddInversor\\\\|searchResults\" c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrc/components --include=*.tsx)",
+      "Bash(grep -r \"theme\\\\|extend\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/tailwind*)",
+      "Bash(find /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src -name *theme* -o -name *color* -o -name *style*)",
+      "Bash(grep -r \"className.*button\\\\|class.*btn\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/components --include=*.tsx --include=*.ts)",
+      "Bash(grep -r \"\\\\-\\\\-color\\\\|--font\\\\|@theme\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src --include=*.tsx --include=*.ts --include=*.css)"
     ],
     "additionalDirectories": [
       "C:\\Users\\tomas\\Documents\\Proyectos\\App-Concesionaria\\docs\\historias-de-usuario\\HU-21"
