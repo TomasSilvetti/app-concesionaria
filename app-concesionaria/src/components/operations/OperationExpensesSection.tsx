@@ -328,13 +328,13 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                 <table className="w-full">
                   <thead>
                     <tr>
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
                         Descripción
                       </th>
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
                         Quién pagó
                       </th>
-                      <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                         Monto
                       </th>
                       <th className="pb-3 w-16" />

@@ -188,16 +188,16 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
               <table className="w-full">
                 <thead>
                   <tr>
-                    <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Fecha
                     </th>
-                    <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Forma de pago
                     </th>
-                    <th className="pb-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    <th className="pb-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-white">
                       Monto
                     </th>
-                    <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                       Nota
                     </th>
                     {!readOnly && <th className="pb-3 w-16" />}
