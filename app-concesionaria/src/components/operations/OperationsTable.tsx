@@ -559,7 +559,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
         />
       )}
       <div className="hidden overflow-x-auto rounded-lg border border-zinc-200 lg:block">
-        <table className="w-full min-w-[900px]">
+        <table className="w-full table-fixed">
           <thead className="bg-zinc-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
