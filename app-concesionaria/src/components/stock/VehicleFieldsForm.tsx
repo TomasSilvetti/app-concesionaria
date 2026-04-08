@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import "material-symbols/outlined.css";
 import { NumericInput } from "@/components/ui/NumericInput";
 
@@ -103,65 +103,157 @@ export function VehicleFieldsForm({
 
   const [photoErrors, setPhotoErrors] = useState<string[]>([]);
 
-  const [showAddBrand, setShowAddBrand] = useState(false);
-  const [newBrandName, setNewBrandName] = useState("");
-  const [localBrands, setLocalBrands] = useState<VehicleBrand[]>([]);
+  // Marca search
+  const [marcaQuery, setMarcaQuery] = useState("");
+  const [marcaDropdown, setMarcaDropdown] = useState(false);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const [confirmDeleteBrandId, setConfirmDeleteBrandId] = useState<string | null>(null);
+  const [isDeletingBrandId, setIsDeletingBrandId] = useState<string | null>(null);
+  const [deletedBrandIds, setDeletedBrandIds] = useState<Set<string>>(new Set());
+  const marcaInputRef = useRef<HTMLInputElement>(null);
+  const marcaDropdownRef = useRef<HTMLDivElement>(null);
 
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [localCategories, setLocalCategories] = useState<VehicleCategory[]>([]);
+  // Categoría search
+  const [categoriaQuery, setCategoriaQuery] = useState("");
+  const [categoriaDropdown, setCategoriaDropdown] = useState(false);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
+  const [confirmDeleteCategoryId, setConfirmDeleteCategoryId] = useState<string | null>(null);
+  const [isDeletingCategoryId, setIsDeletingCategoryId] = useState<string | null>(null);
+  const [deletedCategoryIds, setDeletedCategoryIds] = useState<Set<string>>(new Set());
+  const categoriaInputRef = useRef<HTMLInputElement>(null);
+  const categoriaDropdownRef = useRef<HTMLDivElement>(null);
 
-  const allBrands = [...brands, ...localBrands];
-  const allCategories = [...categories, ...localCategories];
-
-  const handleAddBrandClick = async () => {
-    if (!showAddBrand) {
-      setShowAddBrand(true);
-      return;
+  // Sync display names when brands/categories load (edit mode)
+  useEffect(() => {
+    if (data.marcaId && marcaQuery === "") {
+      const found = brands.find((b) => b.id === data.marcaId);
+      if (found) setMarcaQuery(found.nombre);
     }
-    if (!newBrandName.trim()) return;
+  }, [brands, data.marcaId]);
+
+  useEffect(() => {
+    if (data.categoriaId && categoriaQuery === "") {
+      const found = categories.find((c) => c.id === data.categoriaId);
+      if (found) setCategoriaQuery(found.nombre);
+    }
+  }, [categories, data.categoriaId]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        marcaDropdownRef.current && !marcaDropdownRef.current.contains(e.target as Node) &&
+        marcaInputRef.current && !marcaInputRef.current.contains(e.target as Node)
+      ) setMarcaDropdown(false);
+      if (
+        categoriaDropdownRef.current && !categoriaDropdownRef.current.contains(e.target as Node) &&
+        categoriaInputRef.current && !categoriaInputRef.current.contains(e.target as Node)
+      ) setCategoriaDropdown(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const marcaResultados = brands.filter(
+    (b) =>
+      !deletedBrandIds.has(b.id) &&
+      b.nombre.toLowerCase().includes(marcaQuery.toLowerCase())
+  );
+  const puedoCrearMarca =
+    marcaQuery.trim().length > 0 &&
+    !marcaResultados.some((b) => b.nombre.toLowerCase() === marcaQuery.trim().toLowerCase());
+
+  const categoriaResultados = categories.filter(
+    (c) =>
+      !deletedCategoryIds.has(c.id) &&
+      c.nombre.toLowerCase().includes(categoriaQuery.toLowerCase())
+  );
+  const puedoCrearCategoria =
+    categoriaQuery.trim().length > 0 &&
+    !categoriaResultados.some((c) => c.nombre.toLowerCase() === categoriaQuery.trim().toLowerCase());
+
+  const handleDeleteBrand = async (id: string) => {
+    setIsDeletingBrandId(id);
+    try {
+      const res = await fetch(`/api/vehicle-brands/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeletedBrandIds((prev) => new Set(prev).add(id));
+        if (data.marcaId === id) {
+          handlers.setMarcaId("");
+          setMarcaQuery("");
+        }
+      }
+    } finally {
+      setIsDeletingBrandId(null);
+      setConfirmDeleteBrandId(null);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    setIsDeletingCategoryId(id);
+    try {
+      const res = await fetch(`/api/vehicle-categories/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeletedCategoryIds((prev) => new Set(prev).add(id));
+        if (data.categoriaId === id) {
+          handlers.setCategoriaId("");
+          setCategoriaQuery("");
+        }
+      }
+    } finally {
+      setIsDeletingCategoryId(null);
+      setConfirmDeleteCategoryId(null);
+    }
+  };
+
+  const handleSelectBrand = (brand: VehicleBrand) => {
+    handlers.setMarcaId(brand.id);
+    handleInputChange("marcaId");
+    setMarcaQuery(brand.nombre);
+    setMarcaDropdown(false);
+  };
+
+  const handleCreateBrand = async () => {
+    const nombre = marcaQuery.trim().toUpperCase();
+    if (!nombre) return;
     setIsSavingBrand(true);
     try {
       const res = await fetch("/api/vehicle-brands", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: newBrandName.trim() }),
+        body: JSON.stringify({ nombre }),
       });
-      const data = await res.json();
+      const json = await res.json();
       if (res.ok) {
-        setLocalBrands((prev) => [...prev, data.brand]);
-        handlers.setMarcaId(data.brand.id);
-        handleInputChange("marcaId");
-        setNewBrandName("");
-        setShowAddBrand(false);
+        brands.push(json.brand);
+        handleSelectBrand(json.brand);
       }
     } finally {
       setIsSavingBrand(false);
     }
   };
 
-  const handleAddCategoryClick = async () => {
-    if (!showAddCategory) {
-      setShowAddCategory(true);
-      return;
-    }
-    if (!newCategoryName.trim()) return;
+  const handleSelectCategory = (category: VehicleCategory) => {
+    handlers.setCategoriaId(category.id);
+    handleInputChange("categoriaId");
+    setCategoriaQuery(category.nombre);
+    setCategoriaDropdown(false);
+  };
+
+  const handleCreateCategory = async () => {
+    const nombre = categoriaQuery.trim().toUpperCase();
+    if (!nombre) return;
     setIsSavingCategory(true);
     try {
       const res = await fetch("/api/vehicle-categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: newCategoryName.trim() }),
+        body: JSON.stringify({ nombre }),
       });
-      const data = await res.json();
+      const json = await res.json();
       if (res.ok) {
-        setLocalCategories((prev) => [...prev, data.category]);
-        handlers.setCategoriaId(data.category.id);
-        handleInputChange("categoriaId");
-        setNewCategoryName("");
-        setShowAddCategory(false);
+        categories.push(json.category);
+        handleSelectCategory(json.category);
       }
     } finally {
       setIsSavingCategory(false);
@@ -277,60 +369,104 @@ export function VehicleFieldsForm({
             <label htmlFor="marca" className="text-sm font-medium text-zinc-700">
               Marca <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+            <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                 branding_watermark
               </span>
-              <select
+              {data.marcaId && !marcaDropdown && (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500">
+                  check_circle
+                </span>
+              )}
+              <input
+                ref={marcaInputRef}
                 id="marca"
-                value={data.marcaId}
+                type="text"
+                value={marcaQuery}
                 onChange={(e) => {
-                  handlers.setMarcaId(e.target.value);
+                  setMarcaQuery(e.target.value);
+                  handlers.setMarcaId("");
                   handleInputChange("marcaId");
+                  setMarcaDropdown(true);
                 }}
-                className={`h-12 w-full appearance-none rounded-lg border ${
+                onFocus={() => setMarcaDropdown(true)}
+                placeholder="Buscar marca..."
+                autoComplete="off"
+                disabled={disabled || brandsLoading}
+                aria-label="Buscar marca"
+                className={`h-12 w-full rounded-lg border ${
                   fieldErrors.marcaId
                     ? "border-red-300 bg-red-50"
                     : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={disabled || brandsLoading}
-              >
-                <option value="">Seleccionar marca...</option>
-                {allBrands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.nombre}
-                  </option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                expand_more
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddBrandClick}
-              disabled={disabled || isSavingBrand || (showAddBrand && !newBrandName.trim())}
-              className={`flex h-12 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors disabled:opacity-40 focus:outline-none ${showAddBrand ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
-              aria-label={showAddBrand ? "Confirmar nueva marca" : "Agregar nueva marca"}
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-              {showAddBrand ? "Confirmar" : "Agregar"}
-            </button>
-            </div>
-            {showAddBrand && (
-              <input
-                type="text"
-                value={newBrandName}
-                onChange={(e) => setNewBrandName(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === "Enter" && handleAddBrandClick()}
-                placeholder="Nombre de la nueva marca..."
-                autoFocus
-                className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                disabled={isSavingBrand}
-                aria-label="Nombre de la nueva marca"
+                } pl-11 pr-10 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
               />
-            )}
+              {marcaDropdown && (marcaResultados.length > 0 || puedoCrearMarca) && (
+                <div
+                  ref={marcaDropdownRef}
+                  className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg"
+                >
+                  {marcaResultados.map((b) => (
+                    <div
+                      key={b.id}
+                      className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg"
+                    >
+                      {confirmDeleteBrandId === b.id ? (
+                        <div className="flex flex-1 items-center gap-2 py-2">
+                          <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{b.nombre}</strong>?</span>
+                          <button
+                            type="button"
+                            onMouseDown={() => handleDeleteBrand(b.id)}
+                            disabled={isDeletingBrandId === b.id}
+                            className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                          >
+                            {isDeletingBrandId === b.id ? "..." : "Sí"}
+                          </button>
+                          <button
+                            type="button"
+                            onMouseDown={() => setConfirmDeleteBrandId(null)}
+                            className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onMouseDown={() => handleSelectBrand(b)}
+                            className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800"
+                          >
+                            <span className="material-symbols-outlined text-base text-zinc-400">
+                              branding_watermark
+                            </span>
+                            {b.nombre}
+                          </button>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteBrandId(b.id); }}
+                            aria-label={`Eliminar marca ${b.nombre}`}
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                          >
+                            <span className="material-symbols-outlined text-base">delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {puedoCrearMarca && (
+                    <button
+                      type="button"
+                      onMouseDown={handleCreateBrand}
+                      disabled={isSavingBrand}
+                      className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-base">add</span>
+                      {isSavingBrand ? "Creando..." : `Crear "${marcaQuery.trim()}"`}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
             {fieldErrors.marcaId && (
               <span className="text-xs text-red-600">
                 {fieldErrors.marcaId}
@@ -441,60 +577,104 @@ export function VehicleFieldsForm({
             >
               Categoría <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+            <div className="relative">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
                 label
               </span>
-              <select
+              {data.categoriaId && !categoriaDropdown && (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500">
+                  check_circle
+                </span>
+              )}
+              <input
+                ref={categoriaInputRef}
                 id="categoria"
-                value={data.categoriaId}
+                type="text"
+                value={categoriaQuery}
                 onChange={(e) => {
-                  handlers.setCategoriaId(e.target.value);
+                  setCategoriaQuery(e.target.value);
+                  handlers.setCategoriaId("");
                   handleInputChange("categoriaId");
+                  setCategoriaDropdown(true);
                 }}
-                className={`h-12 w-full appearance-none rounded-lg border ${
+                onFocus={() => setCategoriaDropdown(true)}
+                placeholder="Buscar categoría..."
+                autoComplete="off"
+                disabled={disabled || categoriesLoading}
+                aria-label="Buscar categoría"
+                className={`h-12 w-full rounded-lg border ${
                   fieldErrors.categoriaId
                     ? "border-red-300 bg-red-50"
                     : "border-zinc-300 bg-zinc-50"
-                } pl-11 pr-10 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
-                disabled={disabled || categoriesLoading}
-              >
-                <option value="">Seleccionar categoría...</option>
-                {allCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.nombre}
-                  </option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
-                expand_more
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddCategoryClick}
-              disabled={disabled || isSavingCategory || (showAddCategory && !newCategoryName.trim())}
-              className={`flex h-12 items-center gap-1 rounded-lg px-3 text-xs font-medium text-white transition-colors disabled:opacity-40 focus:outline-none ${showAddCategory ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
-              aria-label={showAddCategory ? "Confirmar nueva categoría" : "Agregar nueva categoría"}
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-              {showAddCategory ? "Confirmar" : "Agregar"}
-            </button>
-            </div>
-            {showAddCategory && (
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === "Enter" && handleAddCategoryClick()}
-                placeholder="Nombre de la nueva categoría..."
-                autoFocus
-                className="h-10 w-full rounded-lg border border-blue-300 bg-white px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                disabled={isSavingCategory}
-                aria-label="Nombre de la nueva categoría"
+                } pl-11 pr-10 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50`}
               />
-            )}
+              {categoriaDropdown && (categoriaResultados.length > 0 || puedoCrearCategoria) && (
+                <div
+                  ref={categoriaDropdownRef}
+                  className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg"
+                >
+                  {categoriaResultados.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg"
+                    >
+                      {confirmDeleteCategoryId === c.id ? (
+                        <div className="flex flex-1 items-center gap-2 py-2">
+                          <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{c.nombre}</strong>?</span>
+                          <button
+                            type="button"
+                            onMouseDown={() => handleDeleteCategory(c.id)}
+                            disabled={isDeletingCategoryId === c.id}
+                            className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                          >
+                            {isDeletingCategoryId === c.id ? "..." : "Sí"}
+                          </button>
+                          <button
+                            type="button"
+                            onMouseDown={() => setConfirmDeleteCategoryId(null)}
+                            className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onMouseDown={() => handleSelectCategory(c)}
+                            className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800"
+                          >
+                            <span className="material-symbols-outlined text-base text-zinc-400">
+                              label
+                            </span>
+                            {c.nombre}
+                          </button>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteCategoryId(c.id); }}
+                            aria-label={`Eliminar categoría ${c.nombre}`}
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                          >
+                            <span className="material-symbols-outlined text-base">delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {puedoCrearCategoria && (
+                    <button
+                      type="button"
+                      onMouseDown={handleCreateCategory}
+                      disabled={isSavingCategory}
+                      className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-base">add</span>
+                      {isSavingCategory ? "Creando..." : `Crear "${categoriaQuery.trim()}"`}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
             {fieldErrors.categoriaId && (
               <span className="text-xs text-red-600">
                 {fieldErrors.categoriaId}

@@ -8,7 +8,14 @@
       "Bash(find c:/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src -type f \\\\\\(-name *.tsx -o -name *.ts \\\\\\))",
       "Bash(ls docs/historias-de-usuario/HU-*.md)",
       "Bash(mkdir -p \"c:/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-20\")",
-      "Bash(mv \"c:/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-20.md\" \"c:/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-20/HU-20.md\")"
+      "Bash(mv \"c:/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-20.md\" \"c:/Users/tomas/Documents/Proyectos/App-Concesionaria/docs/historias-de-usuario/HU-20/HU-20.md\")",
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrc -type f -iname *form*)",
+      "Bash(find c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrc -type f \\\\\\(-iname *selector* -o -iname *select* -o -iname *picker* \\\\\\))",
+      "Bash(grep -l \"edit\\\\|Edit\\\\|update\\\\|Update\" \"c:\\\\Users\\\\tomas\\\\Documents\\\\Proyectos\\\\App-Concesionaria\\\\app-concesionaria\\\\src/app/operaciones/\"*)",
+      "Bash(grep -r \"showAddInversor\\\\|searchResults\" c:UserstomasDocumentsProyectosApp-Concesionariaapp-concesionariasrc/components --include=*.tsx)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\tomas\\Documents\\Proyectos\\App-Concesionaria\\docs\\historias-de-usuario\\HU-21"
     ]
   }
 }
