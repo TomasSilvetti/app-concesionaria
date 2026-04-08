@@ -37,7 +37,6 @@ export function KanbanTarjetaCard({ tarjeta, isDragOverlay = false, onClick }: P
     <div
       ref={setNodeRef}
       style={style}
-      role="article"
       aria-label={`Tarjeta: ${tarjeta.titulo}`}
       onClick={() => !isDragging && onClick?.(tarjeta)}
       className={[
@@ -49,6 +48,7 @@ export function KanbanTarjetaCard({ tarjeta, isDragOverlay = false, onClick }: P
         .join(" ")}
       {...attributes}
       {...listeners}
+      role="article"
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-zinc-800">{tarjeta.titulo}</p>
