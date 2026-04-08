@@ -596,10 +596,25 @@ export async function POST(req: NextRequest) {
       let resolvedVehicleId: string;
 
       if (stockVehicleId) {
-        // Use existing stock vehicle — update its estado to en_proceso
+        // Use existing stock vehicle — update its estado to en_proceso and sync edited fields
         await tx.vehicle.update({
           where: { id: stockVehicleId },
-          data: { estado: "en_proceso", actualizadoEn: now },
+          data: {
+            estado: "en_proceso",
+            marcaId,
+            modelo,
+            anio,
+            categoriaId,
+            patente: patente || null,
+            version,
+            color,
+            kilometros,
+            notasMecanicas: notasMecanicas || null,
+            notasGenerales: notasGenerales || null,
+            precioRevista,
+            precioOferta: precioOferta ?? null,
+            actualizadoEn: now,
+          },
         });
         resolvedVehicleId = stockVehicleId;
       } else {
