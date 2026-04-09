@@ -59,6 +59,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       icon: "checklist",
       path: "/pendientes",
     },
+    {
+      label: "Métricas",
+      icon: "bar_chart",
+      path: "/metricas",
+    },
     ...(isAdmin ? [{
       label: "Usuarios",
       icon: "group",
