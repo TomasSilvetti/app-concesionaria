@@ -53,8 +53,8 @@ function GraficoOperaciones({ desde, hasta }: { desde: string; hasta: string }) 
   };
 
   const data = [
-    { name: "Cerradas", value: cerradas, color: "#2563EB" },
-    { name: "Canceladas", value: canceladas, color: "#EF4444" },
+    { name: "Cerradas", value: cerradas, color: "#253551" },
+    { name: "Canceladas", value: canceladas, color: "#7B1F2A" },
     { name: "Abiertas", value: abiertas, color: "#D1D5DB" },
   ];
 
@@ -187,8 +187,8 @@ function GraficoInventario() {
     valorRealToma: 0,
   };
   const data = [
-    { name: "Valor Revista", value: valorRevista, color: "#2563EB" },
-    { name: "Precio Real Toma", value: valorRealToma, color: "#10B981" },
+    { name: "Valor Revista", value: valorRevista, color: "#253551" },
+    { name: "Precio Real Toma", value: valorRealToma, color: "#15803D" },
   ];
 
   return (
