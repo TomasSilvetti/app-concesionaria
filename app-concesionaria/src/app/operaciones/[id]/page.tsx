@@ -326,10 +326,11 @@ export default function OperacionDetailPage() {
           </div>
         </div>
 
-        {/* Contenido principal en grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Contenido principal */}
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           {/* Sección: Datos del vehículo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-1">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5 lg:row-start-1">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 directions_car
@@ -420,7 +421,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Módulo de Gastos */}
-          <div className="lg:col-span-1 lg:row-span-3 lg:row-start-1">
+          <div className="lg:col-span-2 lg:row-span-3 lg:row-start-1">
             <OperationExpensesSection
             operacionId={operation.idOperacion}
             onTotalChange={setGastosTotal}
@@ -429,7 +430,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Fechas */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5 lg:row-start-2">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 calendar_today
@@ -458,6 +459,8 @@ export default function OperacionDetailPage() {
             </dl>
           </div>
 
+          </div>
+
           {/* Sección: Cobranzas */}
           <OperationCobranzasSection
             operacionId={operation.idOperacion}
@@ -472,7 +475,7 @@ export default function OperacionDetailPage() {
           />
 
           {/* Sección: Información financiera */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 payments
@@ -539,7 +542,7 @@ export default function OperacionDetailPage() {
 
           {/* Sección: Distribución de utilidades */}
           {operation.inversion && (
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-5">
               <OperationInversionSection
                 operacionId={operation.idOperacion}
                 inversion={operation.inversion}
@@ -552,7 +555,7 @@ export default function OperacionDetailPage() {
           )}
 
           {/* Sección: Estado y tipo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 info
@@ -589,7 +592,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Vehículos de intercambio */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 swap_horiz
@@ -684,7 +687,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Sección: Documentos */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-2xl text-blue-600">
@@ -706,7 +709,7 @@ export default function OperacionDetailPage() {
           </div>
 
           {/* Cerrar operación */}
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm lg:col-span-5">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-2xl text-amber-600">warning</span>

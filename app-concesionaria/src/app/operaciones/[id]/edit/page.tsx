@@ -910,10 +910,11 @@ export default function OperacionEditPage() {
           </div>
         )}
 
-        {/* Contenido principal en grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Contenido principal */}
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           {/* Sección: Datos del vehículo (editable) */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-1">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5 lg:row-start-1">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 directions_car
@@ -1237,7 +1238,7 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Sección: Módulo de Gastos */}
-          <div className="lg:col-span-1 lg:row-span-3 lg:row-start-1">
+          <div className="lg:col-span-2 lg:row-span-3 lg:row-start-1">
             <OperationExpensesSection
               operacionId={id}
               onTotalChange={setGastosAsociados}
@@ -1246,7 +1247,7 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Sección: Fechas */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2 lg:row-start-2">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5 lg:row-start-2">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 calendar_today
@@ -1337,8 +1338,10 @@ export default function OperacionEditPage() {
             </div>
           </div>
 
+          </div>
+
           {/* Sección: Cobranzas */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-5">
             <OperationCobranzasSection
               operacionId={id}
               precioVentaTotal={parseFloat(precioVentaTotal) || 0}
@@ -1349,7 +1352,7 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Sección: Información financiera */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 payments
@@ -1485,7 +1488,7 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Sección: Estado y tipo */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 info
@@ -1552,7 +1555,7 @@ export default function OperacionEditPage() {
           </div>
 
           {/* Sección: Vehículos de intercambio (editable) */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-3">
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
             <div className="mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-2xl text-blue-600">
                 swap_horiz
@@ -1882,7 +1885,7 @@ export default function OperacionEditPage() {
 
           {/* Cerrar operación */}
           {!isCerrada && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm lg:col-span-3">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm lg:col-span-5">
               <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-2xl text-amber-600">warning</span>

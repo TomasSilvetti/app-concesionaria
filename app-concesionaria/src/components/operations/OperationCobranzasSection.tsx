@@ -132,7 +132,7 @@ export function OperationCobranzasSection({ operacionId, precioVentaTotal, estad
 
   return (
     <>
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-5">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
