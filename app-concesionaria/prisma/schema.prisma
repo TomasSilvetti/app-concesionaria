@@ -335,6 +335,7 @@ enum DocumentFieldType {
   auto
   fijo
   manual
+  manual_opcional
 }
 
 model DocumentTemplate {

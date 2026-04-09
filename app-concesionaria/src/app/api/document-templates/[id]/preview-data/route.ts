@@ -159,7 +159,7 @@ export async function GET(
       }
       // tipo "manual": value queda null, el usuario lo completa
 
-      const tipoMap = { auto: "Auto", fijo: "Fijo", manual: "Manual" } as const;
+      const tipoMap = { auto: "Auto", fijo: "Fijo", manual: "Manual", manual_opcional: "ManualOpcional" } as const;
 
       return {
         id: field.id,

@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
         value = field.valorFijo === "__FECHA_ACTUAL__"
           ? new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })
           : (field.valorFijo ?? null);
-      } else if (field.tipo === "manual") {
+      } else if (field.tipo === "manual" || field.tipo === "manual_opcional") {
         value = safeManualFields[field.id] ?? null;
       } else if (field.tipo === "auto") {
         value = entityObj && field.rutaAuto

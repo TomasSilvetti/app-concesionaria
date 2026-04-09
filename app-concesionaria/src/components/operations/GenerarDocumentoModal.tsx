@@ -5,7 +5,7 @@ import { PdfCanvas } from "@/components/documents/PdfCanvas";
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
-type FieldType = "Auto" | "Fijo" | "Manual";
+type FieldType = "Auto" | "Fijo" | "Manual" | "ManualOpcional";
 
 interface TemplateField {
   id: string;
@@ -88,7 +88,7 @@ export function GenerarDocumentoModal({
           // Inicializar valores manuales vacíos
           const initials: Record<string, string> = {};
           for (const f of data.fields) {
-            if (f.tipo === "Manual") initials[f.id] = "";
+            if (f.tipo === "Manual" || f.tipo === "ManualOpcional") initials[f.id] = "";
           }
           setManualValues(initials);
         }
@@ -120,8 +120,9 @@ export function GenerarDocumentoModal({
   }
 
   const manualFields =
-    previewData?.fields.filter((f) => f.tipo === "Manual") ?? [];
-  const allManualFilled = manualFields.every(
+    previewData?.fields.filter((f) => f.tipo === "Manual" || f.tipo === "ManualOpcional") ?? [];
+  const requiredManualFields = manualFields.filter((f) => f.tipo === "Manual");
+  const allManualFilled = requiredManualFields.every(
     (f) => manualValues[f.id]?.trim() !== ""
   );
   const canGenerate = !loadingPreview && !previewError && allManualFilled;
@@ -199,7 +200,11 @@ export function GenerarDocumentoModal({
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block h-3 w-3 rounded-sm border border-amber-400 bg-amber-50" />
-                  Campo manual (completar)
+                  Campo manual (obligatorio)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-3 w-3 rounded-sm border border-violet-400 bg-violet-50" />
+                  Campo manual (opcional)
                 </span>
               </div>
 
@@ -220,10 +225,10 @@ export function GenerarDocumentoModal({
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-zinc-200 px-6 py-4 shrink-0">
           <p className="text-xs text-zinc-400">
-            {manualFields.length > 0 && !allManualFilled
-              ? "Completá todos los campos manuales para continuar"
-              : manualFields.length > 0
-              ? "Todos los campos están completos"
+            {requiredManualFields.length > 0 && !allManualFilled
+              ? "Completá todos los campos obligatorios para continuar"
+              : requiredManualFields.length > 0
+              ? "Todos los campos obligatorios están completos"
               : ""}
           </p>
           <div className="flex gap-3">
@@ -321,6 +326,7 @@ interface FieldOverlayProps {
 
 function FieldOverlay({ field, manualValue, onManualChange }: FieldOverlayProps) {
   const isManual = field.tipo === "Manual";
+  const isManualOpcional = field.tipo === "ManualOpcional";
   const hasValue = field.value !== null && field.value !== "";
 
   const style: React.CSSProperties = {
@@ -344,6 +350,24 @@ function FieldOverlay({ field, manualValue, onManualChange }: FieldOverlayProps)
           onChange={(e) => onManualChange(field.id, e.target.value)}
           placeholder={field.label}
           className="h-full w-full rounded border border-amber-400 bg-white px-1.5 text-xs text-zinc-800 placeholder-amber-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+        />
+      </div>
+    );
+  }
+
+  if (isManualOpcional) {
+    return (
+      <div style={style} className="flex items-center">
+        <label htmlFor={`field-${field.id}`} className="sr-only">
+          {field.label} (opcional)
+        </label>
+        <input
+          id={`field-${field.id}`}
+          type="text"
+          value={manualValue}
+          onChange={(e) => onManualChange(field.id, e.target.value)}
+          placeholder={`${field.label} (opcional)`}
+          className="h-full w-full rounded border border-violet-400 bg-white px-1.5 text-xs text-zinc-800 placeholder-violet-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-400"
         />
       </div>
     );
