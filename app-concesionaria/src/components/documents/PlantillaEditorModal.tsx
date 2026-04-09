@@ -11,7 +11,7 @@ interface Recuadro {
   width: number;
   height: number;
   nombre: string;
-  tipo: "auto" | "fijo" | "manual" | "";
+  tipo: "auto" | "fijo" | "manual" | "fecha" | "";
   valor: string;
 }
 
@@ -129,11 +129,14 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
                 width: f.ancho,
                 height: f.alto,
                 nombre: f.nombre,
-                tipo: f.tipo,
+                tipo:
+                  f.tipo === "fijo" && f.valorFijo === "__FECHA_ACTUAL__"
+                    ? "fecha"
+                    : f.tipo,
                 valor:
                   f.tipo === "auto"
                     ? (f.rutaAuto ?? "")
-                    : f.tipo === "fijo"
+                    : f.tipo === "fijo" && f.valorFijo !== "__FECHA_ACTUAL__"
                     ? (f.valorFijo ?? "")
                     : "",
               })
@@ -261,8 +264,8 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
         JSON.stringify(
           recuadros.map((r, i) => ({
             nombre: r.nombre,
-            tipo: r.tipo,
-            valorFijo: r.tipo === "fijo" ? r.valor : undefined,
+            tipo: r.tipo === "fecha" ? "fijo" : r.tipo,
+            valorFijo: r.tipo === "fijo" ? r.valor : r.tipo === "fecha" ? "__FECHA_ACTUAL__" : undefined,
             rutaAuto: r.tipo === "auto" ? r.valor : undefined,
             posX: r.x,
             posY: r.y,
@@ -601,8 +604,8 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
                   <label className="mb-1.5 block text-xs font-medium text-zinc-700">
                     Tipo <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(["auto", "fijo", "manual"] as const).map((tipo) => (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(["auto", "fijo", "fecha", "manual"] as const).map((tipo) => (
                       <button
                         key={tipo}
                         onClick={() =>
@@ -614,7 +617,7 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
                             : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
                         }`}
                       >
-                        {tipo === "auto" ? "Auto" : tipo === "fijo" ? "Fijo" : "Manual"}
+                        {tipo === "auto" ? "Auto" : tipo === "fijo" ? "Fijo" : tipo === "fecha" ? "Fecha" : "Manual"}
                       </button>
                     ))}
                   </div>
@@ -675,6 +678,17 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
                       placeholder="ej: Buenos Aires, Argentina"
                       className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                )}
+
+                {selectedRecuadro.tipo === "fecha" && (
+                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="flex items-start gap-2 text-xs text-zinc-600">
+                      <span className="material-symbols-outlined flex-shrink-0 text-sm text-zinc-400">
+                        calendar_today
+                      </span>
+                      Este campo se completará automáticamente con la fecha del día en que se genere el documento.
+                    </p>
                   </div>
                 )}
 

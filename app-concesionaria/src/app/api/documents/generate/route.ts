@@ -170,7 +170,9 @@ export async function POST(req: NextRequest) {
       let value: string | null = null;
 
       if (field.tipo === "fijo") {
-        value = field.valorFijo ?? null;
+        value = field.valorFijo === "__FECHA_ACTUAL__"
+          ? new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })
+          : (field.valorFijo ?? null);
       } else if (field.tipo === "manual") {
         value = safeManualFields[field.id] ?? null;
       } else if (field.tipo === "auto") {
