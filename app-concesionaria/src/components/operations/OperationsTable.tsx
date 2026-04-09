@@ -9,6 +9,7 @@ interface Operation {
   idOperacion: number;
   fechaInicio: string;
   fechaVenta: string | null;
+  nombreComprador: string;
   modelo: string;
   anio: number;
   patente: string;
@@ -558,17 +559,17 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
           onClose={() => setPaymentOp(null)}
         />
       )}
-      <div className="hidden overflow-x-auto rounded-lg border border-zinc-200 lg:block">
+      <div className="hidden overflow-x-auto rounded-lg border border-border lg:block">
         <table className="w-full table-fixed">
-          <thead className="bg-zinc-50">
+          <thead className="bg-primary">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white w-[110px]">
                 ID Operación
               </th>
-              <th className="px-6 py-3 text-left">
+              <th className="px-4 py-3 text-left w-[105px]">
                 <button
                   onClick={() => handleSort("fechaInicio")}
-                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Fecha Inicio
                   {sortBy === "fechaInicio" && (
@@ -578,23 +579,10 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-left">
-                <button
-                  onClick={() => handleSort("fechaVenta")}
-                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                >
-                  Fecha Venta
-                  {sortBy === "fechaVenta" && (
-                    <span className="material-symbols-outlined text-sm">
-                      {sortOrder === "asc" ? "arrow_upward" : "arrow_downward"}
-                    </span>
-                  )}
-                </button>
-              </th>
-              <th className="px-6 py-3 text-left">
+<th className="px-6 py-3 text-left w-[160px]">
                 <button
                   onClick={() => handleSort("marca")}
-                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Vehículo
                   {sortBy === "marca" && (
@@ -604,13 +592,13 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white w-[130px]">
                 Tipo de Operación
               </th>
-              <th className="px-6 py-3 text-left">
+              <th className="px-3 py-3 text-left w-[95px]">
                 <button
                   onClick={() => handleSort("estado")}
-                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Estado
                   {sortBy === "estado" && (
@@ -620,10 +608,10 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-right">
+              <th className="px-4 py-3 text-right w-[110px]">
                 <button
                   onClick={() => handleSort("precioVentaTotal")}
-                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Precio Venta
                   {sortBy === "precioVentaTotal" && (
@@ -633,10 +621,10 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-right">
+              <th className="px-4 py-3 text-right w-[115px]">
                 <button
                   onClick={() => handleSort("ingresosNetos")}
-                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  className="flex items-center justify-end gap-1 w-full text-xs font-semibold uppercase tracking-wider text-white hover:text-white/70 transition-colors focus:outline-none rounded"
                 >
                   Ganancia Neta
                   {sortBy === "ingresosNetos" && (
@@ -646,15 +634,15 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                   )}
                 </button>
               </th>
-              <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white w-[90px]">
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-200 bg-white">
+          <tbody className="divide-y divide-border bg-white">
             {operations.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-16">
+                <td colSpan={8} className="px-6 py-16">
                   <div className="flex flex-col items-center justify-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
                       <span className="material-symbols-outlined text-4xl text-zinc-400">
@@ -679,7 +667,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                       key={operation.idOperacion}
                       className="transition-colors hover:bg-zinc-50"
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <button
                           onClick={() => handleOperationClick(operation.idOperacion)}
                           className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
@@ -687,18 +675,13 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                           #{operation.idOperacion}
                         </button>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="text-sm text-zinc-900">
                           {formatDate(operation.fechaInicio)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-zinc-900">
-                          {formatDate(operation.fechaVenta)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
+<td className="px-4 py-4 w-[160px] max-w-[160px]">
+                        <div className="flex items-center gap-3 overflow-hidden">
                           {operation.vehiculoId && operation.vehiculoFotoId ? (
                             <img
                               src={`/api/stock/${operation.vehiculoId}/photos/${operation.vehiculoFotoId}`}
@@ -712,9 +695,12 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                               </span>
                             </div>
                           )}
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-zinc-900">
-                              {operation.marcaNombre} {operation.modelo}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium text-zinc-900 truncate">
+                              {operation.marcaNombre}
+                            </span>
+                            <span className="text-sm font-medium text-zinc-900 truncate">
+                              {operation.modelo}
                             </span>
                             <span className="text-xs text-zinc-500">
                               {operation.anio}
@@ -722,12 +708,12 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-4">
                         <span className="text-sm text-zinc-900">
                           {operation.tipoOperacionNombre}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-4 w-[95px]">
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${estadoBadge.color}`}
                         >
@@ -737,12 +723,12 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                           {estadoBadge.label}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         <span className="text-sm font-medium text-zinc-900">
                           {formatCurrency(operation.precioVentaTotal)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-4 text-right">
                         <span
                           className={`text-sm font-semibold ${
                             operation.ingresosNetos && operation.ingresosNetos > 0
@@ -766,16 +752,7 @@ export function OperationsTable({ refreshTrigger, filters }: OperationsTableProp
                               edit
                             </span>
                           </button>
-                          <button
-                            onClick={(e) => handlePayClick(e, operation)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-700 transition-colors hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                            aria-label={`Registrar pago operación ${operation.idOperacion}`}
-                          >
-                            <span className="material-symbols-outlined text-lg">
-                              attach_money
-                            </span>
-                          </button>
-                          {operation.estado === "abierta" && (
+{operation.estado === "abierta" && (
                             <button
                               onClick={(e) => handleCancelClick(e, operation)}
                               className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"

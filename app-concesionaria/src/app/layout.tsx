@@ -1,19 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Archivo_Black, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import "material-symbols/outlined.css";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import PreventNumberInputScroll from "@/components/providers/PreventNumberInputScroll";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const archivBlack = Archivo_Black({
+  variable: "--font-archivo-black",
+  subsets: ["latin"],
+  weight: "400",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -38,7 +45,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistMono.variable} ${archivBlack.variable} ${spaceGrotesk.variable} antialiased`}
         suppressHydrationWarning={true}
       >
         <PreventNumberInputScroll />

@@ -140,32 +140,32 @@ export function CobranzasPage() {
       {/* Tabla desktop */}
       {!loading && !error && (
         <>
-          <div className="hidden overflow-hidden rounded-xl border border-zinc-200 lg:block">
+          <div className="hidden overflow-hidden rounded-xl border border-border lg:block">
             <table className="w-full">
-              <thead className="bg-zinc-50">
+              <thead className="bg-primary">
                 <tr>
                   <th className="w-10 px-4 py-3" />
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                     Operación
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                     Comprador
                   </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                     Precio Total
                   </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                     Saldado
                   </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                     Pendiente
                   </th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                  <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
                     Estado
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y divide-border bg-white">
                 {operaciones.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-16">
@@ -194,8 +194,8 @@ export function CobranzasPage() {
                       <React.Fragment key={op.idOperacion}>
                         {/* Fila padre */}
                         <tr
-                          className={`cursor-pointer transition-colors hover:bg-zinc-50 ${
-                            isExpanded ? "bg-blue-50/40" : ""
+                          className={`cursor-pointer transition-colors ${
+                            isExpanded ? "bg-blue-50 hover:bg-blue-50" : "hover:bg-zinc-50"
                           }`}
                           onClick={() => toggleExpand(op.idOperacion)}
                         >
@@ -280,7 +280,7 @@ export function CobranzasPage() {
                         {isExpanded && (
                           <>
                             {op.pagos.length === 0 ? (
-                              <tr className="bg-zinc-50/60">
+                              <tr className="bg-zinc-100/60">
                                 <td colSpan={7} className="px-12 py-3 text-sm text-zinc-400 italic">
                                   Sin pagos registrados
                                 </td>
@@ -288,28 +288,28 @@ export function CobranzasPage() {
                             ) : (
                               <>
                                 {/* Encabezado subfilas */}
-                                <tr className="bg-zinc-50/80">
+                                <tr className="bg-blue-100/60">
                                   <td />
-                                  <td className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-blue-700/60">
                                     Fecha
                                   </td>
-                                  <td colSpan={2} className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td colSpan={2} className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-blue-700/60">
                                     Forma de pago
                                   </td>
-                                  <td className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-blue-700/60">
                                     Monto
                                   </td>
-                                  <td className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-blue-700/60">
                                     Deuda tras pago
                                   </td>
-                                  <td className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                  <td className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-blue-700/60">
                                     Nota
                                   </td>
                                 </tr>
                                 {op.pagos.map((pago, idx) => (
                                   <tr
                                     key={idx}
-                                    className="border-t border-zinc-100 bg-blue-50/20"
+                                    className="border-t border-blue-100 bg-blue-50/50"
                                   >
                                     <td className="px-4 py-3">
                                       <div className="flex justify-center">
@@ -380,7 +380,9 @@ export function CobranzasPage() {
                 return (
                   <div
                     key={op.idOperacion}
-                    className="rounded-xl border border-zinc-200 bg-white shadow-sm"
+                    className={`rounded-xl border shadow-sm transition-colors ${
+                      isExpanded ? "border-blue-200 bg-blue-50/20" : "border-zinc-200 bg-white"
+                    }`}
                   >
                     {/* Cabecera card */}
                     <button
@@ -464,7 +466,7 @@ export function CobranzasPage() {
 
                     {/* Pagos expandidos */}
                     {isExpanded && (
-                      <div className="border-t border-zinc-100 px-4 pb-4 pt-3">
+                      <div className="border-t border-blue-100 bg-blue-50/20 px-4 pb-4 pt-3">
                         {op.pagos.length === 0 ? (
                           <p className="text-sm italic text-zinc-400">
                             Sin pagos registrados
@@ -474,7 +476,7 @@ export function CobranzasPage() {
                             {op.pagos.map((pago, idx) => (
                               <div
                                 key={idx}
-                                className="flex flex-col gap-1 rounded-lg bg-zinc-50 p-3"
+                                className="flex flex-col gap-1 rounded-lg border border-blue-100 bg-blue-50/60 p-3"
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-medium text-zinc-700">

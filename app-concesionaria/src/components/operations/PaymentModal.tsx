@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NumericInput } from "@/components/ui/NumericInput";
 
 interface PaymentMethod {
@@ -32,16 +32,33 @@ export function PaymentModal({ pendiente, onSave, onClose, advertencia }: Paymen
   const [monto, setMonto] = useState("");
   const [nota, setNota] = useState("");
 
-  const [nuevoMetodoNombre, setNuevoMetodoNombre] = useState("");
-  const [showAddMethodInput, setShowAddMethodInput] = useState(false);
-  const [addingMethod, setAddingMethod] = useState(false);
-  const [addMethodError, setAddMethodError] = useState("");
+  // Payment method search
+  const [metodoPagoQuery, setMetodoPagoQuery] = useState("");
+  const [metodoPagoDropdown, setMetodoPagoDropdown] = useState(false);
+  const [isSavingMetodo, setIsSavingMetodo] = useState(false);
+  const [confirmDeleteMetodoId, setConfirmDeleteMetodoId] = useState<string | null>(null);
+  const [isDeletingMetodoId, setIsDeletingMetodoId] = useState<string | null>(null);
+  const [deletedMetodoIds, setDeletedMetodoIds] = useState<Set<string>>(new Set());
+  const metodoPagoInputRef = useRef<HTMLInputElement>(null);
+  const metodoPagoDropdownRef = useRef<HTMLDivElement>(null);
 
   const [montoError, setMontoError] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchPaymentMethods();
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        metodoPagoDropdownRef.current && !metodoPagoDropdownRef.current.contains(e.target as Node) &&
+        metodoPagoInputRef.current && !metodoPagoInputRef.current.contains(e.target as Node)
+      ) setMetodoPagoDropdown(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   async function fetchPaymentMethods() {
@@ -57,12 +74,41 @@ export function PaymentModal({ pendiente, onSave, onClose, advertencia }: Paymen
     }
   }
 
-  async function handleAddMethod() {
-    const nombre = nuevoMetodoNombre.trim();
-    if (!nombre) return;
+  // Search results
+  const metodoResultados = paymentMethods.filter(
+    (pm) => !deletedMetodoIds.has(pm.id) && pm.nombre.toLowerCase().includes(metodoPagoQuery.toLowerCase())
+  );
+  const puedoCrearMetodo =
+    metodoPagoQuery.trim().length > 0 &&
+    !metodoResultados.some((pm) => pm.nombre.toLowerCase() === metodoPagoQuery.trim().toLowerCase());
 
-    setAddMethodError("");
-    setAddingMethod(true);
+  async function handleDeleteMetodo(id: string) {
+    setIsDeletingMetodoId(id);
+    try {
+      const res = await fetch(`/api/payment-methods/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeletedMetodoIds((prev) => new Set(prev).add(id));
+        if (metodoPagoId === id) {
+          setMetodoPagoId("");
+          setMetodoPagoQuery("");
+        }
+      }
+    } finally {
+      setIsDeletingMetodoId(null);
+      setConfirmDeleteMetodoId(null);
+    }
+  }
+
+  function handleSelectMetodo(pm: PaymentMethod) {
+    setMetodoPagoId(pm.id);
+    setMetodoPagoQuery(pm.nombre);
+    setMetodoPagoDropdown(false);
+  }
+
+  async function handleCreateMetodo() {
+    const nombre = metodoPagoQuery.trim().toUpperCase();
+    if (!nombre) return;
+    setIsSavingMetodo(true);
     try {
       const res = await fetch("/api/payment-methods", {
         method: "POST",
@@ -70,18 +116,13 @@ export function PaymentModal({ pendiente, onSave, onClose, advertencia }: Paymen
         body: JSON.stringify({ nombre }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setAddMethodError(data.error ?? "Error al agregar");
-        return;
+      if (res.ok) {
+        const newMethod: PaymentMethod = data.paymentMethod;
+        setPaymentMethods((prev) => [...prev, newMethod].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+        handleSelectMetodo(newMethod);
       }
-      setPaymentMethods((prev) =>
-        [...prev, data.paymentMethod].sort((a, b) => a.nombre.localeCompare(b.nombre))
-      );
-      setMetodoPagoId(data.paymentMethod.id);
-      setNuevoMetodoNombre("");
-      setShowAddMethodInput(false);
     } finally {
-      setAddingMethod(false);
+      setIsSavingMetodo(false);
     }
   }
 
@@ -186,82 +227,108 @@ export function PaymentModal({ pendiente, onSave, onClose, advertencia }: Paymen
             <label htmlFor="pago-metodo" className="text-sm font-medium text-zinc-700">
               Forma de pago
             </label>
-            {loadingMethods ? (
-              <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4">
-                <span className="material-symbols-outlined animate-spin text-sm text-zinc-400">
-                  progress_activity
-                </span>
-                <span className="text-sm text-zinc-400">Cargando...</span>
-              </div>
-            ) : (
-              <select
-                id="pago-metodo"
-                value={metodoPagoId}
-                onChange={(e) => setMetodoPagoId(e.target.value)}
-                disabled={saving}
-                className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-              >
-                <option value="">Seleccionar...</option>
-                {paymentMethods.map((pm) => (
-                  <option key={pm.id} value={pm.id}>
-                    {pm.nombre}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {/* Agregar nueva forma de pago */}
-            {showAddMethodInput ? (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={nuevoMetodoNombre}
-                  onChange={(e) => {
-                    setNuevoMetodoNombre(e.target.value.toUpperCase());
-                    setAddMethodError("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddMethod();
-                    }
-                  }}
-                  placeholder="Agregar nueva..."
-                  disabled={saving || addingMethod}
-                  autoFocus
-                  className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
-                  aria-label="Nombre de nueva forma de pago"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddMethod}
-                  disabled={!nuevoMetodoNombre.trim() || saving || addingMethod}
-                  className="flex h-8 items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
-                >
-                  {addingMethod ? (
-                    <span className="material-symbols-outlined animate-spin text-sm">
-                      progress_activity
+            <div className="relative">
+              {loadingMethods ? (
+                <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4">
+                  <span className="material-symbols-outlined animate-spin text-sm text-zinc-400">
+                    progress_activity
+                  </span>
+                  <span className="text-sm text-zinc-400">Cargando...</span>
+                </div>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    credit_card
+                  </span>
+                  {metodoPagoId && !metodoPagoDropdown && (
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500">
+                      check_circle
                     </span>
-                  ) : (
-                    <span className="material-symbols-outlined text-sm">add</span>
                   )}
-                  Agregar
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAddMethodInput(true)}
-                disabled={saving}
-                className="flex h-8 w-fit items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Agregar
-              </button>
-            )}
-            {addMethodError && (
-              <p className="text-xs text-red-600">{addMethodError}</p>
-            )}
+                  <input
+                    ref={metodoPagoInputRef}
+                    id="pago-metodo"
+                    type="text"
+                    value={metodoPagoQuery}
+                    onChange={(e) => {
+                      setMetodoPagoQuery(e.target.value);
+                      setMetodoPagoId("");
+                      setMetodoPagoDropdown(true);
+                    }}
+                    onFocus={() => setMetodoPagoDropdown(true)}
+                    placeholder="Buscar forma de pago..."
+                    autoComplete="off"
+                    disabled={saving}
+                    aria-label="Buscar forma de pago"
+                    className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-10 pr-10 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                  {metodoPagoDropdown && (metodoResultados.length > 0 || puedoCrearMetodo) && (
+                    <div
+                      ref={metodoPagoDropdownRef}
+                      className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg"
+                    >
+                      {metodoResultados.map((pm) => (
+                        <div
+                          key={pm.id}
+                          className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg"
+                        >
+                          {confirmDeleteMetodoId === pm.id ? (
+                            <div className="flex flex-1 items-center gap-2 py-2">
+                              <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{pm.nombre}</strong>?</span>
+                              <button
+                                type="button"
+                                onMouseDown={() => handleDeleteMetodo(pm.id)}
+                                disabled={isDeletingMetodoId === pm.id}
+                                className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {isDeletingMetodoId === pm.id ? "..." : "Sí"}
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={() => setConfirmDeleteMetodoId(null)}
+                                className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onMouseDown={() => handleSelectMetodo(pm)}
+                                className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800"
+                              >
+                                <span className="material-symbols-outlined text-base text-zinc-400">credit_card</span>
+                                {pm.nombre}
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteMetodoId(pm.id); }}
+                                aria-label={`Eliminar forma de pago ${pm.nombre}`}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                              >
+                                <span className="material-symbols-outlined text-base">delete</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      {puedoCrearMetodo && (
+                        <button
+                          type="button"
+                          onMouseDown={handleCreateMetodo}
+                          disabled={isSavingMetodo}
+                          className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-base">add</span>
+                          {isSavingMetodo ? "Creando..." : `Crear "${metodoPagoQuery.trim()}"`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Monto */}

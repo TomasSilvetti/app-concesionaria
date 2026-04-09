@@ -4,21 +4,174 @@ html {
   font-size: 13px;
 }
 
+/* ============================================================
+   PALETA DE COLORES
+   Cambiá estos valores para cambiar el estilo global del sitio
+   ============================================================ */
 :root {
+  /* Fondo y texto base */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #2A2829;
+
+  /* Surface — fondo de página (detrás de cards y tablas) */
+  --color-surface: #F4F5F7;
+
+  /* Primario — acciones principales, botones, links */
+  --color-primary:         #253551;
+  --color-primary-hover:   #1c2a40;
+  --color-primary-fg:      #ffffff;
+
+  /* Secundario — acciones secundarias, badges neutros */
+  --color-secondary:       #2A2829;
+  --color-secondary-hover: #000000;
+  --color-secondary-fg:    #ffffff;
+
+  /* Acento — highlights, tags, detalles */
+  --color-accent:          #253551;
+  --color-accent-hover:    #1c2a40;
+  --color-accent-fg:       #ffffff;
+
+  /* Muted — fondos suaves, disabled, placeholders */
+  --color-muted:           #E0E0DB;
+  --color-muted-fg:        #2A2829;
+
+  /* Peligro — errores, eliminaciones */
+  --color-danger:          #ef4444;
+  --color-danger-hover:    #dc2626;
+  --color-danger-fg:       #ffffff;
+
+  /* Éxito — confirmaciones, estados ok */
+  --color-success:         #22c55e;
+  --color-success-hover:   #16a34a;
+  --color-success-fg:      #ffffff;
+
+  /* Borde global */
+  --color-border:          #E0E0DB;
 }
 
+/* ============================================================
+   TIPOGRAFÍA
+   Cambiá las fuentes desde acá para afectar toda la página
+   ============================================================ */
+:root {
+  --font-heading: var(--font-archivo-black); /* Títulos (h1–h4, secciones) */
+  --font-body:    var(--font-space-grotesk); /* Texto general               */
+  --font-small:   var(--font-geist-mono);    /* Captions, etiquetas, código */
+}
+
+/* ============================================================
+   EXPOSICIÓN A TAILWIND
+   Usá estas clases en los componentes:
+     bg-primary, text-primary, bg-danger, font-heading, etc.
+   ============================================================ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-background:       var(--background);
+  --color-foreground:       var(--foreground);
 
+  --color-primary:          var(--color-primary);
+  --color-primary-hover:    var(--color-primary-hover);
+  --color-primary-fg:       var(--color-primary-fg);
+
+  --color-secondary:        var(--color-secondary);
+  --color-secondary-hover:  var(--color-secondary-hover);
+  --color-secondary-fg:     var(--color-secondary-fg);
+
+  --color-accent:           var(--color-accent);
+  --color-accent-hover:     var(--color-accent-hover);
+  --color-accent-fg:        var(--color-accent-fg);
+
+  --color-muted:            var(--color-muted);
+  --color-muted-fg:         var(--color-muted-fg);
+
+  --color-danger:           var(--color-danger);
+  --color-danger-hover:     var(--color-danger-hover);
+  --color-danger-fg:        var(--color-danger-fg);
+
+  --color-success:          var(--color-success);
+  --color-success-hover:    var(--color-success-hover);
+  --color-success-fg:       var(--color-success-fg);
+
+  --color-border:           var(--color-border);
+  --color-surface:          var(--color-surface);
+
+  /* Reemplaza el azul estándar de Tailwind por la paleta navy #253551 */
+  --color-blue-50:  #eef1f6;
+  --color-blue-100: #d5dce9;
+  --color-blue-200: #abbad3;
+  --color-blue-300: #8197bd;
+  --color-blue-400: #5775a7;
+  --color-blue-500: #253551;
+  --color-blue-600: #1e2b42;
+  --color-blue-700: #172133;
+  --color-blue-800: #101724;
+  --color-blue-900: #080d15;
+  --color-blue-950: #040709;
+
+  --font-sans:              var(--font-space-grotesk);
+  --font-mono:              var(--font-geist-mono);
+  --font-heading:           var(--font-heading);
+  --font-body:              var(--font-body);
+  --font-small:             var(--font-small);
+}
 
 body {
-  background: var(--background);
+  background: var(--color-surface);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+/* ============================================================
+   TABLAS — tema global
+   ============================================================ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--background);
+}
+
+thead tr {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+}
+
+thead th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s;
+}
+
+tbody tr:hover {
+  background: #eef1f6; /* blue-50 tint */
+}
+
+tbody td {
+  padding: 0.6rem 1rem;
+  color: var(--foreground);
+}
+
+/* ============================================================
+   ENCABEZADOS DE PÁGINA
+   ============================================================ */
+h1, h2, h3 {
+  font-family: var(--font-heading), var(--font-body), sans-serif;
+  color: var(--foreground);
+}
+
+/* ============================================================
+   CARDS / PANELS
+   ============================================================ */
+.card {
+  background: var(--background);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
 }

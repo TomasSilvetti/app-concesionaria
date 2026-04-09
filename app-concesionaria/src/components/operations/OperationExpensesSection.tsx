@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import "material-symbols/outlined.css";
 import { NumericInput } from "@/components/ui/NumericInput";
 
@@ -42,15 +42,27 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Inline create state
-  const [nuevoOrigenNombre, setNuevoOrigenNombre] = useState("");
-  const [nuevaCatNombre, setNuevaCatNombre] = useState("");
-  const [creatingOrigen, setCreatingOrigen] = useState(false);
-  const [creatingCat, setCreatingCat] = useState(false);
-  const [showOrigenInput, setShowOrigenInput] = useState(false);
-  const [showCatInput, setShowCatInput] = useState(false);
+  // Origen search
+  const [origenQuery, setOrigenQuery] = useState("");
+  const [origenDropdown, setOrigenDropdown] = useState(false);
+  const [isSavingOrigen, setIsSavingOrigen] = useState(false);
+  const [confirmDeleteOrigenId, setConfirmDeleteOrigenId] = useState<string | null>(null);
+  const [isDeletingOrigenId, setIsDeletingOrigenId] = useState<string | null>(null);
+  const [deletedOrigenIds, setDeletedOrigenIds] = useState<Set<string>>(new Set());
+  const origenInputRef = useRef<HTMLInputElement>(null);
+  const origenDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Delete confirmation
+  // Categoría search
+  const [categoriaQuery, setCategoriaQuery] = useState("");
+  const [categoriaDropdown, setCategoriaDropdown] = useState(false);
+  const [isSavingCategoria, setIsSavingCategoria] = useState(false);
+  const [confirmDeleteCategoriaId, setConfirmDeleteCategoriaId] = useState<string | null>(null);
+  const [isDeletingCategoriaId, setIsDeletingCategoriaId] = useState<string | null>(null);
+  const [deletedCategoriaIds, setDeletedCategoriaIds] = useState<Set<string>>(new Set());
+  const categoriaInputRef = useRef<HTMLInputElement>(null);
+  const categoriaDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Delete confirmation (gasto list)
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) =>
@@ -105,6 +117,22 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     fetchCategories();
   }, [fetchGastos, fetchOrigins, fetchCategories]);
 
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        origenDropdownRef.current && !origenDropdownRef.current.contains(e.target as Node) &&
+        origenInputRef.current && !origenInputRef.current.contains(e.target as Node)
+      ) setOrigenDropdown(false);
+      if (
+        categoriaDropdownRef.current && !categoriaDropdownRef.current.contains(e.target as Node) &&
+        categoriaInputRef.current && !categoriaInputRef.current.contains(e.target as Node)
+      ) setCategoriaDropdown(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   const total = gastos.reduce((sum, g) => sum + g.monto, 0);
 
   useEffect(() => {
@@ -117,6 +145,111 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     return acc;
   }, {});
 
+  // Search results
+  const origenResultados = origins.filter(
+    (o) => !deletedOrigenIds.has(o.id) && o.nombre.toLowerCase().includes(origenQuery.toLowerCase())
+  );
+  const puedoCrearOrigen =
+    origenQuery.trim().length > 0 &&
+    !origenResultados.some((o) => o.nombre.toLowerCase() === origenQuery.trim().toLowerCase());
+
+  const categoriaResultados = categories.filter(
+    (c) => !deletedCategoriaIds.has(c.id) && c.nombre.toLowerCase().includes(categoriaQuery.toLowerCase())
+  );
+  const puedoCrearCategoria =
+    categoriaQuery.trim().length > 0 &&
+    !categoriaResultados.some((c) => c.nombre.toLowerCase() === categoriaQuery.trim().toLowerCase());
+
+  // Handlers origen
+  const handleDeleteOrigen = async (id: string) => {
+    setIsDeletingOrigenId(id);
+    try {
+      const res = await fetch(`/api/operations/${operacionId}/expenses/origins/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeletedOrigenIds((prev) => new Set(prev).add(id));
+        if (formOrigenId === id) {
+          setFormOrigenId("");
+          setOrigenQuery("");
+        }
+      }
+    } finally {
+      setIsDeletingOrigenId(null);
+      setConfirmDeleteOrigenId(null);
+    }
+  };
+
+  const handleSelectOrigen = (o: OpcionSelector) => {
+    setFormOrigenId(o.id);
+    setOrigenQuery(o.nombre);
+    setOrigenDropdown(false);
+  };
+
+  const handleCreateOrigen = async () => {
+    const nombre = origenQuery.trim().toUpperCase();
+    if (!nombre) return;
+    setIsSavingOrigen(true);
+    try {
+      const res = await fetch(`/api/operations/${operacionId}/expenses/origins`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        const newOrigin: OpcionSelector = json.origin;
+        setOrigins((prev) => [...prev, newOrigin]);
+        handleSelectOrigen(newOrigin);
+      }
+    } finally {
+      setIsSavingOrigen(false);
+    }
+  };
+
+  // Handlers categoría
+  const handleDeleteCategoria = async (id: string) => {
+    setIsDeletingCategoriaId(id);
+    try {
+      const res = await fetch(`/api/operations/${operacionId}/expenses/categories/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeletedCategoriaIds((prev) => new Set(prev).add(id));
+        if (formCategoriaId === id) {
+          setFormCategoriaId("");
+          setCategoriaQuery("");
+        }
+      }
+    } finally {
+      setIsDeletingCategoriaId(null);
+      setConfirmDeleteCategoriaId(null);
+    }
+  };
+
+  const handleSelectCategoria = (c: OpcionSelector) => {
+    setFormCategoriaId(c.id);
+    setCategoriaQuery(c.nombre);
+    setCategoriaDropdown(false);
+  };
+
+  const handleCreateCategoria = async () => {
+    const nombre = categoriaQuery.trim().toUpperCase();
+    if (!nombre) return;
+    setIsSavingCategoria(true);
+    try {
+      const res = await fetch(`/api/operations/${operacionId}/expenses/categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        const newCat: OpcionSelector = json.category;
+        setCategories((prev) => [...prev, newCat]);
+        handleSelectCategoria(newCat);
+      }
+    } finally {
+      setIsSavingCategoria(false);
+    }
+  };
+
   const openCreate = () => {
     setEditingGasto(null);
     setFormDescripcion("");
@@ -124,10 +257,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     setFormOrigenId("");
     setFormCategoriaId("");
     setFormError("");
-    setNuevoOrigenNombre("");
-    setNuevaCatNombre("");
-    setShowOrigenInput(false);
-    setShowCatInput(false);
+    setOrigenQuery("");
+    setCategoriaQuery("");
+    setOrigenDropdown(false);
+    setCategoriaDropdown(false);
     setShowModal(true);
   };
 
@@ -138,10 +271,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     setFormOrigenId(gasto.origenId);
     setFormCategoriaId(gasto.categoriaId);
     setFormError("");
-    setNuevoOrigenNombre("");
-    setNuevaCatNombre("");
-    setShowOrigenInput(false);
-    setShowCatInput(false);
+    setOrigenQuery(gasto.origenNombre);
+    setCategoriaQuery(gasto.categoriaNombre);
+    setOrigenDropdown(false);
+    setCategoriaDropdown(false);
     setShowModal(true);
   };
 
@@ -153,64 +286,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     setFormOrigenId("");
     setFormCategoriaId("");
     setFormError("");
-    setNuevoOrigenNombre("");
-    setNuevaCatNombre("");
-    setShowOrigenInput(false);
-    setShowCatInput(false);
-  };
-
-  const handleCrearOrigen = async () => {
-    if (!nuevoOrigenNombre.trim()) return;
-    setCreatingOrigen(true);
-    try {
-      const res = await fetch(`/api/operations/${operacionId}/expenses/origins`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nuevoOrigenNombre.trim() }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setFormError(data.error ?? "Error al crear origen");
-        return;
-      }
-      const data = await res.json();
-      const newOrigin: OpcionSelector = data.origin;
-      setOrigins((prev) => [...prev, newOrigin]);
-      setFormOrigenId(newOrigin.id);
-      setNuevoOrigenNombre("");
-      setShowOrigenInput(false);
-    } catch {
-      setFormError("Error al crear origen");
-    } finally {
-      setCreatingOrigen(false);
-    }
-  };
-
-  const handleCrearCategoria = async () => {
-    if (!nuevaCatNombre.trim()) return;
-    setCreatingCat(true);
-    try {
-      const res = await fetch(`/api/operations/${operacionId}/expenses/categories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nuevaCatNombre.trim() }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setFormError(data.error ?? "Error al crear categoría");
-        return;
-      }
-      const data = await res.json();
-      const newCat: OpcionSelector = data.category;
-      setCategories((prev) => [...prev, newCat]);
-      setFormCategoriaId(newCat.id);
-      setNuevaCatNombre("");
-      setShowCatInput(false);
-    } catch {
-      setFormError("Error al crear categoría");
-    } finally {
-      setCreatingCat(false);
-    }
+    setOrigenQuery("");
+    setCategoriaQuery("");
+    setOrigenDropdown(false);
+    setCategoriaDropdown(false);
   };
 
   const handleSave = async () => {
@@ -328,13 +407,13 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                 <table className="w-full">
                   <thead>
                     <tr>
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
                         Descripción
                       </th>
-                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
                         Quién pagó
                       </th>
-                      <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                         Monto
                       </th>
                       <th className="pb-3 w-16" />
@@ -488,66 +567,97 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                 <label htmlFor="gasto-origen" className="text-sm font-medium text-zinc-700">
                   Quién pagó
                 </label>
-                <select
-                  id="gasto-origen"
-                  value={formOrigenId}
-                  onChange={(e) => setFormOrigenId(e.target.value)}
-                  disabled={saving}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                >
-                  <option value="">Seleccionar...</option>
-                  {origins.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.nombre}
-                    </option>
-                  ))}
-                </select>
-                {showOrigenInput ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={nuevoOrigenNombre}
-                      onChange={(e) => setNuevoOrigenNombre(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearOrigen(); } }}
-                      placeholder="Nombre del pagador..."
-                      disabled={saving || creatingOrigen}
-                      autoFocus
-                      className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCrearOrigen}
-                      disabled={!nuevoOrigenNombre.trim() || saving || creatingOrigen}
-                      className="flex h-8 items-center gap-1 rounded-md bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40"
-                    >
-                      {creatingOrigen ? (
-                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                      ) : (
-                        <span className="material-symbols-outlined text-sm">check</span>
-                      )}
-                      Agregar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setShowOrigenInput(false); setNuevoOrigenNombre(""); }}
-                      disabled={saving || creatingOrigen}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
-                      aria-label="Cancelar"
-                    >
-                      <span className="material-symbols-outlined text-sm">close</span>
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowOrigenInput(true)}
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    person
+                  </span>
+                  {formOrigenId && !origenDropdown && (
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500">
+                      check_circle
+                    </span>
+                  )}
+                  <input
+                    ref={origenInputRef}
+                    id="gasto-origen"
+                    type="text"
+                    value={origenQuery}
+                    onChange={(e) => {
+                      setOrigenQuery(e.target.value);
+                      setFormOrigenId("");
+                      setOrigenDropdown(true);
+                    }}
+                    onFocus={() => setOrigenDropdown(true)}
+                    placeholder="Buscar quién pagó..."
+                    autoComplete="off"
                     disabled={saving}
-                    className="flex h-8 w-fit items-center gap-1 rounded-md border border-dashed border-zinc-300 px-3 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
-                  >
-                    <span className="material-symbols-outlined text-sm">add</span>
-                    Agregar nuevo
-                  </button>
-                )}
+                    aria-label="Buscar quién pagó"
+                    className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-10 pr-10 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                  {origenDropdown && (origenResultados.length > 0 || puedoCrearOrigen) && (
+                    <div
+                      ref={origenDropdownRef}
+                      className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg"
+                    >
+                      {origenResultados.map((o) => (
+                        <div
+                          key={o.id}
+                          className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg"
+                        >
+                          {confirmDeleteOrigenId === o.id ? (
+                            <div className="flex flex-1 items-center gap-2 py-2">
+                              <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{o.nombre}</strong>?</span>
+                              <button
+                                type="button"
+                                onMouseDown={() => handleDeleteOrigen(o.id)}
+                                disabled={isDeletingOrigenId === o.id}
+                                className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {isDeletingOrigenId === o.id ? "..." : "Sí"}
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={() => setConfirmDeleteOrigenId(null)}
+                                className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onMouseDown={() => handleSelectOrigen(o)}
+                                className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800"
+                              >
+                                <span className="material-symbols-outlined text-base text-zinc-400">person</span>
+                                {o.nombre}
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteOrigenId(o.id); }}
+                                aria-label={`Eliminar origen ${o.nombre}`}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                              >
+                                <span className="material-symbols-outlined text-base">delete</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      {puedoCrearOrigen && (
+                        <button
+                          type="button"
+                          onMouseDown={handleCreateOrigen}
+                          disabled={isSavingOrigen}
+                          className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-base">add</span>
+                          {isSavingOrigen ? "Creando..." : `Crear "${origenQuery.trim()}"`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Categoría */}
@@ -555,66 +665,97 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                 <label htmlFor="gasto-categoria" className="text-sm font-medium text-zinc-700">
                   Categoría
                 </label>
-                <select
-                  id="gasto-categoria"
-                  value={formCategoriaId}
-                  onChange={(e) => setFormCategoriaId(e.target.value)}
-                  disabled={saving}
-                  className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                >
-                  <option value="">Seleccionar...</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
-                {showCatInput ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={nuevaCatNombre}
-                      onChange={(e) => setNuevaCatNombre(e.target.value.toUpperCase())}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCrearCategoria(); } }}
-                      placeholder="Nombre de la categoría..."
-                      disabled={saving || creatingCat}
-                      autoFocus
-                      className="h-8 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs text-zinc-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 disabled:opacity-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCrearCategoria}
-                      disabled={!nuevaCatNombre.trim() || saving || creatingCat}
-                      className="flex h-8 items-center gap-1 rounded-md bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40"
-                    >
-                      {creatingCat ? (
-                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                      ) : (
-                        <span className="material-symbols-outlined text-sm">check</span>
-                      )}
-                      Agregar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setShowCatInput(false); setNuevaCatNombre(""); }}
-                      disabled={saving || creatingCat}
-                      className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
-                      aria-label="Cancelar"
-                    >
-                      <span className="material-symbols-outlined text-sm">close</span>
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowCatInput(true)}
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
+                    category
+                  </span>
+                  {formCategoriaId && !categoriaDropdown && (
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-base text-green-500">
+                      check_circle
+                    </span>
+                  )}
+                  <input
+                    ref={categoriaInputRef}
+                    id="gasto-categoria"
+                    type="text"
+                    value={categoriaQuery}
+                    onChange={(e) => {
+                      setCategoriaQuery(e.target.value);
+                      setFormCategoriaId("");
+                      setCategoriaDropdown(true);
+                    }}
+                    onFocus={() => setCategoriaDropdown(true)}
+                    placeholder="Buscar categoría..."
+                    autoComplete="off"
                     disabled={saving}
-                    className="flex h-8 w-fit items-center gap-1 rounded-md border border-dashed border-zinc-300 px-3 text-xs font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-40"
-                  >
-                    <span className="material-symbols-outlined text-sm">add</span>
-                    Agregar nueva
-                  </button>
-                )}
+                    aria-label="Buscar categoría"
+                    className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-10 pr-10 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  />
+                  {categoriaDropdown && (categoriaResultados.length > 0 || puedoCrearCategoria) && (
+                    <div
+                      ref={categoriaDropdownRef}
+                      className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg"
+                    >
+                      {categoriaResultados.map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-center gap-1 px-2 hover:bg-blue-50 first:rounded-t-lg"
+                        >
+                          {confirmDeleteCategoriaId === c.id ? (
+                            <div className="flex flex-1 items-center gap-2 py-2">
+                              <span className="flex-1 text-sm text-zinc-700">¿Eliminar <strong>{c.nombre}</strong>?</span>
+                              <button
+                                type="button"
+                                onMouseDown={() => handleDeleteCategoria(c.id)}
+                                disabled={isDeletingCategoriaId === c.id}
+                                className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {isDeletingCategoriaId === c.id ? "..." : "Sí"}
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={() => setConfirmDeleteCategoriaId(null)}
+                                className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onMouseDown={() => handleSelectCategoria(c)}
+                                className="flex flex-1 items-center gap-2 py-2.5 text-left text-sm text-zinc-800"
+                              >
+                                <span className="material-symbols-outlined text-base text-zinc-400">category</span>
+                                {c.nombre}
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteCategoriaId(c.id); }}
+                                aria-label={`Eliminar categoría ${c.nombre}`}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                              >
+                                <span className="material-symbols-outlined text-base">delete</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      {puedoCrearCategoria && (
+                        <button
+                          type="button"
+                          onMouseDown={handleCreateCategoria}
+                          disabled={isSavingCategoria}
+                          className="flex w-full items-center gap-2 border-t border-zinc-100 px-4 py-2.5 text-left text-sm font-medium text-blue-700 hover:bg-blue-50 last:rounded-b-lg disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-base">add</span>
+                          {isSavingCategoria ? "Creando..." : `Crear "${categoriaQuery.trim()}"`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Monto */}

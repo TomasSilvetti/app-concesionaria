@@ -451,7 +451,9 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                 return (
                   <div
                     key={key}
-                    className="rounded-xl border border-zinc-200 bg-white shadow-sm"
+                    className={`rounded-xl border shadow-sm transition-colors ${
+                      isExpanded ? "border-blue-200 bg-blue-50/20" : "border-zinc-200 bg-white"
+                    }`}
                   >
                     {/* Cabecera card */}
                     <button
@@ -515,32 +517,32 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
 
                     {/* Gastos expandidos */}
                     {isExpanded && (
-                      <div className="border-t border-zinc-100 px-4 pb-4 pt-3">
+                      <div className="border-t border-blue-100 bg-blue-50/20 px-4 pb-4 pt-3">
                         <div className="flex flex-col gap-2">
                           {gastosVisibles.map((gasto) => {
                             const colorQuien = getQuienPagoColor(gasto.quienPago);
                             return (
                               <div
                                 key={gasto.id}
-                                className="flex items-center gap-2 rounded-lg bg-zinc-50 p-3"
+                                className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/60 p-3"
                               >
                                 <div className="flex flex-1 items-start gap-4 min-w-0">
                                   <div className="flex flex-col gap-0.5 min-w-0">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Fecha</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Fecha</span>
                                     <span className="text-sm text-zinc-700 whitespace-nowrap">{formatFecha(gasto.fecha)}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Categoría</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Categoría</span>
                                     <span className="text-sm text-zinc-700 truncate">{gasto.descripcion}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Quién pagó</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Quién pagó</span>
                                     <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-semibold ${colorQuien.bg} ${colorQuien.text}`}>
                                       {gasto.quienPago}
                                     </span>
                                   </div>
                                   <div className="flex flex-col gap-0.5 items-end">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Monto</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Monto</span>
                                     <span className="text-sm font-medium text-red-500 whitespace-nowrap">{formatPesos(gasto.monto)}</span>
                                   </div>
                                 </div>

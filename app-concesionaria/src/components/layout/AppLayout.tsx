@@ -105,27 +105,27 @@ export function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-zinc-50">
+    <div className="flex h-screen flex-col overflow-hidden bg-surface">
       {/* Navbar */}
-      <header className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-6 flex-shrink-0 z-50">
+      <header className="flex h-16 items-center justify-between bg-primary px-6 flex-shrink-0 z-50 shadow-md">
           <div className="flex items-center gap-4">
             <button
               onClick={toggle}
-              className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
               aria-label="Toggle menu"
             >
-              <span className="material-symbols-outlined text-zinc-700">menu</span>
+              <span className="material-symbols-outlined text-white">menu</span>
             </button>
-            
+
             <div className="flex items-center gap-2">
               {companyLogo ? (
                 <img
                   src={companyLogo}
                   alt="Logo"
-                  className="h-10 w-auto max-w-[140px] object-contain"
+                  className="h-10 w-auto max-w-[140px] object-contain brightness-0 invert"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/15">
                   <span className="material-symbols-outlined text-white text-xl">
                     directions_car
                   </span>
@@ -133,23 +133,23 @@ export function AppLayout({ children }: AppLayoutProps) {
               )}
               <button
                 onClick={() => router.push("/gastos")}
-                className="text-xl font-bold text-zinc-900 hover:text-blue-600 transition-colors"
+                className="text-xl font-bold text-white hover:text-white/80 transition-colors"
               >
                 {companyName || "NorDem"}
               </button>
             </div>
-            
+
           </div>
 
           <div className="flex items-center gap-3">
             {/* Settings */}
             <button
               disabled
-              className="flex h-10 w-10 items-center justify-center rounded-lg cursor-not-allowed opacity-40"
+              className="flex h-10 w-10 items-center justify-center rounded-lg cursor-not-allowed opacity-30"
               aria-label="Configuración"
               title="Configuración (próximamente)"
             >
-              <span className="material-symbols-outlined text-zinc-400 text-xl">
+              <span className="material-symbols-outlined text-white text-xl">
                 settings
               </span>
             </button>
@@ -158,50 +158,50 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 transition-colors hover:bg-zinc-50"
+                className="flex items-center gap-2 rounded-lg border border-white/20 px-3 py-1.5 transition-colors hover:bg-white/10"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200">
-                  <span className="material-symbols-outlined text-zinc-600 text-lg">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                  <span className="material-symbols-outlined text-white text-lg">
                     person
                   </span>
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-zinc-900">
+                  <p className="text-sm font-semibold text-white">
                     {session?.user?.nombre || "Admin User"}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-white/60">
                     {session?.user?.rol === "admin" ? "Manager" : "User"}
                   </p>
                 </div>
-                <span className="material-symbols-outlined text-zinc-500 text-lg hidden sm:block">
+                <span className="material-symbols-outlined text-white/60 text-lg hidden sm:block">
                   {showUserMenu ? "expand_less" : "expand_more"}
                 </span>
               </button>
 
               {/* Dropdown Menu */}
               {showUserMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-zinc-200 bg-white shadow-lg z-50">
-                  <div className="p-3 border-b border-zinc-200">
-                    <p className="text-sm font-semibold text-zinc-900">
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-border bg-background shadow-lg z-50">
+                  <div className="p-3 border-b border-border">
+                    <p className="text-sm font-semibold text-foreground">
                       {session?.user?.nombre || "Admin User"}
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-foreground/50">
                       @{session?.user?.username || "admin"}
                     </p>
                   </div>
                   <div className="py-2">
                     <button
                       onClick={handleProfileClick}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-50"
+                      className="flex w-full items-center gap-3 px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted"
                     >
-                      <span className="material-symbols-outlined text-xl text-zinc-500">
+                      <span className="material-symbols-outlined text-xl text-foreground/50">
                         account_circle
                       </span>
                       Mi perfil
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
+                      className="flex w-full items-center gap-3 px-4 py-2 text-sm text-danger transition-colors hover:bg-red-50"
                     >
                       <span className="material-symbols-outlined text-xl">
                         logout
@@ -220,7 +220,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Sidebar */}
         <aside
           className={`
-            fixed inset-y-0 left-0 top-16 z-40 flex flex-col border-r border-zinc-200 bg-white transition-all duration-300 ease-in-out w-64
+            fixed inset-y-0 left-0 top-16 z-40 flex flex-col border-r border-border bg-background transition-all duration-300 ease-in-out w-64
             ${isOpen ? "translate-x-0" : "-translate-x-full"}
             md:relative md:top-0 md:translate-x-0
             ${isOpen ? "md:w-64" : "md:w-0 md:overflow-hidden md:border-r-0"}
@@ -228,10 +228,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         >
           {/* Sidebar Menu */}
           <nav className="flex-1 overflow-y-auto p-4">
-            <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-foreground/40">
               Main Menu
             </div>
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {menuItems.map((item) => {
                 const isActive = pathname === item.path;
                 return (
@@ -242,12 +242,12 @@ export function AppLayout({ children }: AppLayoutProps) {
                         flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
                         ${
                           isActive
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-zinc-700 hover:bg-zinc-100"
+                            ? "bg-blue-50 text-primary border-l-2 border-primary pl-[10px]"
+                            : "text-foreground/70 hover:bg-muted hover:text-foreground"
                         }
                       `}
                     >
-                      <span className="material-symbols-outlined text-xl">
+                      <span className={`material-symbols-outlined text-xl ${isActive ? "text-primary" : ""}`}>
                         {item.icon}
                       </span>
                       {item.label}
