@@ -80,6 +80,10 @@ export function GenerarDocumentoModal({
         }
         const data: PreviewData = await res.json();
         if (!cancelled) {
+          const today = new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
+          data.fields = data.fields.map((f) =>
+            f.value === "__FECHA_ACTUAL__" ? { ...f, value: today } : f
+          );
           setPreviewData(data);
           // Inicializar valores manuales vacíos
           const initials: Record<string, string> = {};
