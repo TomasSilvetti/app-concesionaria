@@ -404,11 +404,11 @@ function KanbanSkeleton() {
   return (
     <div className="flex gap-3 overflow-x-auto pb-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="w-64 flex-shrink-0 rounded-xl bg-zinc-100 p-3">
-          <div className="mb-3 h-5 w-32 animate-pulse rounded bg-zinc-200" />
+        <div key={i} className="w-64 flex-shrink-0 rounded-xl bg-[#1a2c42] p-3">
+          <div className="mb-3 h-5 w-32 animate-pulse rounded bg-white/10" />
           <div className="flex flex-col gap-2">
             {[1, 2].map((j) => (
-              <div key={j} className="h-16 animate-pulse rounded-lg bg-zinc-200" />
+              <div key={j} className="h-16 animate-pulse rounded-lg bg-white/10" />
             ))}
           </div>
         </div>

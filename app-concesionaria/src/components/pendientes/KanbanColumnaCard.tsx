@@ -80,7 +80,7 @@ export function KanbanColumnaCard({
       ref={setSortableRef}
       style={style}
       className={[
-        "flex w-64 flex-shrink-0 flex-col rounded-xl bg-zinc-100 p-3 transition-opacity",
+        "flex w-64 flex-shrink-0 flex-col rounded-xl bg-[#1a2c42] p-3 transition-opacity",
         isDragging && !isDragOverlay ? "opacity-40" : "",
         isDragOverlay ? "shadow-2xl rotate-1 cursor-grabbing" : "",
       ]
@@ -93,14 +93,14 @@ export function KanbanColumnaCard({
           <button
             type="button"
             aria-label={`Arrastrar columna ${columna.nombre}`}
-            className="flex-shrink-0 cursor-grab text-zinc-300 transition-colors hover:text-zinc-500 active:cursor-grabbing focus:outline-none"
+            className="flex-shrink-0 cursor-grab text-white/30 transition-colors hover:text-white/60 active:cursor-grabbing focus:outline-none"
             {...attributes}
             {...listeners}
           >
             <GripVertical size={15} />
           </button>
-          <span className="truncate text-sm font-semibold text-zinc-700">{columna.nombre}</span>
-          <span className="flex-shrink-0 rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-500">
+          <span className="truncate text-sm font-semibold text-white">{columna.nombre}</span>
+          <span className="flex-shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white/70">
             {columna.tarjetas.length}
           </span>
         </div>
@@ -109,7 +109,7 @@ export function KanbanColumnaCard({
           <button
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
-            className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="flex h-6 w-6 items-center justify-center rounded text-white/50 transition-colors hover:bg-white/10 hover:text-white/80 focus:outline-none focus:ring-2 focus:ring-white/20"
             aria-label={`Opciones de columna ${columna.nombre}`}
           >
             <MoreHorizontal size={16} />
@@ -143,14 +143,14 @@ export function KanbanColumnaCard({
         ref={setDropRef}
         className={[
           "flex flex-col gap-2 rounded-lg transition-colors min-h-[2rem] flex-1",
-          isOver ? "bg-blue-50 ring-2 ring-blue-200 ring-inset" : "",
+          isOver ? "bg-white/5 ring-2 ring-blue-400/40 ring-inset" : "",
         ]
           .filter(Boolean)
           .join(" ")}
       >
         <SortableContext items={tarjetaIds} strategy={verticalListSortingStrategy}>
           {columna.tarjetas.length === 0 ? (
-            <p className="py-3 text-center text-xs text-zinc-400">
+            <p className="py-3 text-center text-xs text-white/40">
               {isOver ? "Soltar aquí" : "Sin tarjetas"}
             </p>
           ) : (
@@ -169,7 +169,7 @@ export function KanbanColumnaCard({
       <button
         type="button"
         onClick={() => onAgregarTarjeta(columna.id)}
-        className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        className="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-white/50 transition-colors hover:bg-white/10 hover:text-white/80 focus:outline-none focus:ring-2 focus:ring-white/20"
       >
         <Plus size={15} />
         Agregar
