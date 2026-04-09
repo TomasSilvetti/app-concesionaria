@@ -11,7 +11,7 @@ interface Recuadro {
   width: number;
   height: number;
   nombre: string;
-  tipo: "auto" | "fijo" | "manual" | "fecha" | "";
+  tipo: "auto" | "fijo" | "manual" | "fecha" | "manual_opcional" | "";
   valor: string;
 }
 
@@ -115,7 +115,7 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
               (f: {
                 id: string;
                 nombre: string;
-                tipo: "auto" | "fijo" | "manual";
+                tipo: "auto" | "fijo" | "manual" | "manual_opcional";
                 valorFijo: string | null;
                 rutaAuto: string | null;
                 posX: number;
@@ -605,7 +605,7 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
                     Tipo <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-1.5">
-                    {(["auto", "fijo", "fecha", "manual"] as const).map((tipo) => (
+                    {(["auto", "fijo", "fecha", "manual", "manual_opcional"] as const).map((tipo) => (
                       <button
                         key={tipo}
                         onClick={() =>
@@ -617,7 +617,7 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
                             : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
                         }`}
                       >
-                        {tipo === "auto" ? "Auto" : tipo === "fijo" ? "Fijo" : tipo === "fecha" ? "Fecha" : "Manual"}
+                        {tipo === "auto" ? "Auto" : tipo === "fijo" ? "Fijo" : tipo === "fecha" ? "Fecha" : tipo === "manual" ? "Manual" : "Opcional"}
                       </button>
                     ))}
                   </div>
@@ -699,6 +699,17 @@ export function PlantillaEditorModal({ onClose, onSaved, plantillaId }: Plantill
                         info
                       </span>
                       Este campo se completará manualmente al generar el documento.
+                    </p>
+                  </div>
+                )}
+
+                {selectedRecuadro.tipo === "manual_opcional" && (
+                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                    <p className="flex items-start gap-2 text-xs text-zinc-600">
+                      <span className="material-symbols-outlined flex-shrink-0 text-sm text-zinc-400">
+                        info
+                      </span>
+                      Este campo es opcional. Se puede completar manualmente al generar el documento, pero no es obligatorio.
                     </p>
                   </div>
                 )}

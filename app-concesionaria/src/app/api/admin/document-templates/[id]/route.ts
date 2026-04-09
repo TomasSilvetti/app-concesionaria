@@ -197,7 +197,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       );
     }
 
-    const validTypes = new Set(["auto", "fijo", "manual"]);
+    const validTypes = new Set(["auto", "fijo", "manual", "manual_opcional"]);
     const rutasValidas = AUTO_ROUTES[contexto];
 
     for (let i = 0; i < campos.length; i++) {
@@ -282,7 +282,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
             id: randomUUID(),
             templateId: id,
             nombre: campo.nombre.trim(),
-            tipo: campo.tipo as "auto" | "fijo" | "manual",
+            tipo: campo.tipo as "auto" | "fijo" | "manual" | "manual_opcional",
             valorFijo: campo.tipo === "fijo" ? campo.valorFijo ?? null : null,
             rutaAuto: campo.tipo === "auto" ? campo.rutaAuto ?? null : null,
             posX: campo.posX,
