@@ -16,7 +16,11 @@
       "Bash(grep -r \"theme\\\\|extend\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/tailwind*)",
       "Bash(find /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src -name *theme* -o -name *color* -o -name *style*)",
       "Bash(grep -r \"className.*button\\\\|class.*btn\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/components --include=*.tsx --include=*.ts)",
-      "Bash(grep -r \"\\\\-\\\\-color\\\\|--font\\\\|@theme\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src --include=*.tsx --include=*.ts --include=*.css)"
+      "Bash(grep -r \"\\\\-\\\\-color\\\\|--font\\\\|@theme\" /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src --include=*.tsx --include=*.ts --include=*.css)",
+      "Bash(find /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src -type d -name *finance* -o -type d -name *dashboard* -o -type d -name *metrics*)",
+      "Bash(ls -la /c/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src/app/cliente/[id]/dashboard/)",
+      "Bash(find c:/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src -name *sidebar* -o -name *Sidebar*)",
+      "Bash(find c:/Users/tomas/Documents/Proyectos/App-Concesionaria/app-concesionaria/src -name *nav* -o -name *Nav*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\tomas\\Documents\\Proyectos\\App-Concesionaria\\docs\\historias-de-usuario\\HU-21"
