@@ -207,13 +207,7 @@ export function CobrosChart({ desde, hasta }: CobrosChartProps) {
           </div>
 
           <div className="w-full">
-            <Legend
-              content={<CustomLegend data={data} />}
-              payload={data.map((item, index) => ({
-                value: item.metodo,
-                color: COLORS[index % COLORS.length],
-              }))}
-            />
+            <Legend content={<CustomLegend data={data} />} />
           </div>
         </div>
       )}
