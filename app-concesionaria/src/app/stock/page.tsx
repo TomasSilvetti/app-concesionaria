@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StockTable } from "@/components/stock/StockTable";
@@ -25,6 +26,7 @@ export default function StockPage() {
   const [selectedVehicles, setSelectedVehicles] = useState<SelectedVehicle[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
 
   const handleAgregarVehiculo = () => {
     router.push("/stock/nuevo");
@@ -64,6 +66,19 @@ export default function StockPage() {
       const pageH = 297;
       const margin = 12;
       const baseUrl = window.location.origin;
+
+      // Paleta negro/rojo/gris
+      const C_BLACK   = [15, 15, 15] as const;   // fondo principal
+      const C_RED     = [185, 28, 28] as const;   // acento rojo
+      const C_GRAY_D  = [30, 30, 30] as const;    // gris oscuro (barras)
+      const C_GRAY_M  = [80, 80, 80] as const;    // gris medio (texto secundario)
+      const C_GRAY_L  = [220, 220, 220] as const; // gris claro (bordes)
+      const C_WHITE   = [255, 255, 255] as const;
+
+      // Cargar logo desde localStorage
+      const clienteId = session?.user?.clienteId || "admin";
+      const companyLogo = localStorage.getItem(`company_logo_${clienteId}`) || "";
+      const companyName = localStorage.getItem(`company_name_${clienteId}`) || "CONCESIONARIA";
 
       // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -131,59 +146,91 @@ export default function StockPage() {
 
       // ── PORTADA ─────────────────────────────────────────────────────────────
 
-      // Fondo azul superior
-      doc.setFillColor(30, 64, 175);
+      // Fondo negro superior
+      doc.setFillColor(...C_BLACK);
       doc.rect(0, 0, pageW, pageH * 0.52, "F");
 
-      // Franja decorativa más clara
-      doc.setFillColor(37, 99, 235);
-      doc.rect(0, pageH * 0.42, pageW, 14, "F");
+      // Franja roja decorativa
+      doc.setFillColor(...C_RED);
+      doc.rect(0, pageH * 0.42, pageW, 10, "F");
 
-      // Nombre de la empresa
-      doc.setTextColor(186, 210, 255);
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
       const datePortada = new Date().toLocaleDateString("es-AR", {
         year: "numeric",
         month: "long",
         day: "numeric",
       });
-      doc.text("CONCESIONARIA", pageW / 2, 65, { align: "center" });
+
+      // Logo de la empresa (si existe)
+      let logoLoaded = false;
+      if (companyLogo) {
+        try {
+          const logoImg = new Image();
+          logoImg.src = companyLogo;
+          await new Promise<void>((resolve) => {
+            logoImg.onload = () => resolve();
+            logoImg.onerror = () => resolve();
+          });
+          if (logoImg.naturalWidth > 0) {
+            const canvas = document.createElement("canvas");
+            canvas.width = logoImg.naturalWidth;
+            canvas.height = logoImg.naturalHeight;
+            canvas.getContext("2d")!.drawImage(logoImg, 0, 0);
+            const logoDataUrl = canvas.toDataURL("image/png");
+            const maxLogoW = 50;
+            const maxLogoH = 25;
+            const aspect = logoImg.naturalWidth / logoImg.naturalHeight;
+            let lw = maxLogoW;
+            let lh = maxLogoW / aspect;
+            if (lh > maxLogoH) { lh = maxLogoH; lw = maxLogoH * aspect; }
+            doc.addImage(logoDataUrl, "PNG", pageW / 2 - lw / 2, 28, lw, lh);
+            logoLoaded = true;
+          }
+        } catch {}
+      }
+
+      // Nombre de la empresa (si no hay logo)
+      if (!logoLoaded) {
+        doc.setTextColor(...C_GRAY_L);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.text(companyName.toUpperCase(), pageW / 2, 55, { align: "center" });
+      }
 
       // Título principal
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(...C_WHITE);
       doc.setFontSize(44);
       doc.setFont("helvetica", "bold");
-      doc.text("CATÁLOGO", pageW / 2, 90, { align: "center" });
+      doc.text("CATÁLOGO", pageW / 2, logoLoaded ? 76 : 90, { align: "center" });
 
       doc.setFontSize(22);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(186, 210, 255);
-      doc.text("DE STOCK", pageW / 2, 103, { align: "center" });
+      doc.setTextColor(...C_GRAY_L);
+      doc.text("DE STOCK", pageW / 2, logoLoaded ? 89 : 103, { align: "center" });
 
-      // Línea decorativa
-      doc.setDrawColor(255, 255, 255);
+      // Línea decorativa blanca
+      doc.setDrawColor(...C_WHITE);
       doc.setLineWidth(0.6);
-      doc.line(pageW / 2 - 35, 110, pageW / 2 + 35, 110);
+      const lineY = logoLoaded ? 96 : 110;
+      doc.line(pageW / 2 - 35, lineY, pageW / 2 + 35, lineY);
 
       // Fecha
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(255, 255, 255);
-      doc.text(datePortada, pageW / 2, 119, { align: "center" });
+      doc.setTextColor(...C_WHITE);
+      doc.text(datePortada, pageW / 2, lineY + 9, { align: "center" });
 
-      // Fondo blanco inferior
-      doc.setFillColor(248, 250, 252);
+      // Fondo gris claro inferior
+      doc.setFillColor(245, 245, 245);
       doc.rect(0, pageH * 0.52, pageW, pageH * 0.48, "F");
 
       // Lista de vehículos en portada
       const listStartY = pageH * 0.52 + 14;
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 64, 175);
+      doc.setTextColor(...C_RED);
       doc.text(`${selectedVehicles.length} VEHÍCULO${selectedVehicles.length !== 1 ? "S" : ""} INCLUIDO${selectedVehicles.length !== 1 ? "S" : ""}`, margin + 4, listStartY);
 
-      doc.setDrawColor(30, 64, 175);
+      doc.setDrawColor(...C_RED);
       doc.setLineWidth(0.3);
       doc.line(margin + 4, listStartY + 2, pageW - margin - 4, listStartY + 2);
 
@@ -192,18 +239,18 @@ export default function StockPage() {
         const row = Math.floor(i / 2);
         const x = margin + 4 + col * ((pageW - margin * 2 - 8) / 2);
         const y = listStartY + 10 + row * 8;
-        doc.setFillColor(30, 64, 175);
+        doc.setFillColor(...C_RED);
         doc.circle(x + 1, y - 1.5, 0.8, "F");
         doc.setFontSize(8.5);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(30, 42, 74);
+        doc.setTextColor(...C_GRAY_D);
         const label = `${v.marca} ${v.modelo}${v.version ? ` · ${v.version}` : ""}`;
         doc.text(label, x + 4, y);
       });
 
       // Pie de portada
       doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184);
+      doc.setTextColor(...C_GRAY_M);
       doc.text(`Generado el ${new Date().toLocaleDateString("es-AR")}`, pageW / 2, pageH - 8, { align: "center" });
 
       // ── PÁGINAS DE VEHÍCULOS (4 por página) ──────────────────────────────
@@ -226,9 +273,11 @@ export default function StockPage() {
         );
 
         // Header de página
-        doc.setFillColor(30, 64, 175);
+        doc.setFillColor(...C_BLACK);
         doc.rect(0, 0, pageW, headerH, "F");
-        doc.setTextColor(255, 255, 255);
+        doc.setFillColor(...C_RED);
+        doc.rect(0, headerH - 2, pageW, 2, "F");
+        doc.setTextColor(...C_WHITE);
         doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         doc.text("CATÁLOGO DE STOCK", margin, 8.5);
@@ -243,12 +292,12 @@ export default function StockPage() {
 
           // Fondo de card
           doc.setFillColor(255, 255, 255);
-          doc.setDrawColor(226, 232, 240);
+          doc.setDrawColor(...C_GRAY_L);
           doc.setLineWidth(0.3);
           doc.roundedRect(margin, cardY, pageW - margin * 2, cardH - 2, 2, 2, "FD");
 
-          // Barra azul izquierda
-          doc.setFillColor(30, 64, 175);
+          // Barra roja izquierda
+          doc.setFillColor(...C_RED);
           doc.roundedRect(margin, cardY, 3.5, cardH - 2, 1, 1, "F");
 
           const textX = margin + 3.5 + innerPad;
@@ -289,11 +338,11 @@ export default function StockPage() {
             }
           }
           if (!photoLoaded) {
-            doc.setFillColor(241, 245, 249);
-            doc.setDrawColor(203, 213, 225);
+            doc.setFillColor(240, 240, 240);
+            doc.setDrawColor(...C_GRAY_L);
             doc.setLineWidth(0.2);
             doc.roundedRect(photoX, cardY + innerPad, photoW, photoH, 1.5, 1.5, "FD");
-            doc.setTextColor(148, 163, 184);
+            doc.setTextColor(...C_GRAY_M);
             doc.setFontSize(7);
             doc.setFont("helvetica", "italic");
             doc.text("Sin foto", photoX + photoW / 2, cardY + innerPad + photoH / 2, { align: "center" });
@@ -303,7 +352,7 @@ export default function StockPage() {
           let ty = cardY + innerPad + 6;
 
           // Marca + Modelo
-          doc.setTextColor(15, 23, 42);
+          doc.setTextColor(...C_BLACK);
           doc.setFontSize(13);
           doc.setFont("helvetica", "bold");
           const titleText = `${vehicle.marca} ${vehicle.modelo}`;
@@ -318,14 +367,14 @@ export default function StockPage() {
           if (vehicle.version) {
             doc.setFontSize(8.5);
             doc.setFont("helvetica", "normal");
-            doc.setTextColor(100, 116, 139);
+            doc.setTextColor(...C_GRAY_M);
             doc.text(vehicle.version, textX, ty);
             ty += 5;
           }
 
           // Separador
           ty += 2;
-          doc.setDrawColor(226, 232, 240);
+          doc.setDrawColor(...C_GRAY_L);
           doc.setLineWidth(0.2);
           doc.line(textX, ty, textX + textW, ty);
           ty += 5;
@@ -333,31 +382,31 @@ export default function StockPage() {
           // Campo Color
           doc.setFontSize(6.5);
           doc.setFont("helvetica", "normal");
-          doc.setTextColor(100, 116, 139);
+          doc.setTextColor(...C_GRAY_M);
           doc.text("COLOR", textX, ty);
           ty += 3.5;
           doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
-          doc.setTextColor(15, 23, 42);
+          doc.setTextColor(...C_BLACK);
           doc.text(vehicle.color || "—", textX, ty);
           ty += 5;
 
           // Campo Kilómetros
           doc.setFontSize(6.5);
           doc.setFont("helvetica", "normal");
-          doc.setTextColor(100, 116, 139);
+          doc.setTextColor(...C_GRAY_M);
           doc.text("KILÓMETROS", textX, ty);
           ty += 3.5;
           doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
-          doc.setTextColor(15, 23, 42);
+          doc.setTextColor(...C_BLACK);
           doc.text(formatKilometers(vehicle.kilometros), textX, ty);
           ty += 5;
 
           // Campo Precio
           doc.setFontSize(6.5);
           doc.setFont("helvetica", "normal");
-          doc.setTextColor(100, 116, 139);
+          doc.setTextColor(...C_GRAY_M);
           doc.text("PRECIO", textX, ty);
           ty += 4;
 
@@ -386,7 +435,7 @@ export default function StockPage() {
           } else {
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(15, 23, 42);
+            doc.setTextColor(...C_BLACK);
             doc.text(formatCurrency(vehicle.precioRevista), textX, ty);
           }
         }
@@ -394,7 +443,7 @@ export default function StockPage() {
         // Número de página
         doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(148, 163, 184);
+        doc.setTextColor(...C_GRAY_M);
         doc.text(`${pageIdx + 2} / ${totalPages}`, pageW - margin, pageH - 4, { align: "right" });
       }
 
