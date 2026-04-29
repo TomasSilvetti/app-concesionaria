@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
           where: {
             clienteId,
             estado: "cerrada",
-            fechaVenta: { gte: desde, lte: hasta },
+            fechaInicio: { gte: desde, lte: hasta },
           },
           select: {
             precioVentaTotal: true,
@@ -67,12 +67,21 @@ export async function GET(req: NextRequest) {
           where: {
             clienteId,
             estado: "cerrada",
-            fechaVenta: { gte: anteriorDesde, lte: anteriorHasta },
+            fechaInicio: { gte: anteriorDesde, lte: anteriorHasta },
           },
           select: { ingresosNetos: true },
         }),
         prisma.vehicle.findMany({
-          where: { clienteId, operacionId: null },
+          where: {
+            clienteId,
+            operacionId: null,
+            estado: { not: "vendido" },
+            OperationExchange: {
+              none: {
+                Operation: { estado: "cerrada" },
+              },
+            },
+          },
           select: { precioToma: true },
         }),
         prisma.operation.findMany({

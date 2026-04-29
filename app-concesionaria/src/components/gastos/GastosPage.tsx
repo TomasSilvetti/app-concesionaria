@@ -6,9 +6,16 @@ import "material-symbols/outlined.css";
 import { GastosCharts } from "./GastosCharts";
 import { GastosTabla } from "./GastosTabla";
 
+interface DesgloseTotalGastado {
+  gastosDirectos: number;
+  precioToma0km: number;
+  precioTomaStock: number;
+}
+
 interface Metricas {
   totalVendidoBruto: number;
   totalGastado: number;
+  desgloseTotalGastado: DesgloseTotalGastado;
   ganancia: number;
   margenPorcentaje?: number;
   plataPorCobrar: number;
@@ -224,13 +231,10 @@ export function GastosPage() {
             iconBg="bg-emerald-100"
             iconColor="text-emerald-600"
           />
-          <MetricCard
-            label="Total gastado"
+          <TotalGastadoCard
             value={metricas?.totalGastado ?? null}
+            desglose={metricas?.desgloseTotalGastado ?? null}
             loading={loading}
-            icon="receipt"
-            iconBg="bg-red-100"
-            iconColor="text-red-500"
           />
           <MetricCard
             label="Ganancia Neta"
@@ -287,6 +291,67 @@ export function GastosPage() {
 
       {/* Tabla de gastos */}
       <GastosTabla desde={desde} hasta={hasta} />
+    </div>
+  );
+}
+
+// ─── TotalGastadoCard ─────────────────────────────────────────────────────────
+
+interface TotalGastadoCardProps {
+  value: number | null;
+  desglose: DesgloseTotalGastado | null;
+  loading: boolean;
+}
+
+function TotalGastadoCard({ value, desglose, loading }: TotalGastadoCardProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
+          <span className="material-symbols-outlined text-xl text-red-500">receipt</span>
+        </div>
+        {!loading && desglose && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-200"
+            aria-expanded={open}
+          >
+            <span className="material-symbols-outlined text-sm">
+              {open ? "expand_less" : "expand_more"}
+            </span>
+            Desglose
+          </button>
+        )}
+      </div>
+      <div>
+        <p className="text-sm text-zinc-500">Total gastado</p>
+        {loading ? (
+          <div className="mt-1.5 h-8 w-36 animate-pulse rounded-lg bg-zinc-200" aria-label="Cargando" />
+        ) : (
+          <p className="text-2xl font-bold text-zinc-900">
+            {value != null ? formatPesos(value) : "$—"}
+          </p>
+        )}
+      </div>
+      {open && desglose && (
+        <div className="flex flex-col gap-1.5 border-t border-zinc-100 pt-3">
+          <DesgloseRow label="Gastos directos" value={desglose.gastosDirectos} />
+          <DesgloseRow label="Precio de toma (0km)" value={desglose.precioToma0km} />
+          <DesgloseRow label="Precio de toma (stock)" value={desglose.precioTomaStock} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DesgloseRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs text-zinc-500">{label}</span>
+      <span className="text-xs font-semibold text-zinc-700">{formatPesos(value)}</span>
     </div>
   );
 }

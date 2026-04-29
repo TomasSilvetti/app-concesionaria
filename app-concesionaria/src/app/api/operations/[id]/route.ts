@@ -393,7 +393,36 @@ export async function PATCH(
       );
     }
 
+    if (updateData.estado === "cancelada") {
+      const now = new Date();
+      const vehicleIdsToRestore: string[] = [];
+
+      // Restaurar vehículo principal si es venta desde stock
+      if (existingOperation.tipoOperacion === "Venta desde stock") {
+        vehicleIdsToRestore.push(existingOperation.vehiculoVendidoId);
+      }
+
+      // Restaurar vehículos de intercambio
+      const exchanges = await prisma.operationExchange.findMany({
+        where: { operacionId: existingOperation.id },
+        select: { stockId: true },
+      });
+      exchanges.forEach((e) => vehicleIdsToRestore.push(e.stockId));
+
+      if (vehicleIdsToRestore.length > 0) {
+        await prisma.vehicle.updateMany({
+          where: { id: { in: vehicleIdsToRestore } },
+          data: { estado: "disponible", actualizadoEn: now },
+        });
+      }
+    }
+
     if (updateData.estado === "cerrada") {
+      await prisma.vehicle.update({
+        where: { id: existingOperation.vehiculoVendidoId },
+        data: { estado: "vendido", actualizadoEn: new Date() },
+      });
+
       const aggregate = await prisma.pago.aggregate({
         where: { operacionId: existingOperation.id },
         _sum: { monto: true },

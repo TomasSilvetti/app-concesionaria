@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     // Incluir hasta el final del día de 'hasta'
     hasta.setHours(23, 59, 59, 999);
 
-    const [pagosResult, operacionesCerradas, gastosResult, plataPorCobrarResult] =
+    const [pagosResult, operacionesCerradas, gastosResult, plataPorCobrarResult, ops0km, vehiculosStock] =
       await Promise.all([
         // SUM de monto de Pagos de TODAS las operaciones (abiertas y cerradas) en el período
         prisma.pago.aggregate({
@@ -48,9 +48,7 @@ export async function GET(req: NextRequest) {
             clienteId,
             fecha: { gte: desde, lte: hasta },
           },
-          _sum: {
-            monto: true,
-          },
+          _sum: { monto: true },
         }),
 
         // Operaciones cerradas en el período (por fechaInicio) con sus gastos reales
@@ -72,9 +70,7 @@ export async function GET(req: NextRequest) {
             clienteId,
             fecha: { gte: desde, lte: hasta },
           },
-          _sum: {
-            monto: true,
-          },
+          _sum: { monto: true },
         }),
 
         // Operaciones abiertas con sus pagos para calcular saldo pendiente de cobro
@@ -88,10 +84,37 @@ export async function GET(req: NextRequest) {
             Pago: { select: { monto: true } },
           },
         }),
+
+        // Precio de toma de operaciones 0km abiertas/cerradas (no canceladas) en el período
+        prisma.operation.findMany({
+          where: {
+            clienteId,
+            tipoOperacion: { not: "Venta desde stock" },
+            estado: { not: "cancelada" },
+            fechaInicio: { gte: desde, lte: hasta },
+            precioToma: { not: null },
+          },
+          select: { precioToma: true },
+        }),
+
+        // Precio de toma de vehículos de stock ingresados en el período (deduplicado automáticamente)
+        prisma.vehicle.findMany({
+          where: {
+            clienteId,
+            operacionId: null,
+            creadoEn: { gte: desde, lte: hasta },
+            precioToma: { not: null },
+          },
+          select: { precioToma: true },
+        }),
       ]);
 
     const totalVendidoBruto = pagosResult._sum.monto ?? 0;
-    const totalGastado = gastosResult._sum.monto ?? 0;
+    const gastosDirectos = gastosResult._sum.monto ?? 0;
+    const precioToma0km = ops0km.reduce((sum, op) => sum + (op.precioToma ?? 0), 0);
+    const precioTomaStock = vehiculosStock.reduce((sum, v) => sum + (v.precioToma ?? 0), 0);
+    const totalGastado = gastosDirectos + precioToma0km + precioTomaStock;
+
     const ganancia = operacionesCerradas.reduce((sum, op) => {
       const gastosOp = op.Expense.reduce((s, e) => s + e.monto, 0);
       return sum + op.ingresosBrutos - gastosOp;
@@ -104,6 +127,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       totalVendidoBruto,
       totalGastado,
+      desgloseTotalGastado: {
+        gastosDirectos,
+        precioToma0km,
+        precioTomaStock,
+      },
       ganancia,
       plataPorCobrar,
     });
