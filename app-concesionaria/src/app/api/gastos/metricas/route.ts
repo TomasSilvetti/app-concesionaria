@@ -40,9 +40,9 @@ export async function GET(req: NextRequest) {
     // Incluir hasta el final del día de 'hasta'
     hasta.setHours(23, 59, 59, 999);
 
-    const [pagosResult, operacionesCerradas, gastosResult, plataPorCobrarResult, ops0km, vehiculosStock] =
+    const [pagosResult, pagosCerradas, pagosAbiertas, gastosResult, plataPorCobrarResult, ops0km, vehiculosStock] =
       await Promise.all([
-        // SUM de monto de Pagos de TODAS las operaciones (abiertas y cerradas) en el período
+        // SUM de monto de Pagos de TODAS las operaciones en el período
         prisma.pago.aggregate({
           where: {
             clienteId,
@@ -51,17 +51,24 @@ export async function GET(req: NextRequest) {
           _sum: { monto: true },
         }),
 
-        // Operaciones cerradas en el período (por fechaInicio) con sus gastos reales
-        prisma.operation.findMany({
+        // SUM de pagos de operaciones cerradas en el período
+        prisma.pago.aggregate({
           where: {
             clienteId,
-            estado: "cerrada",
-            fechaInicio: { gte: desde, lte: hasta },
+            fecha: { gte: desde, lte: hasta },
+            Operation: { estado: "cerrada" },
           },
-          select: {
-            ingresosBrutos: true,
-            Expense: { select: { monto: true } },
+          _sum: { monto: true },
+        }),
+
+        // SUM de pagos de operaciones abiertas en el período
+        prisma.pago.aggregate({
+          where: {
+            clienteId,
+            fecha: { gte: desde, lte: hasta },
+            Operation: { estado: { in: ["abierta", "open"] } },
           },
+          _sum: { monto: true },
         }),
 
         // SUM de monto de todos los gastos del período (con o sin operación, cualquier estado)
@@ -110,15 +117,15 @@ export async function GET(req: NextRequest) {
       ]);
 
     const totalVendidoBruto = pagosResult._sum.monto ?? 0;
+    const vendidoBrutoCerradas = pagosCerradas._sum.monto ?? 0;
+    const vendidoBrutoAbiertas = pagosAbiertas._sum.monto ?? 0;
+    const vendidoBrutoOtros = totalVendidoBruto - vendidoBrutoCerradas - vendidoBrutoAbiertas;
     const gastosDirectos = gastosResult._sum.monto ?? 0;
     const precioToma0km = ops0km.reduce((sum, op) => sum + (op.precioToma ?? 0), 0);
     const precioTomaStock = vehiculosStock.reduce((sum, v) => sum + (v.precioToma ?? 0), 0);
     const totalGastado = gastosDirectos + precioToma0km + precioTomaStock;
 
-    const ganancia = operacionesCerradas.reduce((sum, op) => {
-      const gastosOp = op.Expense.reduce((s, e) => s + e.monto, 0);
-      return sum + op.ingresosBrutos - gastosOp;
-    }, 0);
+    const ganancia = totalVendidoBruto - totalGastado;
     const plataPorCobrar = plataPorCobrarResult.reduce((sum, op) => {
       const pagado = op.Pago.reduce((s, p) => s + p.monto, 0);
       return sum + Math.max(op.precioVentaTotal - pagado, 0);
@@ -126,6 +133,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       totalVendidoBruto,
+      desgloseTotalVendido: {
+        cerradas: vendidoBrutoCerradas,
+        abiertas: vendidoBrutoAbiertas,
+        canceladas: vendidoBrutoOtros,
+      },
       totalGastado,
       desgloseTotalGastado: {
         gastosDirectos,

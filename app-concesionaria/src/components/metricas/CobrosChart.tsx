@@ -7,7 +7,6 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import "material-symbols/outlined.css";
 
@@ -197,7 +196,13 @@ export function CobrosChart({ desde, hasta }: CobrosChartProps) {
           </div>
 
           <div className="w-full">
-            <Legend content={<CustomLegend data={data} />} />
+            <CustomLegend
+              payload={data.map((item, i) => ({
+                value: item.metodo,
+                color: COLORS[i % COLORS.length],
+              }))}
+              data={data}
+            />
           </div>
         </div>
       )}

@@ -92,9 +92,9 @@ export function ResultadoMensualChart({ desde, hasta }: ResultadoMensualChartPro
           </span>
         </div>
         <div>
-          <h2 className="text-base font-semibold text-zinc-900">Resultado mensual</h2>
+          <h2 className="text-base font-semibold text-zinc-900">Resultado por periodo</h2>
           <p className="text-xs text-zinc-500">
-            Ingresos, gastos y ganancia neta por mes
+            Ingresos, gastos y ganancia neta por periodo seleccionado
           </p>
         </div>
       </div>

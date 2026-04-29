@@ -109,16 +109,16 @@ export function RoiInversorTable({ desde, hasta }: RoiInversorTableProps) {
           <table className="w-full min-w-[500px] text-sm">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50 text-left">
-                <th className="px-4 py-3 font-semibold text-zinc-500 text-xs uppercase tracking-wider rounded-tl-lg">
+                <th className="px-4 py-3 font-semibold text-zinc-300 text-xs uppercase tracking-wider rounded-tl-lg">
                   Inversor
                 </th>
-                <th className="px-4 py-3 font-semibold text-zinc-500 text-xs uppercase tracking-wider text-right">
+                <th className="px-4 py-3 font-semibold text-zinc-300 text-xs uppercase tracking-wider text-right">
                   Monto Aportado
                 </th>
-                <th className="px-4 py-3 font-semibold text-zinc-500 text-xs uppercase tracking-wider text-right">
+                <th className="px-4 py-3 font-semibold text-zinc-300  text-xs uppercase tracking-wider text-right">
                   Retorno
                 </th>
-                <th className="px-4 py-3 font-semibold text-zinc-500 text-xs uppercase tracking-wider text-right rounded-tr-lg">
+                <th className="px-4 py-3 font-semibold text-zinc-300 text-xs uppercase tracking-wider text-right rounded-tr-lg">
                   ROI%
                 </th>
               </tr>

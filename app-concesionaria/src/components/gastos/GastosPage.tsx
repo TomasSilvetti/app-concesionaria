@@ -6,6 +6,12 @@ import "material-symbols/outlined.css";
 import { GastosCharts } from "./GastosCharts";
 import { GastosTabla } from "./GastosTabla";
 
+interface DesgloseTotalVendido {
+  cerradas: number;
+  abiertas: number;
+  canceladas: number;
+}
+
 interface DesgloseTotalGastado {
   gastosDirectos: number;
   precioToma0km: number;
@@ -14,6 +20,7 @@ interface DesgloseTotalGastado {
 
 interface Metricas {
   totalVendidoBruto: number;
+  desgloseTotalVendido: DesgloseTotalVendido;
   totalGastado: number;
   desgloseTotalGastado: DesgloseTotalGastado;
   ganancia: number;
@@ -223,13 +230,10 @@ export function GastosPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            label="Total vendido bruto"
+          <TotalVendidoCard
             value={metricas?.totalVendidoBruto ?? null}
+            desglose={metricas?.desgloseTotalVendido ?? null}
             loading={loading}
-            icon="label"
-            iconBg="bg-emerald-100"
-            iconColor="text-emerald-600"
           />
           <TotalGastadoCard
             value={metricas?.totalGastado ?? null}
@@ -291,6 +295,58 @@ export function GastosPage() {
 
       {/* Tabla de gastos */}
       <GastosTabla desde={desde} hasta={hasta} />
+    </div>
+  );
+}
+
+// ─── TotalVendidoCard ─────────────────────────────────────────────────────────
+
+interface TotalVendidoCardProps {
+  value: number | null;
+  desglose: DesgloseTotalVendido | null;
+  loading: boolean;
+}
+
+function TotalVendidoCard({ value, desglose, loading }: TotalVendidoCardProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+          <span className="material-symbols-outlined text-xl text-emerald-600">label</span>
+        </div>
+        {!loading && desglose && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-200"
+            aria-expanded={open}
+          >
+            <span className="material-symbols-outlined text-sm">
+              {open ? "expand_less" : "expand_more"}
+            </span>
+            Desglose
+          </button>
+        )}
+      </div>
+      <div>
+        <p className="text-sm text-zinc-500">Total vendido bruto</p>
+        {loading ? (
+          <div className="mt-1.5 h-8 w-36 animate-pulse rounded-lg bg-zinc-200" aria-label="Cargando" />
+        ) : (
+          <p className="text-2xl font-bold text-zinc-900">
+            {value != null ? formatPesos(value) : "$—"}
+          </p>
+        )}
+      </div>
+      {open && desglose && (
+        <div className="flex flex-col gap-1.5 border-t border-zinc-100 pt-3">
+          <DesgloseRow label="Ops. cerradas" value={desglose.cerradas} />
+          <DesgloseRow label="Ops. abiertas" value={desglose.abiertas} />
+          {desglose.canceladas > 0 && <DesgloseRow label="Ops. canceladas" value={desglose.canceladas} />}
+        </div>
+      )}
     </div>
   );
 }
