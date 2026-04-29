@@ -166,6 +166,12 @@ export async function PUT(
     if (doc.clienteId !== clienteId) {
       return NextResponse.json({ message: "Acceso denegado" }, { status: 403 });
     }
+    if (!doc.templateId) {
+      return NextResponse.json(
+        { message: "Los documentos subidos manualmente no pueden regenerarse" },
+        { status: 400 }
+      );
+    }
 
     const body = await req.json();
     const manualFields: Record<string, string> =

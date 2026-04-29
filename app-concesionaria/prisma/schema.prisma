@@ -388,18 +388,18 @@ model DocumentAssignment {
 }
 
 model GeneratedDocument {
-  id               String           @id
-  templateId       String
+  id               String            @id
+  templateId       String?
   clienteId        String
   contexto         DocumentContext
   contextId        String
   pdfGenerado      Bytes
   nombreArchivo    String
   mimeType         String
-  creadoEn         DateTime         @default(now())
+  creadoEn         DateTime          @default(now())
   actualizadoEn    DateTime
-  DocumentTemplate DocumentTemplate @relation(fields: [templateId], references: [id])
-  Client           Client           @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  DocumentTemplate DocumentTemplate? @relation(fields: [templateId], references: [id])
+  Client           Client            @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@index([templateId])
   @@index([clienteId])
