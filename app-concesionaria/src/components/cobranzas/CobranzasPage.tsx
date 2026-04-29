@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import "material-symbols/outlined.css";
+import { CobrosChart } from "@/components/metricas/CobrosChart";
 
 interface PagoCobranza {
   fecha: string;
@@ -114,19 +115,27 @@ export function CobranzasPage() {
         </label>
       </div>
 
-      {/* Card deuda total pendiente */}
+      {/* Card deuda total pendiente + Gráfico cobros */}
       {!loading && !error && (
-        <div className="flex w-full max-w-xs flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
-            <span className="material-symbols-outlined text-xl text-red-500">pending_actions</span>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="flex w-full max-w-xs flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm flex-shrink-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
+              <span className="material-symbols-outlined text-xl text-red-500">pending_actions</span>
+            </div>
+            <div>
+              <p className="text-sm text-zinc-500">Deuda total pendiente</p>
+              <p className="mt-0.5 text-2xl font-bold text-zinc-900">
+                {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0 }).format(
+                  operaciones.reduce((sum, op) => sum + op.pendiente, 0)
+                )}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-zinc-500">Deuda total pendiente</p>
-            <p className="mt-0.5 text-2xl font-bold text-zinc-900">
-              {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0 }).format(
-                operaciones.reduce((sum, op) => sum + op.pendiente, 0)
-              )}
-            </p>
+          <div className="flex-1">
+            <CobrosChart
+              desde={new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10)}
+              hasta={new Date().toISOString().slice(0, 10)}
+            />
           </div>
         </div>
       )}

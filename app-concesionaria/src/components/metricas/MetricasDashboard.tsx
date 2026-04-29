@@ -4,7 +4,6 @@ import { useState } from "react";
 import { format, startOfMonth, endOfMonth, subMonths, subWeeks, startOfYear } from "date-fns";
 import "material-symbols/outlined.css";
 import { ResultadoMensualChart } from "./ResultadoMensualChart";
-import { CobrosChart } from "./CobrosChart";
 import { RoiInversorTable } from "./RoiInversorTable";
 
 type Preset = "semana" | "mes_actual" | "mes_anterior" | "anio" | "custom";
@@ -175,9 +174,6 @@ export function MetricasDashboard() {
         <>
           {/* Resultado mensual */}
           <ResultadoMensualChart desde={desde} hasta={hasta} />
-
-          {/* Cobros por método de pago */}
-          <CobrosChart desde={desde} hasta={hasta} />
 
           {/* ROI por inversor */}
           <RoiInversorTable desde={desde} hasta={hasta} />

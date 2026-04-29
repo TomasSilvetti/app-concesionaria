@@ -11,6 +11,10 @@ function labelMes(year: number, month: number): string {
   return `${MESES_ES[month]} ${year}`;
 }
 
+function mesKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, "0")}`;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -48,34 +52,78 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const ops = await prisma.operation.findMany({
-      where: {
-        clienteId,
-        estado: "cerrada",
-        fechaVenta: { gte: desde, lte: hasta },
-      },
-      select: {
-        fechaVenta: true,
-        ingresosBrutos: true,
-        gastosAsociados: true,
-        ingresosNetos: true,
-      },
-    });
+    hasta.setHours(23, 59, 59, 999);
 
-    // Construir mapa mes -> acumulados
-    const mapaMs = new Map<string, { ingresos: number; gastos: number; ganancia: number }>();
+    const [pagos, gastos, ops0km, vehiculosStock] = await Promise.all([
+      // Ingresos: todos los pagos del período
+      prisma.pago.findMany({
+        where: {
+          clienteId,
+          fecha: { gte: desde, lte: hasta },
+        },
+        select: { fecha: true, monto: true },
+      }),
 
-    for (const op of ops) {
-      if (!op.fechaVenta) continue;
-      const y = op.fechaVenta.getFullYear();
-      const m = op.fechaVenta.getMonth();
-      const key = `${y}-${String(m).padStart(2, "0")}`;
-      const existing = mapaMs.get(key) ?? { ingresos: 0, gastos: 0, ganancia: 0 };
-      mapaMs.set(key, {
-        ingresos: existing.ingresos + op.ingresosBrutos,
-        gastos: existing.gastos + op.gastosAsociados,
-        ganancia: existing.ganancia + op.ingresosNetos,
-      });
+      // Gastos directos: todos los expenses del período
+      prisma.expense.findMany({
+        where: {
+          clienteId,
+          fecha: { gte: desde, lte: hasta },
+        },
+        select: { fecha: true, monto: true },
+      }),
+
+      // Precio de toma de operaciones 0km (no canceladas) en el período
+      prisma.operation.findMany({
+        where: {
+          clienteId,
+          tipoOperacion: { not: "Venta desde stock" },
+          estado: { not: "cancelada" },
+          fechaInicio: { gte: desde, lte: hasta },
+          precioToma: { not: null },
+        },
+        select: { fechaInicio: true, precioToma: true },
+      }),
+
+      // Precio de toma de vehículos de stock ingresados en el período
+      prisma.vehicle.findMany({
+        where: {
+          clienteId,
+          operacionId: null,
+          creadoEn: { gte: desde, lte: hasta },
+          precioToma: { not: null },
+        },
+        select: { creadoEn: true, precioToma: true },
+      }),
+    ]);
+
+    type MesData = { ingresos: number; gastos: number };
+    const mapa = new Map<string, MesData>();
+
+    const getOrCreate = (key: string): MesData => {
+      if (!mapa.has(key)) mapa.set(key, { ingresos: 0, gastos: 0 });
+      return mapa.get(key)!;
+    };
+
+    for (const p of pagos) {
+      const entry = getOrCreate(mesKey(p.fecha));
+      entry.ingresos += p.monto;
+    }
+
+    for (const g of gastos) {
+      const entry = getOrCreate(mesKey(g.fecha));
+      entry.gastos += g.monto;
+    }
+
+    for (const op of ops0km) {
+      if (!op.fechaInicio) continue;
+      const entry = getOrCreate(mesKey(op.fechaInicio));
+      entry.gastos += op.precioToma ?? 0;
+    }
+
+    for (const v of vehiculosStock) {
+      const entry = getOrCreate(mesKey(v.creadoEn));
+      entry.gastos += v.precioToma ?? 0;
     }
 
     // Generar array ordenado cubriendo todos los meses del rango
@@ -88,8 +136,13 @@ export async function GET(req: NextRequest) {
       const y = cursor.getFullYear();
       const m = cursor.getMonth();
       const key = `${y}-${String(m).padStart(2, "0")}`;
-      const entry = mapaMs.get(key) ?? { ingresos: 0, gastos: 0, ganancia: 0 };
-      resultado.push({ mes: labelMes(y, m), ...entry });
+      const entry = mapa.get(key) ?? { ingresos: 0, gastos: 0 };
+      resultado.push({
+        mes: labelMes(y, m),
+        ingresos: entry.ingresos,
+        gastos: entry.gastos,
+        ganancia: entry.ingresos - entry.gastos,
+      });
       cursor.setMonth(cursor.getMonth() + 1);
     }
 
