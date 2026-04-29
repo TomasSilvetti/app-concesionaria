@@ -34,20 +34,10 @@ function formatMonto(value: number): string {
   return "$" + value.toLocaleString("es-AR");
 }
 
-// Mock data — reemplazar con fetch real cuando esté el endpoint
-function fetchCobrosData(
-  _desde: string,
-  _hasta: string
-): Promise<CobrosPorMetodo[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { metodo: "Efectivo", total: 1200000 },
-        { metodo: "Transferencia", total: 600000 },
-        { metodo: "Cheque", total: 200000 },
-      ]);
-    }, 700);
-  });
+async function fetchCobrosData(desde: string, hasta: string): Promise<CobrosPorMetodo[]> {
+  const res = await fetch(`/api/cliente/metricas/cobros-por-metodo?desde=${desde}&hasta=${hasta}`);
+  if (!res.ok) throw new Error("Error al obtener cobros");
+  return res.json();
 }
 
 interface CustomTooltipProps {

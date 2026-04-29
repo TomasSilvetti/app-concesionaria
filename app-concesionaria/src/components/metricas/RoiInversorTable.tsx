@@ -23,17 +23,10 @@ function formatRoi(value: number): string {
   return value.toFixed(2) + "%";
 }
 
-// Mock data — reemplazar con fetch real cuando esté el endpoint
-function fetchRoiData(_desde: string, _hasta: string): Promise<RoiInversor[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { inversor: "Carlos Méndez", montoAportado: 5000000, retorno: 1150000, roi: 23.0 },
-        { inversor: "Sofía Bravo", montoAportado: 3200000, retorno: 608000, roi: 19.0 },
-        { inversor: "Inversiones Norte S.A.", montoAportado: 8500000, retorno: 2380000, roi: 28.0 },
-      ]);
-    }, 700);
-  });
+async function fetchRoiData(desde: string, hasta: string): Promise<RoiInversor[]> {
+  const res = await fetch(`/api/cliente/metricas/roi-inversores?desde=${desde}&hasta=${hasta}`);
+  if (!res.ok) throw new Error("Error al obtener ROI");
+  return res.json();
 }
 
 export function RoiInversorTable({ desde, hasta }: RoiInversorTableProps) {

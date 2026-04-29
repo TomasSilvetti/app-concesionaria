@@ -40,9 +40,10 @@ model Client {
   VehicleCategory    VehicleCategory[]
   DocumentTemplate   DocumentTemplate[]
   DocumentAssignment DocumentAssignment[]
-  GeneratedDocument  GeneratedDocument[]
-  KanbanColumna      KanbanColumna[]
-  KanbanTarjeta      KanbanTarjeta[]
+  GeneratedDocument      GeneratedDocument[]
+  KanbanColumna          KanbanColumna[]
+  KanbanTarjeta          KanbanTarjeta[]
+  RepositorioDocumento   RepositorioDocumento[]
 }
 
 model Expense {
@@ -404,6 +405,22 @@ model GeneratedDocument {
   @@index([templateId])
   @@index([clienteId])
   @@index([contextId])
+}
+
+model RepositorioDocumento {
+  id            String   @id
+  clienteId     String
+  nombre        String
+  nombreOriginal String
+  mimeType      String
+  tamano        Int
+  datos         Bytes
+  subidoPorId   String
+  subidoPorNombre String
+  creadoEn      DateTime @default(now())
+  Client        Client   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
 }
 
 model KanbanColumna {

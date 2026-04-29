@@ -14,6 +14,12 @@ interface Metricas {
   plataPorCobrar: number;
 }
 
+interface KpiData {
+  ticketPromedio: number | null;
+  tasaConversion: number | null;
+  capitalStock: number | null;
+}
+
 function formatPesos(value: number): string {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -81,6 +87,7 @@ export function GastosPage() {
     }
   };
   const [metricas, setMetricas] = useState<Metricas | null>(null);
+  const [kpis, setKpis] = useState<KpiData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -88,10 +95,17 @@ export function GastosPage() {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`/api/gastos/metricas?desde=${d}&hasta=${h}`);
-      if (!res.ok) throw new Error("Error al cargar las métricas");
-      const data = await res.json();
-      setMetricas(data);
+      const [gastosRes, kpisRes] = await Promise.all([
+        fetch(`/api/gastos/metricas?desde=${d}&hasta=${h}`),
+        fetch(`/api/cliente/metricas/kpis?desde=${d}&hasta=${h}`),
+      ]);
+      if (!gastosRes.ok) throw new Error();
+      const gastosData = await gastosRes.json();
+      setMetricas(gastosData);
+      if (kpisRes.ok) {
+        const kpisData = await kpisRes.json();
+        setKpis(kpisData);
+      }
     } catch {
       setError("No se pudieron cargar las métricas de gastos");
     } finally {
@@ -240,6 +254,31 @@ export function GastosPage() {
             iconBg="bg-amber-100"
             iconColor="text-amber-600"
           />
+          <MetricCard
+            label="Ticket promedio de venta"
+            value={kpis?.ticketPromedio ?? null}
+            loading={loading}
+            icon="sell"
+            iconBg="bg-emerald-100"
+            iconColor="text-emerald-600"
+          />
+          <MetricCard
+            label="Tasa de conversión"
+            value={kpis?.tasaConversion ?? null}
+            loading={loading}
+            icon="conversion_path"
+            iconBg="bg-violet-100"
+            iconColor="text-violet-600"
+            format="percent"
+          />
+          <MetricCard
+            label="Capital inmovilizado en stock"
+            value={kpis?.capitalStock ?? null}
+            loading={loading}
+            icon="inventory_2"
+            iconBg="bg-amber-100"
+            iconColor="text-amber-600"
+          />
         </div>
       )}
 
@@ -263,6 +302,7 @@ interface MetricCardProps {
   iconColor: string;
   highlight?: boolean;
   badge?: string;
+  format?: "pesos" | "percent";
 }
 
 function MetricCard({
@@ -274,6 +314,7 @@ function MetricCard({
   iconColor,
   highlight,
   badge,
+  format = "pesos",
 }: MetricCardProps) {
   return (
     <div
@@ -308,7 +349,11 @@ function MetricCard({
               highlight ? "text-blue-600" : "text-zinc-900"
             }`}
           >
-            {value != null ? formatPesos(value) : "$—"}
+            {value != null
+              ? format === "percent"
+                ? `${value}%`
+                : formatPesos(value)
+              : format === "percent" ? "—" : "$—"}
           </p>
         )}
       </div>

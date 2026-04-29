@@ -114,6 +114,23 @@ export function CobranzasPage() {
         </label>
       </div>
 
+      {/* Card deuda total pendiente */}
+      {!loading && !error && (
+        <div className="flex w-full max-w-xs flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
+            <span className="material-symbols-outlined text-xl text-red-500">pending_actions</span>
+          </div>
+          <div>
+            <p className="text-sm text-zinc-500">Deuda total pendiente</p>
+            <p className="mt-0.5 text-2xl font-bold text-zinc-900">
+              {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0 }).format(
+                operaciones.reduce((sum, op) => sum + op.pendiente, 0)
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Error */}
       {error && (
         <div

@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
     const operations = await prisma.operation.findMany({
       where: {
         clienteId,
+        estado: { not: "cancelada" },
         idOperacion: {
           not: {
             contains: "-INT-",

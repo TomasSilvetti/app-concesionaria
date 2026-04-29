@@ -9,7 +9,6 @@ interface KpiData {
   ticketPromedio: number | null;
   tasaConversion: number | null;
   capitalStock: number | null;
-  deudaPendiente: number | null;
 }
 
 interface KpiCardsProps {
@@ -26,20 +25,10 @@ function formatPesos(value: number): string {
   }).format(value);
 }
 
-// Mock data — reemplazar con fetch real cuando esté el endpoint
-function fetchKpiData(_desde: string, _hasta: string): Promise<KpiData> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        gananciaNeta: 2450000,
-        gananciaDelta: 12.4,
-        ticketPromedio: 8200000,
-        tasaConversion: 34,
-        capitalStock: 45000000,
-        deudaPendiente: 3800000,
-      });
-    }, 800);
-  });
+async function fetchKpiData(desde: string, hasta: string): Promise<KpiData> {
+  const res = await fetch(`/api/cliente/metricas/kpis?desde=${desde}&hasta=${hasta}`);
+  if (!res.ok) throw new Error("Error al obtener KPIs");
+  return res.json();
 }
 
 export function KpiCards({ desde, hasta }: KpiCardsProps) {
@@ -77,9 +66,9 @@ export function KpiCards({ desde, hasta }: KpiCardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
-        label="Ganancia neta del mes"
+        label="Ganancia neta del período"
         value={data?.gananciaNeta ?? null}
         format="pesos"
         loading={loading}
@@ -115,15 +104,6 @@ export function KpiCards({ desde, hasta }: KpiCardsProps) {
         icon="inventory_2"
         iconBg="bg-amber-100"
         iconColor="text-amber-600"
-      />
-      <KpiCard
-        label="Deuda total pendiente"
-        value={data?.deudaPendiente ?? null}
-        format="pesos"
-        loading={loading}
-        icon="pending_actions"
-        iconBg="bg-red-100"
-        iconColor="text-red-500"
       />
     </div>
   );

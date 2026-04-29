@@ -64,14 +64,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       icon: "bar_chart",
       path: "/metricas",
     },
+    {
+      label: "Documentos",
+      icon: "folder_open",
+      path: "/documentos",
+    },
     ...(isAdmin ? [{
       label: "Usuarios",
       icon: "group",
       path: "/usuarios",
-    }, {
-      label: "Documentos",
-      icon: "description",
-      path: "/admin/documentos",
     }] : []),
   ];
 

@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth, subMonths, subWeeks, startOfYear } from "date-fns";
 import "material-symbols/outlined.css";
-import { KpiCards } from "./KpiCards";
-import { AgingDeudaChart } from "./AgingDeudaChart";
-import { RotacionChart } from "./RotacionChart";
+import { ResultadoMensualChart } from "./ResultadoMensualChart";
 import { CobrosChart } from "./CobrosChart";
 import { RoiInversorTable } from "./RoiInversorTable";
 
@@ -175,14 +173,8 @@ export function MetricasDashboard() {
 
       {isRangeValid && (
         <>
-          {/* KPIs */}
-          <KpiCards desde={desde} hasta={hasta} />
-
-          {/* Aging de deuda */}
-          <AgingDeudaChart desde={desde} hasta={hasta} />
-
-          {/* Rotación mensual */}
-          <RotacionChart desde={desde} hasta={hasta} />
+          {/* Resultado mensual */}
+          <ResultadoMensualChart desde={desde} hasta={hasta} />
 
           {/* Cobros por método de pago */}
           <CobrosChart desde={desde} hasta={hasta} />

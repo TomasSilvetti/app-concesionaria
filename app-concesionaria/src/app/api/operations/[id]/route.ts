@@ -406,6 +406,9 @@ export async function PATCH(
           { status: 400 }
         );
       }
+      if (!updateData.fechaVenta && !existingOperation.fechaVenta) {
+        updateData.fechaVenta = new Date();
+      }
     }
 
     // Actualizar vehículo principal si se envían datos
