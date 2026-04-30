@@ -25,6 +25,7 @@ model Client {
   id              String            @id
   nombre          String
   logo            String?
+  slug            String?           @unique
   activo          Boolean           @default(true)
   modulos         Json
   creadoEn        DateTime          @default(now())
