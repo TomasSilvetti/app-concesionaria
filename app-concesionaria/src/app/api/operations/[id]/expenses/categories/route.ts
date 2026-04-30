@@ -17,6 +17,7 @@ export async function GET(
     }
 
     const { id } = await params;
+    const tipo = _req.nextUrl.searchParams.get("tipo") ?? "gasto";
 
     const operation = await prisma.operation.findFirst({
       where: { idOperacion: id, clienteId },
@@ -26,7 +27,7 @@ export async function GET(
     }
 
     const categories = await prisma.category.findMany({
-      where: { clienteId },
+      where: { clienteId, tipo },
       select: { id: true, nombre: true },
       orderBy: { nombre: "asc" },
     });
@@ -54,7 +55,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await req.json();
-    const { nombre } = body;
+    const { nombre, tipo = "gasto" } = body;
 
     if (!nombre || !String(nombre).trim()) {
       return NextResponse.json({ error: "nombre es requerido" }, { status: 400 });
@@ -66,6 +67,8 @@ export async function POST(
     if (!operation) {
       return NextResponse.json({ message: "Operación no encontrada" }, { status: 404 });
     }
+
+    const tipoValido = tipo === "ingreso" ? "ingreso" : "gasto";
 
     const existing = await prisma.category.findFirst({
       where: { clienteId, nombre: String(nombre).trim() },
@@ -79,6 +82,7 @@ export async function POST(
         id: crypto.randomUUID(),
         clienteId,
         nombre: String(nombre).trim(),
+        tipo: tipoValido,
       },
       select: { id: true, nombre: true },
     });

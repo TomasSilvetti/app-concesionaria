@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Category" ADD COLUMN IF NOT EXISTS "tipo" TEXT NOT NULL DEFAULT 'gasto';
