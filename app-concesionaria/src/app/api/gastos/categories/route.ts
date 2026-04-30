@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
@@ -13,8 +13,11 @@ export async function GET() {
       return NextResponse.json({ message: "Usuario sin cliente asociado" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const tipo = searchParams.get("tipo");
+
     const categories = await prisma.category.findMany({
-      where: { clienteId },
+      where: { clienteId, ...(tipo ? { tipo } : {}) },
       select: { id: true, nombre: true },
       orderBy: { nombre: "asc" },
     });
@@ -38,14 +41,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { nombre } = body;
+    const { nombre, tipo } = body;
 
     if (!nombre || !String(nombre).trim()) {
       return NextResponse.json({ error: "nombre es requerido" }, { status: 400 });
     }
 
+    const tipoValido = tipo === "ingreso" ? "ingreso" : "gasto";
+
     const existing = await prisma.category.findFirst({
-      where: { clienteId, nombre: String(nombre).trim() },
+      where: { clienteId, nombre: String(nombre).trim(), tipo: tipoValido },
     });
     if (existing) {
       return NextResponse.json({ error: "Ya existe una categoría con ese nombre" }, { status: 400 });
@@ -56,6 +61,7 @@ export async function POST(req: NextRequest) {
         id: crypto.randomUUID(),
         clienteId,
         nombre: String(nombre).trim(),
+        tipo: tipoValido,
       },
       select: { id: true, nombre: true },
     });

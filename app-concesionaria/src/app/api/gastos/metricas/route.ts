@@ -38,9 +38,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Incluir hasta el final del día de 'hasta'
-    hasta.setHours(23, 59, 59, 999);
+    hasta.setUTCHours(23, 59, 59, 999);
 
-    const [pagosResult, pagosCerradas, pagosAbiertas, gastosResult, plataPorCobrarResult, ops0km, vehiculosStock] =
+    const [pagosResult, pagosCerradas, pagosAbiertas, gastosResult, ingresosResult, plataPorCobrarResult, ops0km, vehiculosStock] =
       await Promise.all([
         // SUM de monto de Pagos de TODAS las operaciones en el período
         prisma.pago.aggregate({
@@ -71,11 +71,22 @@ export async function GET(req: NextRequest) {
           _sum: { monto: true },
         }),
 
-        // SUM de monto de todos los gastos del período (con o sin operación, cualquier estado)
+        // SUM de gastos directos del período (solo tipo "gasto")
         prisma.expense.aggregate({
           where: {
             clienteId,
             fecha: { gte: desde, lte: hasta },
+            tipo: "gasto",
+          },
+          _sum: { monto: true },
+        }),
+
+        // SUM de ingresos extraordinarios del período (solo tipo "ingreso")
+        prisma.expense.aggregate({
+          where: {
+            clienteId,
+            fecha: { gte: desde, lte: hasta },
+            tipo: "ingreso",
           },
           _sum: { monto: true },
         }),
@@ -118,11 +129,13 @@ export async function GET(req: NextRequest) {
         }),
       ]);
 
-    const totalVendidoBruto = pagosResult._sum.monto ?? 0;
+    const totalPagos = pagosResult._sum.monto ?? 0;
     const vendidoBrutoCerradas = pagosCerradas._sum.monto ?? 0;
     const vendidoBrutoAbiertas = pagosAbiertas._sum.monto ?? 0;
-    const vendidoBrutoOtros = totalVendidoBruto - vendidoBrutoCerradas - vendidoBrutoAbiertas;
+    const vendidoBrutoOtros = totalPagos - vendidoBrutoCerradas - vendidoBrutoAbiertas;
     const gastosDirectos = gastosResult._sum.monto ?? 0;
+    const totalIngresos = ingresosResult._sum.monto ?? 0;
+    const totalVendidoBruto = totalPagos + totalIngresos;
     const precioToma0km = ops0km.reduce((sum, op) => sum + (op.precioToma ?? 0), 0);
     const precioTomaStock = vehiculosStock.reduce((sum, v) => sum + (v.precioToma ?? 0), 0);
     const totalGastado = gastosDirectos + precioToma0km + precioTomaStock;
@@ -139,8 +152,11 @@ export async function GET(req: NextRequest) {
         cerradas: vendidoBrutoCerradas,
         abiertas: vendidoBrutoAbiertas,
         canceladas: vendidoBrutoOtros,
+        ingresosExtraordinarios: totalIngresos,
       },
       totalGastado,
+      totalGastos: gastosDirectos,
+      totalIngresos,
       desgloseTotalGastado: {
         gastosDirectos,
         precioToma0km,
