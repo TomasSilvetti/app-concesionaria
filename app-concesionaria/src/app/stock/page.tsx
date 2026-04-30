@@ -156,8 +156,8 @@ export default function StockPage() {
 
       const datePortada = new Date().toLocaleDateString("es-AR", {
         year: "numeric",
-        month: "long",
-        day: "numeric",
+        month: "2-digit",
+        day: "2-digit",
       });
 
       // Logo de la empresa (si existe)

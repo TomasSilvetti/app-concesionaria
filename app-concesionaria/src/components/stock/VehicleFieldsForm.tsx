@@ -1057,7 +1057,11 @@ export function VehicleFieldsForm({
                   </span>
                 )}
                 <p className="text-xs text-zinc-500">
-                  Precio al que la concesionaria compra el vehículo
+                  Si se deja en 0, el vehículo se registra como{" "}
+                  <span className="font-medium text-zinc-600">consignación</span>{" "}
+                  (no hubo compra). Si se ingresa un valor, se considera una{" "}
+                  <span className="font-medium text-zinc-600">compra real</span>{" "}
+                  como inversión de la concesionaria.
                 </p>
               </div>
 

@@ -10,6 +10,7 @@ interface DesgloseTotalVendido {
   cerradas: number;
   abiertas: number;
   canceladas: number;
+  ingresosExtraordinarios: number;
 }
 
 interface DesgloseTotalGastado {
@@ -22,6 +23,8 @@ interface Metricas {
   totalVendidoBruto: number;
   desgloseTotalVendido: DesgloseTotalVendido;
   totalGastado: number;
+  totalGastos: number;
+  totalIngresos: number;
   desgloseTotalGastado: DesgloseTotalGastado;
   ganancia: number;
   margenPorcentaje?: number;
@@ -345,6 +348,7 @@ function TotalVendidoCard({ value, desglose, loading }: TotalVendidoCardProps) {
           <DesgloseRow label="Ops. cerradas" value={desglose.cerradas} />
           <DesgloseRow label="Ops. abiertas" value={desglose.abiertas} />
           {desglose.canceladas > 0 && <DesgloseRow label="Ops. canceladas" value={desglose.canceladas} />}
+          {desglose.ingresosExtraordinarios > 0 && <DesgloseRow label="Ingresos extraordinarios" value={desglose.ingresosExtraordinarios} />}
         </div>
       )}
     </div>

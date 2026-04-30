@@ -4,9 +4,8 @@ import { prisma } from "@/lib/prisma";
 
 function getDefaultPeriod(): { desde: Date; hasta: Date } {
   const now = new Date();
-  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const desde = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
-  const hasta = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
+  const desde = new Date(now.getFullYear(), now.getMonth(), 1);
+  const hasta = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   return { desde, hasta };
 }
 
@@ -50,7 +49,7 @@ export async function GET(req: NextRequest) {
       ({ desde, hasta } = getDefaultPeriod());
     }
 
-    hasta.setHours(23, 59, 59, 999);
+    hasta.setUTCHours(23, 59, 59, 999);
 
     const expenses = await prisma.expense.findMany({
       where: {
@@ -85,6 +84,7 @@ export async function GET(req: NextRequest) {
       monto: e.monto,
       fecha: e.fecha.toISOString(),
       vehiculoFotoId: e.Operation?.VehiculoVendido?.VehiclePhoto?.[0]?.id ?? null,
+      tipo: e.tipo,
     }));
 
     return NextResponse.json(result);
@@ -112,13 +112,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { descripcion, origenId, categoriaId, monto } = body;
+    const { descripcion, origenId, categoriaId, monto, tipo = "gasto" } = body;
 
     const errors: string[] = [];
     if (!descripcion || !String(descripcion).trim()) errors.push("descripcion es requerida");
     if (!origenId) errors.push("origenId es requerido");
     if (!categoriaId) errors.push("categoriaId es requerido");
     if (monto === undefined || monto === null) errors.push("monto es requerido");
+    if (tipo !== "gasto" && tipo !== "ingreso") errors.push("tipo debe ser gasto o ingreso");
     if (errors.length > 0) {
       return NextResponse.json({ error: errors[0] }, { status: 400 });
     }
@@ -156,6 +157,7 @@ export async function POST(req: NextRequest) {
         monto: montoNum,
         origenId,
         categoriaId,
+        tipo,
         actualizadoEn: new Date(),
       },
       include: {
@@ -171,6 +173,7 @@ export async function POST(req: NextRequest) {
         quienPago: expense.Origin.nombre,
         monto: expense.monto,
         fecha: expense.fecha.toISOString(),
+        tipo: expense.tipo,
       },
       { status: 201 }
     );

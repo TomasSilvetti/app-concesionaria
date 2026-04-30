@@ -133,6 +133,7 @@ export default function OperacionEditPage() {
   const [ingresosNetos, setIngresosNetos] = useState(0);
   const [comision, setComision] = useState(0);
   const [gastosAsociados, setGastosAsociados] = useState(0);
+  const [ingresosMovimientos, setIngresosMovimientos] = useState(0);
   const [pendienteReal, setPendienteReal] = useState(0);
 
   // Original values for change detection
@@ -500,7 +501,7 @@ export default function OperacionEditPage() {
     }
   };
 
-  // Recalculate ingresosBrutos, ingresosNetos and comision when precioVentaTotal, precioToma or gastosAsociados change
+  // Recalculate ingresosBrutos, ingresosNetos and comision when precioVentaTotal, precioToma, gastosAsociados or ingresosMovimientos change
   useEffect(() => {
     const precio = parseFloat(precioVentaTotal) || 0;
     const toma = parseFloat(precioToma) || 0;
@@ -509,12 +510,12 @@ export default function OperacionEditPage() {
     const ingresos = precio - toma;
     setIngresosBrutos(ingresos.toString());
 
-    const netos = ingresos - gastos;
+    const netos = ingresos - gastos + ingresosMovimientos;
     setIngresosNetos(netos);
 
     const comisionCalculada = precio > 0 ? (netos / precio) * 100 : 0;
     setComision(comisionCalculada);
-  }, [precioVentaTotal, precioToma, gastosAsociados]);
+  }, [precioVentaTotal, precioToma, gastosAsociados, ingresosMovimientos]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "—";
@@ -1242,6 +1243,7 @@ export default function OperacionEditPage() {
             <OperationExpensesSection
               operacionId={id}
               onTotalChange={setGastosAsociados}
+              onIngresosChange={setIngresosMovimientos}
               readOnly={false}
             />
           </div>
