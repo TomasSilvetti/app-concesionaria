@@ -103,14 +103,18 @@ export async function GET(req: NextRequest) {
           },
         }),
 
-        // Precio de toma de operaciones 0km cerradas en el período (solo se gasta al cerrar)
-        prisma.operation.findMany({
+        // Precio de toma de vehículos de intercambio en ops 0km cerradas en el período
+        prisma.vehicle.findMany({
           where: {
             clienteId,
-            tipoOperacion: { not: "Venta desde stock" },
-            estado: "cerrada",
-            fechaVenta: { gte: desde, lte: hasta },
+            estado: "intercambio",
+            operacionId: { not: null },
             precioToma: { not: null },
+            Operation: {
+              tipoOperacion: { not: "Venta desde stock" },
+              estado: "cerrada",
+              fechaVenta: { gte: desde, lte: hasta },
+            },
           },
           select: { precioToma: true },
         }),
@@ -182,17 +186,28 @@ export async function GET(req: NextRequest) {
           orderBy: { fecha: "desc" },
         }),
 
-        // Detalle de operaciones 0km con precio de toma
-        prisma.operation.findMany({
+        // Detalle de vehículos de intercambio en ops 0km cerradas
+        prisma.vehicle.findMany({
           where: {
             clienteId,
-            tipoOperacion: { not: "Venta desde stock" },
-            estado: "cerrada",
-            fechaVenta: { gte: desde, lte: hasta },
+            estado: "intercambio",
+            operacionId: { not: null },
             precioToma: { not: null },
+            Operation: {
+              tipoOperacion: { not: "Venta desde stock" },
+              estado: "cerrada",
+              fechaVenta: { gte: desde, lte: hasta },
+            },
           },
-          select: { id: true, idOperacion: true, tipoOperacion: true, precioToma: true, fechaVenta: true, VehiculoVendido: { select: { modelo: true, anio: true, VehicleBrand: { select: { nombre: true } } } } },
-          orderBy: { fechaVenta: "desc" },
+          select: {
+            id: true,
+            modelo: true,
+            anio: true,
+            precioToma: true,
+            VehicleBrand: { select: { nombre: true } },
+            Operation: { select: { fechaVenta: true, tipoOperacion: true } },
+          },
+          orderBy: { creadoEn: "desc" },
         }),
 
         // Detalle de vehículos stock con precio de toma
@@ -281,16 +296,12 @@ export async function GET(req: NextRequest) {
           fecha: e.fecha,
           descripcion: e.descripcion ?? "Gasto directo",
         })),
-        precioToma0km: ops0kmDetalle.map((op) => {
-          const veh = op.VehiculoVendido;
-          const vehiculoStr = veh ? `${veh.VehicleBrand.nombre} ${veh.modelo} ${veh.anio ?? ""}`.trim() : `Op. ${op.idOperacion}`;
-          return {
-            id: op.id,
-            monto: op.precioToma ?? 0,
-            fecha: op.fechaVenta,
-            descripcion: vehiculoStr,
-          };
-        }),
+        precioToma0km: ops0kmDetalle.map((v) => ({
+          id: v.id,
+          monto: v.precioToma ?? 0,
+          fecha: v.Operation?.fechaVenta ?? null,
+          descripcion: `${v.VehicleBrand.nombre} ${v.modelo} ${v.anio ?? ""}`.trim(),
+        })),
         precioTomaStock: vehiculosStockDetalle.map((v) => ({
           id: v.id,
           monto: v.precioToma ?? 0,
