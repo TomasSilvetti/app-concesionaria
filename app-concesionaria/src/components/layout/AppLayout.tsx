@@ -128,7 +128,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <img
                   src={companyLogo}
                   alt="Logo"
-                  className="h-10 w-auto max-w-[140px] object-contain brightness-0 invert"
+                  className="h-10 w-auto max-w-[140px] object-contain"
                 />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/15">
