@@ -92,24 +92,26 @@ export async function GET(req: NextRequest) {
           },
         }),
 
-        // Precio de toma de operaciones 0km abiertas/cerradas (no canceladas) en el período
+        // Precio de toma de operaciones 0km cerradas en el período (solo se gasta al cerrar)
         prisma.operation.findMany({
           where: {
             clienteId,
             tipoOperacion: { not: "Venta desde stock" },
-            estado: { not: "cancelada" },
+            estado: "cerrada",
             fechaInicio: { gte: desde, lte: hasta },
             precioToma: { not: null },
           },
           select: { precioToma: true },
         }),
 
-        // Precio de toma de vehículos de stock ingresados en el período (deduplicado automáticamente)
+        // Precio de toma de vehículos de stock vendidos con operación cerrada en el período
         prisma.vehicle.findMany({
           where: {
             clienteId,
             operacionId: null,
-            creadoEn: { gte: desde, lte: hasta },
+            OperacionesVenta: {
+              some: { estado: "cerrada", fechaInicio: { gte: desde, lte: hasta } },
+            },
             precioToma: { not: null },
           },
           select: { precioToma: true },
