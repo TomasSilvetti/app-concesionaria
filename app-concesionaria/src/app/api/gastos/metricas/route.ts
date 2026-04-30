@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
             clienteId,
             tipoOperacion: { not: "Venta desde stock" },
             estado: "cerrada",
-            fechaInicio: { gte: desde, lte: hasta },
+            fechaVenta: { gte: desde, lte: hasta },
             precioToma: { not: null },
           },
           select: { precioToma: true },
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
             clienteId,
             operacionId: null,
             OperacionesVenta: {
-              some: { estado: "cerrada", fechaInicio: { gte: desde, lte: hasta } },
+              some: { estado: "cerrada", fechaVenta: { gte: desde, lte: hasta } },
             },
             precioToma: { not: null },
           },

@@ -103,22 +103,18 @@ export function GastosPage() {
       setHasta(range.hasta);
     }
   };
-  const [metricas, setMetricas] = useState<Metricas | null>(null);
+  const [metricasGlobales, setMetricasGlobales] = useState<Pick<Metricas, "totalVendidoBruto" | "desgloseTotalVendido" | "totalGastado" | "desgloseTotalGastado" | "plataPorCobrar" | "ganancia" | "margenPorcentaje"> | null>(null);
   const [kpis, setKpis] = useState<KpiData | null>(null);
+  const [kpisGlobales, setKpisGlobales] = useState<Pick<KpiData, "capitalStock"> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingGlobales, setLoadingGlobales] = useState(true);
   const [error, setError] = useState("");
 
   const fetchMetricas = useCallback(async (d: string, h: string) => {
     try {
       setLoading(true);
       setError("");
-      const [gastosRes, kpisRes] = await Promise.all([
-        fetch(`/api/gastos/metricas?desde=${d}&hasta=${h}`),
-        fetch(`/api/cliente/metricas/kpis?desde=${d}&hasta=${h}`),
-      ]);
-      if (!gastosRes.ok) throw new Error();
-      const gastosData = await gastosRes.json();
-      setMetricas(gastosData);
+      const kpisRes = await fetch(`/api/cliente/metricas/kpis?desde=${d}&hasta=${h}`);
       if (kpisRes.ok) {
         const kpisData = await kpisRes.json();
         setKpis(kpisData);
@@ -135,6 +131,17 @@ export function GastosPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchMetricas]);
 
+  useEffect(() => {
+    const hoy = format(new Date(), "yyyy-MM-dd");
+    Promise.all([
+      fetch(`/api/gastos/metricas?desde=2000-01-01&hasta=${hoy}`).then((r) => r.ok ? r.json() : null),
+      fetch(`/api/cliente/metricas/kpis?desde=2000-01-01&hasta=${hoy}`).then((r) => r.ok ? r.json() : null),
+    ]).then(([gastosData, kpisData]) => {
+      if (gastosData) setMetricasGlobales(gastosData);
+      if (kpisData) setKpisGlobales(kpisData);
+    }).finally(() => setLoadingGlobales(false));
+  }, []);
+
   const handleActualizar = () => {
     fetchMetricas(desde, hasta);
   };
@@ -142,156 +149,172 @@ export function GastosPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
-            <span className="material-symbols-outlined text-3xl text-white">
-              receipt_long
-            </span>
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold text-zinc-900">
-              Finanzas
-            </h1>
-            <p className="text-sm text-zinc-500">
-              Gestión detallada de egresos y rentabilidad de inventario.
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
+          <span className="material-symbols-outlined text-3xl text-white">
+            receipt_long
+          </span>
         </div>
-
-        {/* Selector de período */}
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Período
-            </label>
-            <select
-              value={preset}
-              onChange={(e) => handlePresetChange(e.target.value as Preset)}
-              className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="custom">Personalizado</option>
-              <option value="semana">Última semana</option>
-              <option value="mes_actual">Mes actual</option>
-              <option value="mes">Último mes</option>
-              <option value="anio">Último año</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="gastos-desde"
-              className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
-            >
-              Desde
-            </label>
-            <input
-              id="gastos-desde"
-              type="date"
-              value={desde}
-              onChange={(e) => { setDesde(e.target.value); setPreset("custom"); }}
-              className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              aria-label="Fecha desde"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="gastos-hasta"
-              className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
-            >
-              Hasta
-            </label>
-            <input
-              id="gastos-hasta"
-              type="date"
-              value={hasta}
-              onChange={(e) => { setHasta(e.target.value); setPreset("custom"); }}
-              className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              aria-label="Fecha hasta"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleActualizar}
-            className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            <span className="material-symbols-outlined text-xl">filter_list</span>
-            Actualizar
-          </button>
+        <div>
+          <h1 className="text-3xl font-semibold text-zinc-900">Finanzas</h1>
+          <p className="text-sm text-zinc-500">
+            Gestión detallada de egresos y rentabilidad de inventario.
+          </p>
         </div>
       </div>
 
-      {/* Tarjetas de métricas */}
-      {error ? (
-        <div
-          className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
-          role="alert"
-        >
-          <span className="material-symbols-outlined text-xl text-red-500">
-            error
-          </span>
-          {error}
+      {/* Sección actualidad */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-base text-zinc-400">radio_button_checked</span>
+          <p className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
+            Actualidad — refleja el estado al día de hoy
+          </p>
         </div>
-      ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <TotalVendidoCard
-            value={metricas?.totalVendidoBruto ?? null}
-            desglose={metricas?.desgloseTotalVendido ?? null}
-            loading={loading}
+            value={metricasGlobales?.totalVendidoBruto ?? null}
+            desglose={metricasGlobales?.desgloseTotalVendido ?? null}
+            loading={loadingGlobales}
           />
           <TotalGastadoCard
-            value={metricas?.totalGastado ?? null}
-            desglose={metricas?.desgloseTotalGastado ?? null}
-            loading={loading}
+            value={metricasGlobales?.totalGastado ?? null}
+            desglose={metricasGlobales?.desgloseTotalGastado ?? null}
+            loading={loadingGlobales}
           />
           <MetricCard
             label="Ganancia Neta"
-            value={metricas?.ganancia ?? null}
-            loading={loading}
+            value={metricasGlobales?.ganancia ?? null}
+            loading={loadingGlobales}
             icon="trending_up"
             iconBg="bg-blue-100"
             iconColor="text-blue-600"
             highlight
             badge={
-              metricas?.margenPorcentaje != null
-                ? `Margen ${metricas.margenPorcentaje}%`
+              metricasGlobales?.margenPorcentaje != null
+                ? `Margen ${metricasGlobales.margenPorcentaje}%`
                 : undefined
             }
           />
           <MetricCard
             label="Plata por cobrar (Open)"
-            value={metricas?.plataPorCobrar ?? null}
-            loading={loading}
+            value={metricasGlobales?.plataPorCobrar ?? null}
+            loading={loadingGlobales}
             icon="pending_actions"
             iconBg="bg-amber-100"
             iconColor="text-amber-600"
           />
           <MetricCard
-            label="Ticket promedio de venta"
-            value={kpis?.ticketPromedio ?? null}
-            loading={loading}
-            icon="sell"
-            iconBg="bg-emerald-100"
-            iconColor="text-emerald-600"
-          />
-          <MetricCard
-            label="Tasa de conversión"
-            value={kpis?.tasaConversion ?? null}
-            loading={loading}
-            icon="conversion_path"
-            iconBg="bg-violet-100"
-            iconColor="text-violet-600"
-            format="percent"
-          />
-          <MetricCard
             label="Capital inmovilizado en stock"
-            value={kpis?.capitalStock ?? null}
-            loading={loading}
+            value={kpisGlobales?.capitalStock ?? null}
+            loading={loadingGlobales}
             icon="inventory_2"
             iconBg="bg-amber-100"
             iconColor="text-amber-600"
           />
         </div>
-      )}
+      </div>
+
+      {/* Separador + Selector de período */}
+      <div className="flex flex-col gap-4 border-t border-zinc-200 pt-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-zinc-400">date_range</span>
+            <p className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
+              Por período — métricas, gráficos y movimientos filtrados
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                Período
+              </label>
+              <select
+                value={preset}
+                onChange={(e) => handlePresetChange(e.target.value as Preset)}
+                className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="custom">Personalizado</option>
+                <option value="semana">Última semana</option>
+                <option value="mes_actual">Mes actual</option>
+                <option value="mes">Último mes</option>
+                <option value="anio">Último año</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="gastos-desde"
+                className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                Desde
+              </label>
+              <input
+                id="gastos-desde"
+                type="date"
+                value={desde}
+                onChange={(e) => { setDesde(e.target.value); setPreset("custom"); }}
+                className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                aria-label="Fecha desde"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="gastos-hasta"
+                className="text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                Hasta
+              </label>
+              <input
+                id="gastos-hasta"
+                type="date"
+                value={hasta}
+                onChange={(e) => { setHasta(e.target.value); setPreset("custom"); }}
+                className="h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                aria-label="Fecha hasta"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleActualizar}
+              className="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <span className="material-symbols-outlined text-xl">filter_list</span>
+              Actualizar
+            </button>
+          </div>
+        </div>
+
+        {/* Tarjetas filtradas por período */}
+        {error ? (
+          <div
+            className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            role="alert"
+          >
+            <span className="material-symbols-outlined text-xl text-red-500">error</span>
+            {error}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              label="Ticket promedio de venta"
+              value={kpis?.ticketPromedio ?? null}
+              loading={loading}
+              icon="sell"
+              iconBg="bg-emerald-100"
+              iconColor="text-emerald-600"
+            />
+            <MetricCard
+              label="Tasa de conversión"
+              value={kpis?.tasaConversion ?? null}
+              loading={loading}
+              icon="conversion_path"
+              iconBg="bg-violet-100"
+              iconColor="text-violet-600"
+              format="percent"
+            />
+          </div>
+        )}
+      </div>
 
       {/* Gráficos */}
       <GastosCharts desde={desde} hasta={hasta} />
