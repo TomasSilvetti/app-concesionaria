@@ -13,13 +13,26 @@ export async function GET() {
       return NextResponse.json({ message: "Usuario sin cliente asociado" }, { status: 403 });
     }
 
+    // Garantizar que "Caja Empresa" exista para este cliente
+    await prisma.origin.upsert({
+      where: { clienteId_nombre: { clienteId, nombre: "Caja Empresa" } },
+      update: {},
+      create: { id: crypto.randomUUID(), clienteId, nombre: "Caja Empresa" },
+    });
+
     const origins = await prisma.origin.findMany({
       where: { clienteId },
       select: { id: true, nombre: true },
       orderBy: { nombre: "asc" },
     });
 
-    return NextResponse.json({ origins });
+    // "Caja Empresa" siempre primera en la lista
+    const sorted = [
+      ...origins.filter((o) => o.nombre === "Caja Empresa"),
+      ...origins.filter((o) => o.nombre !== "Caja Empresa"),
+    ];
+
+    return NextResponse.json({ origins: sorted });
   } catch (error) {
     console.error("Error al obtener orígenes:", error);
     return NextResponse.json({ message: "Error al obtener orígenes" }, { status: 500 });

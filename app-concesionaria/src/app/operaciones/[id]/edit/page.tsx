@@ -510,7 +510,7 @@ export default function OperacionEditPage() {
     const ingresos = precio - toma;
     setIngresosBrutos(ingresos.toString());
 
-    const netos = ingresos - gastos + ingresosMovimientos;
+    const netos = precio - toma - gastos;
     setIngresosNetos(netos);
 
     const comisionCalculada = precio > 0 ? (netos / precio) * 100 : 0;

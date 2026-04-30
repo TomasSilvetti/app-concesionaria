@@ -107,7 +107,7 @@ async function main() {
   console.log("✅ Tipos de operación (hardcodeados)");
 
   // === ORÍGENES DE GASTOS → capturamos IDs reales ===
-  const origenNombres = ["Caja chica", "Transferencia bancaria", "Tarjeta de crédito"];
+  const origenNombres = ["Caja Empresa", "Caja chica", "Transferencia bancaria", "Tarjeta de crédito"];
   const origenId: Record<string, string> = {};
 
   for (const nombre of origenNombres) {

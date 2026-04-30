@@ -109,7 +109,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, onIngreso
             <span className="material-symbols-outlined text-2xl text-blue-600">
               swap_horiz
             </span>
-            <h2 className="text-lg font-semibold text-zinc-900">Módulo de Movimientos</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">Movimientos</h2>
           </div>
           {!readOnly && (
             <button
