@@ -38,7 +38,7 @@ export async function PATCH(
 
     const { id, gastoId } = await params;
     const body = await req.json();
-    const { descripcion, monto, origenId, categoriaId } = body;
+    const { descripcion, monto, origenId, categoriaId, tipo } = body;
 
     const operation = await prisma.operation.findFirst({
       where: { idOperacion: id, clienteId },
@@ -85,6 +85,13 @@ export async function PATCH(
         return NextResponse.json({ error: "categoriaId no existe o no pertenece al cliente" }, { status: 400 });
       }
       updateData.categoriaId = categoriaId;
+    }
+
+    if (tipo !== undefined) {
+      if (tipo !== "gasto" && tipo !== "ingreso") {
+        return NextResponse.json({ error: "tipo debe ser gasto o ingreso" }, { status: 400 });
+      }
+      updateData.tipo = tipo;
     }
 
     const updated = await prisma.$transaction(async (tx) => {

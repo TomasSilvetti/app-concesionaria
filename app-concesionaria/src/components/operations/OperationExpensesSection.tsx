@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import "material-symbols/outlined.css";
 import { NumericInput } from "@/components/ui/NumericInput";
 
+type TipoMovimiento = "gasto" | "ingreso";
+
 interface GastoOperacion {
   id: string;
   descripcion: string;
@@ -12,6 +14,7 @@ interface GastoOperacion {
   origenNombre: string;
   categoriaId: string;
   categoriaNombre: string;
+  tipo: TipoMovimiento;
 }
 
 interface OpcionSelector {
@@ -26,15 +29,17 @@ interface Props {
 }
 
 export function OperationExpensesSection({ operacionId, onTotalChange, readOnly = false }: Props) {
-  const [gastos, setGastos] = useState<GastoOperacion[]>([]);
+  const [movimientos, setMovimientos] = useState<GastoOperacion[]>([]);
   const [origins, setOrigins] = useState<OpcionSelector[]>([]);
-  const [categories, setCategories] = useState<OpcionSelector[]>([]);
+  const [categoriesGasto, setCategoriesGasto] = useState<OpcionSelector[]>([]);
+  const [categoriesIngreso, setCategoriesIngreso] = useState<OpcionSelector[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingGasto, setEditingGasto] = useState<GastoOperacion | null>(null);
+  const [formTipo, setFormTipo] = useState<TipoMovimiento>("gasto");
   const [formDescripcion, setFormDescripcion] = useState("");
   const [formMonto, setFormMonto] = useState("");
   const [formOrigenId, setFormOrigenId] = useState("");
@@ -62,7 +67,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
   const categoriaInputRef = useRef<HTMLInputElement>(null);
   const categoriaDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Delete confirmation (gasto list)
+  // Delete confirmation (list)
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) =>
@@ -72,16 +77,16 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
       minimumFractionDigits: 0,
     }).format(amount);
 
-  const fetchGastos = useCallback(async () => {
+  const fetchMovimientos = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const res = await fetch(`/api/operations/${operacionId}/expenses`);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setGastos(data.gastos ?? []);
+      setMovimientos(data.gastos ?? []);
     } catch {
-      setError("No se pudieron cargar los gastos");
+      setError("No se pudieron cargar los movimientos");
     } finally {
       setLoading(false);
     }
@@ -101,10 +106,17 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch(`/api/operations/${operacionId}/expenses/categories`);
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data.categories ?? []);
+      const [resGasto, resIngreso] = await Promise.all([
+        fetch(`/api/operations/${operacionId}/expenses/categories?tipo=gasto`),
+        fetch(`/api/operations/${operacionId}/expenses/categories?tipo=ingreso`),
+      ]);
+      if (resGasto.ok) {
+        const data = await resGasto.json();
+        setCategoriesGasto(data.categories ?? []);
+      }
+      if (resIngreso.ok) {
+        const data = await resIngreso.json();
+        setCategoriesIngreso(data.categories ?? []);
       }
     } catch {
       // silently fail
@@ -112,10 +124,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
   }, [operacionId]);
 
   useEffect(() => {
-    fetchGastos();
+    fetchMovimientos();
     fetchOrigins();
     fetchCategories();
-  }, [fetchGastos, fetchOrigins, fetchCategories]);
+  }, [fetchMovimientos, fetchOrigins, fetchCategories]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -133,17 +145,23 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const total = gastos.reduce((sum, g) => sum + g.monto, 0);
+  const totalGastos = movimientos.filter(m => m.tipo === "gasto").reduce((sum, m) => sum + m.monto, 0);
+  const totalIngresos = movimientos.filter(m => m.tipo === "ingreso").reduce((sum, m) => sum + m.monto, 0);
 
   useEffect(() => {
-    onTotalChange?.(total);
-  }, [total, onTotalChange]);
+    onTotalChange?.(totalGastos);
+  }, [totalGastos, onTotalChange]);
 
-  const resumenPorParticipante = gastos.reduce<Record<string, number>>((acc, g) => {
-    const nombre = g.origenNombre || "Sin asignar";
-    acc[nombre] = (acc[nombre] ?? 0) + g.monto;
+  const resumenPorParticipante = movimientos.reduce<Record<string, { gastos: number; ingresos: number }>>((acc, m) => {
+    const nombre = m.origenNombre || "Sin asignar";
+    if (!acc[nombre]) acc[nombre] = { gastos: 0, ingresos: 0 };
+    if (m.tipo === "gasto") acc[nombre].gastos += m.monto;
+    else acc[nombre].ingresos += m.monto;
     return acc;
   }, {});
+
+  // Categories según tipo activo en el form
+  const categoriesActivas = formTipo === "gasto" ? categoriesGasto : categoriesIngreso;
 
   // Search results
   const origenResultados = origins.filter(
@@ -153,7 +171,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     origenQuery.trim().length > 0 &&
     !origenResultados.some((o) => o.nombre.toLowerCase() === origenQuery.trim().toLowerCase());
 
-  const categoriaResultados = categories.filter(
+  const categoriaResultados = categoriesActivas.filter(
     (c) => !deletedCategoriaIds.has(c.id) && c.nombre.toLowerCase().includes(categoriaQuery.toLowerCase())
   );
   const puedoCrearCategoria =
@@ -216,6 +234,11 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
           setFormCategoriaId("");
           setCategoriaQuery("");
         }
+        if (formTipo === "gasto") {
+          setCategoriesGasto((prev) => prev.filter((c) => c.id !== id));
+        } else {
+          setCategoriesIngreso((prev) => prev.filter((c) => c.id !== id));
+        }
       }
     } finally {
       setIsDeletingCategoriaId(null);
@@ -237,12 +260,16 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
       const res = await fetch(`/api/operations/${operacionId}/expenses/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre }),
+        body: JSON.stringify({ nombre, tipo: formTipo }),
       });
       const json = await res.json();
       if (res.ok) {
         const newCat: OpcionSelector = json.category;
-        setCategories((prev) => [...prev, newCat]);
+        if (formTipo === "gasto") {
+          setCategoriesGasto((prev) => [...prev, newCat]);
+        } else {
+          setCategoriesIngreso((prev) => [...prev, newCat]);
+        }
         handleSelectCategoria(newCat);
       }
     } finally {
@@ -250,8 +277,16 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     }
   };
 
+  const handleToggleTipo = (tipo: TipoMovimiento) => {
+    setFormTipo(tipo);
+    setFormCategoriaId("");
+    setCategoriaQuery("");
+    setCategoriaDropdown(false);
+  };
+
   const openCreate = () => {
     setEditingGasto(null);
+    setFormTipo("gasto");
     setFormDescripcion("");
     setFormMonto("");
     setFormOrigenId("");
@@ -261,11 +296,13 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     setCategoriaQuery("");
     setOrigenDropdown(false);
     setCategoriaDropdown(false);
+    setDeletedCategoriaIds(new Set());
     setShowModal(true);
   };
 
   const openEdit = (gasto: GastoOperacion) => {
     setEditingGasto(gasto);
+    setFormTipo(gasto.tipo);
     setFormDescripcion(gasto.descripcion);
     setFormMonto(String(gasto.monto));
     setFormOrigenId(gasto.origenId);
@@ -275,12 +312,14 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
     setCategoriaQuery(gasto.categoriaNombre);
     setOrigenDropdown(false);
     setCategoriaDropdown(false);
+    setDeletedCategoriaIds(new Set());
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingGasto(null);
+    setFormTipo("gasto");
     setFormDescripcion("");
     setFormMonto("");
     setFormOrigenId("");
@@ -298,7 +337,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
       return;
     }
     if (!formOrigenId) {
-      setFormError("Seleccioná quién pagó");
+      setFormError(formTipo === "gasto" ? "Seleccioná quién pagó" : "Seleccioná quién recibió");
       return;
     }
     if (!formCategoriaId) {
@@ -328,19 +367,20 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
           monto,
           origenId: formOrigenId,
           categoriaId: formCategoriaId,
+          tipo: formTipo,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        setFormError(data.error ?? "Error al guardar el gasto");
+        setFormError(data.error ?? "Error al guardar el movimiento");
         return;
       }
 
       closeModal();
-      await fetchGastos();
+      await fetchMovimientos();
     } catch {
-      setFormError("Error al guardar el gasto");
+      setFormError("Error al guardar el movimiento");
     } finally {
       setSaving(false);
     }
@@ -349,7 +389,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
   const handleDelete = async (id: string) => {
     try {
       await fetch(`/api/operations/${operacionId}/expenses/${id}`, { method: "DELETE" });
-      setGastos((prev) => prev.filter((g) => g.id !== id));
+      setMovimientos((prev) => prev.filter((m) => m.id !== id));
       setDeletingId(null);
     } catch {
       setDeletingId(null);
@@ -371,16 +411,16 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-2xl text-blue-600">
-              monetization_on
+              swap_horiz
             </span>
-            <h2 className="text-lg font-semibold text-zinc-900">Módulo de Gastos</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">Módulo de Movimientos</h2>
           </div>
           {!readOnly && (
             <button
               type="button"
               onClick={openCreate}
               className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              aria-label="Agregar gasto"
+              aria-label="Agregar movimiento"
             >
               <span className="material-symbols-outlined text-base">add</span>
               Agregar
@@ -411,7 +451,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                         Descripción
                       </th>
                       <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
-                        Quién pagó
+                        Participante
+                      </th>
+                      <th className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-white">
+                        Tipo
                       </th>
                       <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
                         Monto
@@ -420,26 +463,37 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {gastos.length === 0 ? (
+                    {movimientos.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-sm text-zinc-400">
-                          Sin gastos cargados
+                        <td colSpan={5} className="py-8 text-center text-sm text-zinc-400">
+                          Sin movimientos cargados
                         </td>
                       </tr>
                     ) : (
-                      gastos.map((gasto) => (
-                        <tr key={gasto.id} className="group">
-                          <td className="py-3 pr-4 text-sm text-zinc-900">{gasto.descripcion}</td>
-                          <td className="py-3 pr-4 text-sm text-zinc-500">{gasto.origenNombre}</td>
-                          <td className="py-3 text-right text-sm font-medium text-zinc-900">
-                            {formatCurrency(gasto.monto)}
+                      movimientos.map((m) => (
+                        <tr key={m.id} className="group">
+                          <td className="py-3 pr-4 text-sm text-zinc-900">{m.descripcion}</td>
+                          <td className="py-3 pr-4 text-sm text-zinc-500">{m.origenNombre}</td>
+                          <td className="py-3 pr-4">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                m.tipo === "gasto"
+                                  ? "bg-red-50 text-red-700"
+                                  : "bg-green-50 text-green-700"
+                              }`}
+                            >
+                              {m.tipo === "gasto" ? "Gasto" : "Ingreso"}
+                            </span>
+                          </td>
+                          <td className={`py-3 text-right text-sm font-medium ${m.tipo === "gasto" ? "text-red-600" : "text-green-600"}`}>
+                            {m.tipo === "gasto" ? "-" : "+"}{formatCurrency(m.monto)}
                           </td>
                           <td className="py-3">
-                            {deletingId === gasto.id ? (
+                            {deletingId === m.id ? (
                               <div className="flex items-center gap-1 justify-end">
                                 <button
                                   type="button"
-                                  onClick={() => handleDelete(gasto.id)}
+                                  onClick={() => handleDelete(m.id)}
                                   className="flex h-6 items-center rounded bg-red-600 px-2 text-xs font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 >
                                   Sí
@@ -456,17 +510,17 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                               <div className="flex items-center gap-0.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   type="button"
-                                  onClick={() => openEdit(gasto)}
+                                  onClick={() => openEdit(m)}
                                   className="flex h-7 w-7 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                                  aria-label="Editar gasto"
+                                  aria-label="Editar movimiento"
                                 >
                                   <span className="material-symbols-outlined text-base">edit</span>
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => setDeletingId(gasto.id)}
+                                  onClick={() => setDeletingId(m.id)}
                                   className="flex h-7 w-7 items-center justify-center rounded text-zinc-400 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
-                                  aria-label="Eliminar gasto"
+                                  aria-label="Eliminar movimiento"
                                 >
                                   <span className="material-symbols-outlined text-base">delete</span>
                                 </button>
@@ -479,31 +533,47 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-zinc-200">
-                      <td colSpan={2} className="pt-3 text-sm font-bold text-zinc-900">
-                        Total
+                      <td colSpan={3} className="pt-3 text-sm font-bold text-zinc-900">
+                        Total gastos
                       </td>
-                      <td className="pt-3 text-right text-sm font-bold text-blue-600">
-                        {formatCurrency(total)}
+                      <td className="pt-3 text-right text-sm font-bold text-red-600">
+                        -{formatCurrency(totalGastos)}
                       </td>
                       <td />
                     </tr>
+                    {totalIngresos > 0 && (
+                      <tr>
+                        <td colSpan={3} className="pt-1 text-sm font-bold text-zinc-900">
+                          Total ingresos
+                        </td>
+                        <td className="pt-1 text-right text-sm font-bold text-green-600">
+                          +{formatCurrency(totalIngresos)}
+                        </td>
+                        <td />
+                      </tr>
+                    )}
                   </tfoot>
                 </table>
               </div>
 
-              {/* Resumen por quién pagó */}
+              {/* Resumen por participante */}
               {Object.keys(resumenPorParticipante).length > 0 && (
                 <div className="border-t border-zinc-100 pt-4">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Resumen por quién pagó
+                    Resumen por participante
                   </p>
                   <div className="divide-y divide-zinc-100">
-                    {Object.entries(resumenPorParticipante).map(([nombre, subtotal]) => (
+                    {Object.entries(resumenPorParticipante).map(([nombre, { gastos, ingresos }]) => (
                       <div key={nombre} className="flex items-center justify-between py-2">
                         <span className="text-sm text-zinc-700">{nombre}</span>
-                        <span className="text-sm font-semibold text-zinc-900">
-                          {formatCurrency(subtotal)}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          {gastos > 0 && (
+                            <span className="text-sm font-semibold text-red-600">-{formatCurrency(gastos)}</span>
+                          )}
+                          {ingresos > 0 && (
+                            <span className="text-sm font-semibold text-green-600">+{formatCurrency(ingresos)}</span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -520,7 +590,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label={editingGasto ? "Editar gasto" : "Agregar gasto"}
+          aria-label={editingGasto ? "Editar movimiento" : "Agregar movimiento"}
         >
           <div className="flex w-full max-w-md flex-col rounded-xl bg-white shadow-xl">
             {/* Header */}
@@ -530,7 +600,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                   {editingGasto ? "edit" : "add_circle"}
                 </span>
                 <h2 className="text-lg font-semibold text-zinc-900">
-                  {editingGasto ? "Editar gasto" : "Agregar gasto"}
+                  {editingGasto ? "Editar movimiento" : "Agregar movimiento"}
                 </h2>
               </div>
               <button
@@ -546,13 +616,41 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
 
             {/* Body */}
             <div className="flex flex-col gap-4 px-6 py-5">
+              {/* Toggle Gasto / Ingreso */}
+              <div className="flex rounded-lg border border-zinc-200 p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleToggleTipo("gasto")}
+                  disabled={saving}
+                  className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors focus:outline-none ${
+                    formTipo === "gasto"
+                      ? "bg-red-600 text-white shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-700"
+                  }`}
+                >
+                  Gasto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleTipo("ingreso")}
+                  disabled={saving}
+                  className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors focus:outline-none ${
+                    formTipo === "ingreso"
+                      ? "bg-green-600 text-white shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-700"
+                  }`}
+                >
+                  Ingreso
+                </button>
+              </div>
+
               {/* Descripción */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="gasto-descripcion" className="text-sm font-medium text-zinc-700">
+                <label htmlFor="movimiento-descripcion" className="text-sm font-medium text-zinc-700">
                   Descripción
                 </label>
                 <input
-                  id="gasto-descripcion"
+                  id="movimiento-descripcion"
                   type="text"
                   value={formDescripcion}
                   onChange={(e) => { const v = e.target.value; setFormDescripcion(v.charAt(0).toUpperCase() + v.slice(1)); }}
@@ -562,10 +660,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                 />
               </div>
 
-              {/* Quién pagó (Origin) */}
+              {/* Quién pagó / Quién recibió (Origin) */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="gasto-origen" className="text-sm font-medium text-zinc-700">
-                  Quién pagó
+                <label htmlFor="movimiento-origen" className="text-sm font-medium text-zinc-700">
+                  {formTipo === "gasto" ? "Quién pagó" : "Quién recibió"}
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-zinc-400">
@@ -578,7 +676,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                   )}
                   <input
                     ref={origenInputRef}
-                    id="gasto-origen"
+                    id="movimiento-origen"
                     type="text"
                     value={origenQuery}
                     onChange={(e) => {
@@ -587,10 +685,10 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                       setOrigenDropdown(true);
                     }}
                     onFocus={() => setOrigenDropdown(true)}
-                    placeholder="Buscar quién pagó..."
+                    placeholder={formTipo === "gasto" ? "Buscar quién pagó..." : "Buscar quién recibió..."}
                     autoComplete="off"
                     disabled={saving}
-                    aria-label="Buscar quién pagó"
+                    aria-label={formTipo === "gasto" ? "Buscar quién pagó" : "Buscar quién recibió"}
                     className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-10 pr-10 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
                   />
                   {origenDropdown && (origenResultados.length > 0 || puedoCrearOrigen) && (
@@ -635,7 +733,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                               <button
                                 type="button"
                                 onMouseDown={(e) => { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); setConfirmDeleteOrigenId(o.id); }}
-                                aria-label={`Eliminar origen ${o.nombre}`}
+                                aria-label={`Eliminar ${o.nombre}`}
                                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-500"
                               >
                                 <span className="material-symbols-outlined text-base">delete</span>
@@ -662,7 +760,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
 
               {/* Categoría */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="gasto-categoria" className="text-sm font-medium text-zinc-700">
+                <label htmlFor="movimiento-categoria" className="text-sm font-medium text-zinc-700">
                   Categoría
                 </label>
                 <div className="relative">
@@ -676,7 +774,7 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
                   )}
                   <input
                     ref={categoriaInputRef}
-                    id="gasto-categoria"
+                    id="movimiento-categoria"
                     type="text"
                     value={categoriaQuery}
                     onChange={(e) => {
@@ -760,11 +858,11 @@ export function OperationExpensesSection({ operacionId, onTotalChange, readOnly 
 
               {/* Monto */}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="gasto-monto" className="text-sm font-medium text-zinc-700">
+                <label htmlFor="movimiento-monto" className="text-sm font-medium text-zinc-700">
                   Monto
                 </label>
                 <NumericInput
-                  id="gasto-monto"
+                  id="movimiento-monto"
                   value={formMonto}
                   onChange={setFormMonto}
                   placeholder="0"
