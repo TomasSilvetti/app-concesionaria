@@ -355,7 +355,7 @@ function CajaFuerteCard({ value, desglose, detalle, loading }: CajaFuerteCardPro
         )}
       </div>
       <div>
-        <p className="text-sm text-zinc-500">Caja Empresa (plata liquida empresa)</p>
+        <p className="text-sm text-zinc-500">Caja Empresa (dinero liquido)</p>
         {loading ? (
           <div className="mt-1.5 h-8 w-36 animate-pulse rounded-lg bg-zinc-200" aria-label="Cargando" />
         ) : (
