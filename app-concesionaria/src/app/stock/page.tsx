@@ -410,12 +410,13 @@ export default function StockPage() {
           doc.text("PRECIO", textX, ty);
           ty += 4;
 
-          const hasOffer =
-            vehicle.precioOferta !== null &&
+          const hasOffer = vehicle.precioOferta !== null;
+          const showStrike =
+            hasOffer &&
             vehicle.precioRevista !== null &&
             vehicle.precioOferta < vehicle.precioRevista;
 
-          if (hasOffer) {
+          if (showStrike) {
             // Precio revista tachado en rojo
             const strikeText = formatCurrency(vehicle.precioRevista);
             doc.setFontSize(8.5);
@@ -432,6 +433,12 @@ export default function StockPage() {
             doc.setFont("helvetica", "bold");
             doc.setTextColor(22, 163, 74);
             doc.text(formatCurrency(vehicle.precioOferta), textX + strikeW + 3, ty);
+          } else if (hasOffer) {
+            // Precio oferta solo, sin tachado
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(22, 163, 74);
+            doc.text(formatCurrency(vehicle.precioOferta), textX, ty);
           } else {
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
