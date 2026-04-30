@@ -8,6 +8,7 @@ function formatGasto(expense: {
   monto: number;
   origenId: string;
   categoriaId: string;
+  tipo: string;
   Origin: { nombre: string };
   Category: { nombre: string };
 }) {
@@ -19,6 +20,7 @@ function formatGasto(expense: {
     origenNombre: expense.Origin.nombre,
     categoriaId: expense.categoriaId,
     categoriaNombre: expense.Category.nombre,
+    tipo: expense.tipo,
   };
 }
 
@@ -77,7 +79,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await req.json();
-    const { descripcion, monto, origenId, categoriaId } = body;
+    const { descripcion, monto, origenId, categoriaId, tipo = "gasto" } = body;
 
     const errors: string[] = [];
     if (!descripcion || !String(descripcion).trim()) errors.push("descripcion es requerida");
@@ -85,6 +87,7 @@ export async function POST(
     if (typeof monto === "number" && monto <= 0) errors.push("monto debe ser mayor a 0");
     if (!origenId) errors.push("origenId es requerido");
     if (!categoriaId) errors.push("categoriaId es requerido");
+    if (tipo !== "gasto" && tipo !== "ingreso") errors.push("tipo debe ser gasto o ingreso");
     if (errors.length > 0) {
       return NextResponse.json({ error: errors[0] }, { status: 400 });
     }
@@ -122,6 +125,7 @@ export async function POST(
           monto: montoNum,
           origenId,
           categoriaId,
+          tipo,
           actualizadoEn: new Date(),
         },
         include: {

@@ -12,6 +12,7 @@ model Category {
   id        String    @id
   clienteId String
   nombre    String
+  tipo      String    @default("gasto")
   creadoEn  DateTime  @default(now())
   Client    Client    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   Expense   Expense[]
@@ -23,6 +24,8 @@ model Category {
 model Client {
   id              String            @id
   nombre          String
+  logo            String?
+  slug            String?           @unique
   activo          Boolean           @default(true)
   modulos         Json
   creadoEn        DateTime          @default(now())
@@ -55,6 +58,7 @@ model Expense {
   categoriaId   String
   monto         Float
   origenId      String
+  tipo          String     @default("gasto")
   creadoEn      DateTime   @default(now())
   actualizadoEn DateTime
   Category      Category   @relation(fields: [categoriaId], references: [id])
