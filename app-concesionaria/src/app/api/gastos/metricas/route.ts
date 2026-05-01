@@ -37,61 +37,58 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Incluir hasta el final del día de 'hasta'
     hasta.setUTCHours(23, 59, 59, 999);
 
-    const [pagosResult, pagosCerradas, pagosAbiertas, gastosResult, ingresosResult, plataPorCobrarResult, ops0km, vehiculosStock, pagosDetalleCerradas, pagosDetalleAbiertas, gastosDetalle, ingresosDetalle, ops0kmDetalle, vehiculosStockDetalle] =
+    const [operacionesCerradas, gastosResult, ingresosResult, plataPorCobrarResult, gastosDetalle, ingresosDetalle] =
       await Promise.all([
-        // SUM de monto de Pagos de TODAS las operaciones en el período
-        prisma.pago.aggregate({
+        // Operaciones cerradas en el período — base del ingreso neto de la caja
+        prisma.operation.findMany({
           where: {
             clienteId,
-            fecha: { gte: desde, lte: hasta },
+            estado: "cerrada",
+            fechaVenta: { gte: desde, lte: hasta },
           },
-          _sum: { monto: true },
+          select: {
+            id: true,
+            idOperacion: true,
+            precioVentaTotal: true,
+            precioToma: true,
+            fechaVenta: true,
+            tipoOperacion: true,
+            VehiculoVendido: {
+              select: {
+                modelo: true,
+                anio: true,
+                VehicleBrand: { select: { nombre: true } },
+              },
+            },
+          },
+          orderBy: { fechaVenta: "desc" },
         }),
 
-        // SUM de pagos de operaciones cerradas en el período
-        prisma.pago.aggregate({
-          where: {
-            clienteId,
-            fecha: { gte: desde, lte: hasta },
-            Operation: { estado: "cerrada" },
-          },
-          _sum: { monto: true },
-        }),
-
-        // SUM de pagos de operaciones abiertas en el período
-        prisma.pago.aggregate({
-          where: {
-            clienteId,
-            fecha: { gte: desde, lte: hasta },
-            Operation: { estado: { in: ["abierta", "open"] } },
-          },
-          _sum: { monto: true },
-        }),
-
-        // SUM de gastos directos del período (solo tipo "gasto")
+        // Egresos pagados desde la caja empresa
         prisma.expense.aggregate({
           where: {
             clienteId,
             fecha: { gte: desde, lte: hasta },
             tipo: "gasto",
+            Origin: { nombre: "Caja Empresa" },
           },
           _sum: { monto: true },
         }),
 
-        // SUM de ingresos extraordinarios del período (solo tipo "ingreso")
+        // Ingresos extraordinarios cobrados por la caja empresa
         prisma.expense.aggregate({
           where: {
             clienteId,
             fecha: { gte: desde, lte: hasta },
             tipo: "ingreso",
+            Origin: { nombre: "Caja Empresa" },
           },
           _sum: { monto: true },
         }),
 
-        // Operaciones abiertas con sus pagos para calcular saldo pendiente de cobro
+        // Operaciones abiertas para calcular plata por cobrar
         prisma.operation.findMany({
           where: {
             clienteId,
@@ -99,217 +96,90 @@ export async function GET(req: NextRequest) {
           },
           select: {
             precioVentaTotal: true,
+            precioToma: true,
             Pago: { select: { monto: true } },
           },
         }),
 
-        // Precio de toma de vehículos de intercambio en ops 0km cerradas en el período
-        prisma.vehicle.findMany({
-          where: {
-            clienteId,
-            estado: "intercambio",
-            operacionId: { not: null },
-            precioToma: { not: null },
-            Operation: {
-              tipoOperacion: { not: "Venta desde stock" },
-              estado: "cerrada",
-              fechaVenta: { gte: desde, lte: hasta },
-            },
-          },
-          select: { precioToma: true },
-        }),
-
-        // Precio de toma de vehículos de stock vendidos con operación cerrada en el período
-        prisma.vehicle.findMany({
-          where: {
-            clienteId,
-            operacionId: null,
-            OperacionesVenta: {
-              some: { estado: "cerrada", fechaVenta: { gte: desde, lte: hasta } },
-            },
-            precioToma: { not: null },
-          },
-          select: { precioToma: true },
-        }),
-
-        // Detalle de pagos de operaciones cerradas
-        prisma.pago.findMany({
-          where: {
-            clienteId,
-            fecha: { gte: desde, lte: hasta },
-            Operation: { estado: "cerrada" },
-          },
-          select: {
-            id: true,
-            monto: true,
-            fecha: true,
-            Operation: { select: { idOperacion: true, tipoOperacion: true, VehiculoVendido: { select: { modelo: true, anio: true, VehicleBrand: { select: { nombre: true } } } } } },
-          },
-          orderBy: { fecha: "desc" },
-        }),
-
-        // Detalle de pagos de operaciones abiertas
-        prisma.pago.findMany({
-          where: {
-            clienteId,
-            fecha: { gte: desde, lte: hasta },
-            Operation: { estado: { in: ["abierta", "open"] } },
-          },
-          select: {
-            id: true,
-            monto: true,
-            fecha: true,
-            Operation: { select: { idOperacion: true, tipoOperacion: true, VehiculoVendido: { select: { modelo: true, anio: true, VehicleBrand: { select: { nombre: true } } } } } },
-          },
-          orderBy: { fecha: "desc" },
-        }),
-
-        // Detalle de gastos directos
+        // Detalle de egresos pagados desde la caja empresa
         prisma.expense.findMany({
           where: {
             clienteId,
             fecha: { gte: desde, lte: hasta },
             tipo: "gasto",
+            Origin: { nombre: "Caja Empresa" },
           },
           select: { id: true, descripcion: true, monto: true, fecha: true },
           orderBy: { fecha: "desc" },
         }),
 
-        // Detalle de ingresos extraordinarios
+        // Detalle de ingresos extraordinarios cobrados por la caja empresa
         prisma.expense.findMany({
           where: {
             clienteId,
             fecha: { gte: desde, lte: hasta },
             tipo: "ingreso",
+            Origin: { nombre: "Caja Empresa" },
           },
           select: { id: true, descripcion: true, monto: true, fecha: true },
           orderBy: { fecha: "desc" },
         }),
-
-        // Detalle de vehículos de intercambio en ops 0km cerradas
-        prisma.vehicle.findMany({
-          where: {
-            clienteId,
-            estado: "intercambio",
-            operacionId: { not: null },
-            precioToma: { not: null },
-            Operation: {
-              tipoOperacion: { not: "Venta desde stock" },
-              estado: "cerrada",
-              fechaVenta: { gte: desde, lte: hasta },
-            },
-          },
-          select: {
-            id: true,
-            modelo: true,
-            anio: true,
-            precioToma: true,
-            VehicleBrand: { select: { nombre: true } },
-            Operation: { select: { fechaVenta: true, tipoOperacion: true } },
-          },
-          orderBy: { creadoEn: "desc" },
-        }),
-
-        // Detalle de vehículos stock con precio de toma
-        prisma.vehicle.findMany({
-          where: {
-            clienteId,
-            operacionId: null,
-            OperacionesVenta: {
-              some: { estado: "cerrada", fechaVenta: { gte: desde, lte: hasta } },
-            },
-            precioToma: { not: null },
-          },
-          select: { id: true, modelo: true, anio: true, precioToma: true, VehicleBrand: { select: { nombre: true } } },
-        }),
       ]);
 
-    const totalPagos = pagosResult._sum.monto ?? 0;
-    const vendidoBrutoCerradas = pagosCerradas._sum.monto ?? 0;
-    const vendidoBrutoAbiertas = pagosAbiertas._sum.monto ?? 0;
-    const vendidoBrutoOtros = totalPagos - vendidoBrutoCerradas - vendidoBrutoAbiertas;
-    const gastosDirectos = gastosResult._sum.monto ?? 0;
-    const totalIngresos = ingresosResult._sum.monto ?? 0;
-    const totalVendidoBruto = totalPagos + totalIngresos;
-    const precioToma0km = ops0km.reduce((sum, op) => sum + (op.precioToma ?? 0), 0);
-    const precioTomaStock = vehiculosStock.reduce((sum, v) => sum + (v.precioToma ?? 0), 0);
-    const totalGastado = gastosDirectos + precioToma0km + precioTomaStock;
+    // Ingreso neto por operación = precioVentaTotal - precioToma
+    // La toma es un crédito al cliente, no plata que entró a la caja
+    const ingresosPorOps = operacionesCerradas.reduce(
+      (sum, op) => sum + op.precioVentaTotal - (op.precioToma ?? 0),
+      0
+    );
+    const ingresosExtraordinarios = ingresosResult._sum.monto ?? 0;
+    const egresos = gastosResult._sum.monto ?? 0;
 
-    const ganancia = totalVendidoBruto - totalGastado;
+    const cajaDinero = ingresosPorOps + ingresosExtraordinarios - egresos;
+
+    // Plata por cobrar: diferencia entre precio neto y lo ya cobrado en ops abiertas
     const plataPorCobrar = plataPorCobrarResult.reduce((sum, op) => {
+      const precioNeto = op.precioVentaTotal - (op.precioToma ?? 0);
       const pagado = op.Pago.reduce((s, p) => s + p.monto, 0);
-      return sum + Math.max(op.precioVentaTotal - pagado, 0);
+      return sum + Math.max(precioNeto - pagado, 0);
     }, 0);
 
     return NextResponse.json({
-      totalVendidoBruto,
-      desgloseTotalVendido: {
-        cerradas: vendidoBrutoCerradas,
-        abiertas: vendidoBrutoAbiertas,
-        canceladas: vendidoBrutoOtros,
-        ingresosExtraordinarios: totalIngresos,
+      cajaDinero,
+      desgloseCaja: {
+        ingresosPorOps,
+        ingresosExtraordinarios,
+        egresos,
       },
-      detalleTotalVendido: {
-        cerradas: pagosDetalleCerradas.map((p) => {
-          const veh = p.Operation?.VehiculoVendido;
-          const vehiculoStr = veh ? `${veh.VehicleBrand.nombre} ${veh.modelo} ${veh.anio ?? ""}`.trim() : "";
+      detalleCaja: {
+        operacionesCerradas: operacionesCerradas.map((op) => {
+          const veh = op.VehiculoVendido;
+          const vehiculoStr = veh
+            ? `${veh.VehicleBrand.nombre} ${veh.modelo} ${veh.anio ?? ""}`.trim()
+            : `Op. ${op.idOperacion}`;
+          const neto = op.precioVentaTotal - (op.precioToma ?? 0);
           return {
-            id: p.id,
-            monto: p.monto,
-            fecha: p.fecha,
-            descripcion: p.Operation
-              ? `${p.Operation.tipoOperacion} — ${vehiculoStr || `Op. ${p.Operation.idOperacion}`}`
-              : "Sin operación",
-          };
-        }),
-        abiertas: pagosDetalleAbiertas.map((p) => {
-          const veh = p.Operation?.VehiculoVendido;
-          const vehiculoStr = veh ? `${veh.VehicleBrand.nombre} ${veh.modelo} ${veh.anio ?? ""}`.trim() : "";
-          return {
-            id: p.id,
-            monto: p.monto,
-            fecha: p.fecha,
-            descripcion: p.Operation
-              ? `${p.Operation.tipoOperacion} — ${vehiculoStr || `Op. ${p.Operation.idOperacion}`}`
-              : "Sin operación",
+            id: op.id,
+            descripcion: `${op.tipoOperacion} — ${vehiculoStr}`,
+            precioVenta: op.precioVentaTotal,
+            precioToma: op.precioToma ?? 0,
+            neto,
+            fecha: op.fechaVenta,
           };
         }),
         ingresosExtraordinarios: ingresosDetalle.map((e) => ({
           id: e.id,
-          monto: e.monto,
-          fecha: e.fecha,
           descripcion: e.descripcion ?? "Ingreso extraordinario",
-        })),
-      },
-      totalGastado,
-      totalGastos: gastosDirectos,
-      totalIngresos,
-      desgloseTotalGastado: {
-        gastosDirectos,
-        precioToma0km,
-        precioTomaStock,
-      },
-      detalleTotalGastado: {
-        gastosDirectos: gastosDetalle.map((e) => ({
-          id: e.id,
           monto: e.monto,
           fecha: e.fecha,
+        })),
+        egresos: gastosDetalle.map((e) => ({
+          id: e.id,
           descripcion: e.descripcion ?? "Gasto directo",
-        })),
-        precioToma0km: ops0kmDetalle.map((v) => ({
-          id: v.id,
-          monto: v.precioToma ?? 0,
-          fecha: v.Operation?.fechaVenta ?? null,
-          descripcion: `${v.VehicleBrand.nombre} ${v.modelo} ${v.anio ?? ""}`.trim(),
-        })),
-        precioTomaStock: vehiculosStockDetalle.map((v) => ({
-          id: v.id,
-          monto: v.precioToma ?? 0,
-          fecha: null,
-          descripcion: `${v.VehicleBrand.nombre} ${v.modelo} ${v.anio ?? ""}`.trim(),
+          monto: e.monto,
+          fecha: e.fecha,
         })),
       },
-      ganancia,
       plataPorCobrar,
     });
   } catch (error) {

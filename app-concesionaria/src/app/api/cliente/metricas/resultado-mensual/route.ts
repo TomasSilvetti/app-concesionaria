@@ -54,46 +54,37 @@ export async function GET(req: NextRequest) {
 
     hasta.setHours(23, 59, 59, 999);
 
-    const [pagos, gastos, ops0km, vehiculosStock] = await Promise.all([
-      // Ingresos: todos los pagos del período
-      prisma.pago.findMany({
+    const [operacionesCerradas, gastos, ingresosExtraordinarios] = await Promise.all([
+      // Ingresos: neto de ops cerradas (precioVentaTotal - precioToma) agrupado por fechaVenta
+      prisma.operation.findMany({
         where: {
           clienteId,
-          fecha: { gte: desde, lte: hasta },
+          estado: "cerrada",
+          fechaVenta: { gte: desde, lte: hasta },
         },
-        select: { fecha: true, monto: true },
+        select: { fechaVenta: true, precioVentaTotal: true, precioToma: true },
       }),
 
-      // Gastos directos: todos los expenses del período
+      // Egresos pagados desde la caja empresa
       prisma.expense.findMany({
         where: {
           clienteId,
           fecha: { gte: desde, lte: hasta },
+          tipo: "gasto",
+          Origin: { nombre: "Caja Empresa" },
         },
         select: { fecha: true, monto: true },
       }),
 
-      // Precio de toma de operaciones 0km (no canceladas) en el período
-      prisma.operation.findMany({
+      // Ingresos extraordinarios cobrados por la caja empresa
+      prisma.expense.findMany({
         where: {
           clienteId,
-          tipoOperacion: { not: "Venta desde stock" },
-          estado: { not: "cancelada" },
-          fechaInicio: { gte: desde, lte: hasta },
-          precioToma: { not: null },
+          fecha: { gte: desde, lte: hasta },
+          tipo: "ingreso",
+          Origin: { nombre: "Caja Empresa" },
         },
-        select: { fechaInicio: true, precioToma: true },
-      }),
-
-      // Precio de toma de vehículos de stock ingresados en el período
-      prisma.vehicle.findMany({
-        where: {
-          clienteId,
-          operacionId: null,
-          creadoEn: { gte: desde, lte: hasta },
-          precioToma: { not: null },
-        },
-        select: { creadoEn: true, precioToma: true },
+        select: { fecha: true, monto: true },
       }),
     ]);
 
@@ -105,25 +96,20 @@ export async function GET(req: NextRequest) {
       return mapa.get(key)!;
     };
 
-    for (const p of pagos) {
-      const entry = getOrCreate(mesKey(p.fecha));
-      entry.ingresos += p.monto;
+    for (const op of operacionesCerradas) {
+      if (!op.fechaVenta) continue;
+      const entry = getOrCreate(mesKey(op.fechaVenta));
+      entry.ingresos += op.precioVentaTotal - (op.precioToma ?? 0);
+    }
+
+    for (const ie of ingresosExtraordinarios) {
+      const entry = getOrCreate(mesKey(ie.fecha));
+      entry.ingresos += ie.monto;
     }
 
     for (const g of gastos) {
       const entry = getOrCreate(mesKey(g.fecha));
       entry.gastos += g.monto;
-    }
-
-    for (const op of ops0km) {
-      if (!op.fechaInicio) continue;
-      const entry = getOrCreate(mesKey(op.fechaInicio));
-      entry.gastos += op.precioToma ?? 0;
-    }
-
-    for (const v of vehiculosStock) {
-      const entry = getOrCreate(mesKey(v.creadoEn));
-      entry.gastos += v.precioToma ?? 0;
     }
 
     // Generar array ordenado cubriendo todos los meses del rango

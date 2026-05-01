@@ -19,13 +19,6 @@ interface Gasto {
   tipo: string;
 }
 
-interface GrupoOperacion {
-  operacionId: string | null;
-  gastos: Gasto[];
-  totalGastado: number;
-  fechaUltimoGasto: string;
-  vehiculoFotoId: string | null;
-}
 
 interface GastosTablaProps {
   desde: string;
@@ -76,7 +69,6 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const [filtroQuienPago, setFiltroQuienPago] = useState("");
   const [pagina, setPagina] = useState(1);
@@ -105,63 +97,22 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
     fetchGastos(desde, hasta);
   }, [fetchGastos, desde, hasta]);
 
-  const toggleExpand = (key: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
-
   // Valores únicos de quienPago para el selector
   const opcionesQuienPago = useMemo(() => {
     const set = new Set(gastos.map((g) => g.quienPago));
     return Array.from(set).sort();
   }, [gastos]);
 
-  // Agrupar gastos por operacionId
-  const grupos = useMemo(() => {
-    const mapa = new Map<string, GrupoOperacion>();
+  // Flat list filtrado y ordenado por fecha desc
+  const gastosFiltrados = useMemo(() => {
+    return gastos
+      .filter((g) => filtroQuienPago === "" || g.quienPago === filtroQuienPago)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }, [gastos, filtroQuienPago]);
 
-    gastos.forEach((g) => {
-      const key = g.operacionId ?? "__sin_operacion__";
-      if (!mapa.has(key)) {
-        mapa.set(key, {
-          operacionId: g.operacionId,
-          gastos: [],
-          totalGastado: 0,
-          fechaUltimoGasto: g.fecha,
-          vehiculoFotoId: g.vehiculoFotoId,
-        });
-      }
-      const grupo = mapa.get(key)!;
-      grupo.gastos.push(g);
-      if (g.tipo === "gasto") grupo.totalGastado += g.monto;
-      if (g.fecha > grupo.fechaUltimoGasto) {
-        grupo.fechaUltimoGasto = g.fecha;
-      }
-    });
-
-    return Array.from(mapa.values());
-  }, [gastos]);
-
-  // Filtrado sobre grupos
-  const gruposFiltrados = useMemo(() => {
-    return grupos.filter((gr) => {
-      const matchQuien =
-        filtroQuienPago === "" ||
-        gr.gastos.some((g) => g.quienPago === filtroQuienPago);
-      return matchQuien;
-    });
-  }, [grupos, filtroQuienPago]);
-
-  // Paginación sobre grupos
-  const totalPaginas = Math.max(1, Math.ceil(gruposFiltrados.length / PAGE_SIZE));
-  const gruposPagina = gruposFiltrados.slice(
+  // Paginación sobre gastos individuales
+  const totalPaginas = Math.max(1, Math.ceil(gastosFiltrados.length / PAGE_SIZE));
+  const gastosPagina = gastosFiltrados.slice(
     (pagina - 1) * PAGE_SIZE,
     pagina * PAGE_SIZE
   );
@@ -241,30 +192,34 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
         </div>
       ) : (
         <>
-          {/* Cards */}
-          <div className="flex flex-col gap-3 p-4">
+          {/* Tabla */}
+          <div className="overflow-x-auto">
             {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-zinc-200 bg-white p-4" aria-hidden="true">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-14 animate-pulse rounded-md bg-zinc-200 flex-shrink-0" />
-                    <div className="flex flex-1 flex-col gap-2">
-                      <div className="h-4 w-24 animate-pulse rounded bg-zinc-200" />
-                      <div className="h-3 w-32 animate-pulse rounded bg-zinc-200" />
-                    </div>
-                    <div className="h-5 w-20 animate-pulse rounded bg-zinc-200" />
-                  </div>
+              <div className="flex flex-col gap-0">
+                {/* Header skeleton */}
+                <div className="grid grid-cols-[90px_140px_1fr_120px_90px_110px_40px] gap-4 border-b border-zinc-100 px-5 py-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-3 animate-pulse rounded bg-zinc-200" />
+                  ))}
                 </div>
-              ))
-            ) : gruposPagina.length === 0 ? (
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="grid grid-cols-[90px_140px_1fr_120px_90px_110px_40px] gap-4 border-b border-zinc-100 px-5 py-3">
+                    <div className="h-4 animate-pulse rounded bg-zinc-100" />
+                    <div className="h-8 w-14 animate-pulse rounded bg-zinc-100" />
+                    <div className="h-4 animate-pulse rounded bg-zinc-100" />
+                    <div className="h-4 w-20 animate-pulse rounded bg-zinc-100" />
+                    <div className="h-5 w-14 animate-pulse rounded-full bg-zinc-100" />
+                    <div className="h-4 w-16 animate-pulse rounded bg-zinc-100 ml-auto" />
+                    <div className="h-6 w-6 animate-pulse rounded bg-zinc-100" />
+                  </div>
+                ))}
+              </div>
+            ) : gastosPagina.length === 0 ? (
               <div
                 className="flex flex-col items-center justify-center gap-2 py-14 text-zinc-400"
                 role="status"
-                aria-label="Sin gastos para los filtros aplicados"
               >
-                <span className="material-symbols-outlined text-4xl">
-                  receipt_long
-                </span>
+                <span className="material-symbols-outlined text-4xl">receipt_long</span>
                 <p className="text-sm">
                   {filtroQuienPago
                     ? "No hay movimientos para el participante seleccionado"
@@ -272,163 +227,132 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
                 </p>
               </div>
             ) : (
-              gruposPagina.map((grupo) => {
-                const key = grupo.operacionId ?? "__sin_operacion__";
-                const isExpanded = expanded.has(key);
-                const gastosVisibles = filtroQuienPago
-                  ? grupo.gastos.filter((g) => g.quienPago === filtroQuienPago)
-                  : grupo.gastos;
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-zinc-100">
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-200 w-[90px]">Fecha</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-200 w-[140px]">Operación</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-200">Descripción</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-200 w-[120px]">Origen</th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-200 w-[90px]">Tipo</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-200 w-[110px]">Monto</th>
+                    <th className="px-3 py-3 w-[40px]" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-50">
+                  {gastosPagina.map((gasto) => {
+                    const colorQuien = getQuienPagoColor(gasto.quienPago);
+                    return (
+                      <tr key={gasto.id} className="group hover:bg-zinc-50 transition-colors">
+                        {/* Fecha */}
+                        <td className="px-5 py-3 text-sm text-zinc-500 whitespace-nowrap">
+                          {formatFecha(gasto.fecha)}
+                        </td>
 
-                return (
-                  <div
-                    key={key}
-                    className={`rounded-xl border shadow-sm transition-colors ${
-                      isExpanded ? "border-blue-200 bg-blue-50/20" : "border-zinc-200 bg-white"
-                    }`}
-                  >
-                    {/* Cabecera card */}
-                    <button
-                      onClick={() => toggleExpand(key)}
-                      className="flex w-full items-center gap-3 p-4 text-left"
-                      aria-expanded={isExpanded}
-                      aria-label={`Expandir grupo ${grupo.operacionId ?? "sin operación"}`}
-                    >
-                      <span
-                        className={`material-symbols-outlined text-xl text-zinc-400 transition-transform duration-200 flex-shrink-0 ${
-                          isExpanded ? "rotate-180" : ""
-                        }`}
-                      >
-                        expand_more
-                      </span>
-
-                      {/* Thumbnail */}
-                      {grupo.vehiculoFotoId ? (
-                        <img
-                          src={`/api/photos/${grupo.vehiculoFotoId}`}
-                          alt="Miniatura del vehículo"
-                          className="h-10 w-14 rounded-md object-cover border border-zinc-200 flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-14 flex-shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100">
-                          <span className="material-symbols-outlined text-base text-zinc-300">
-                            directions_car
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Info */}
-                      <div className="flex flex-1 flex-col gap-1 min-w-0">
-                        {grupo.operacionId != null ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/operaciones/${grupo.operacionId}`);
-                            }}
-                            className="w-fit text-base font-semibold text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                          >
-                            #OP-{grupo.operacionId}
-                          </button>
-                        ) : (
-                          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
-                            <span className="material-symbols-outlined text-xs" aria-hidden="true">link_off</span>
-                            Sin operación
-                          </span>
-                        )}
-                        <span className="text-xs text-zinc-400">
-                          Último movimiento: {formatFecha(grupo.fechaUltimoGasto)}
-                        </span>
-                      </div>
-
-                      {/* Total */}
-                      <span className="flex-shrink-0 text-sm font-semibold text-red-800">
-                        {formatPesos(grupo.totalGastado)}
-                      </span>
-                    </button>
-
-                    {/* Gastos expandidos */}
-                    {isExpanded && (
-                      <div className="border-t border-blue-100 bg-blue-50/20 px-4 pb-4 pt-3">
-                        <div className="flex flex-col gap-2">
-                          {gastosVisibles.map((gasto) => {
-                            const colorQuien = getQuienPagoColor(gasto.quienPago);
-                            return (
-                              <div
-                                key={gasto.id}
-                                className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/60 p-3"
-                              >
-                                <div className="flex flex-1 items-start gap-4 min-w-0">
-                                  <div className="flex flex-col gap-0.5 min-w-0">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Fecha</span>
-                                    <span className="text-sm text-zinc-700 whitespace-nowrap">{formatFecha(gasto.fecha)}</span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Categoría</span>
-                                    <span className="text-sm text-zinc-700 truncate">{gasto.descripcion}</span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Participante</span>
-                                    <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-semibold ${colorQuien.bg} ${colorQuien.text}`}>
-                                      {gasto.quienPago}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Tipo</span>
-                                    <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-semibold ${gasto.tipo === "ingreso" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                      {gasto.tipo === "ingreso" ? "Ingreso" : "Gasto"}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5 items-end">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-700/60">Monto</span>
-                                    <span className={`text-sm font-medium whitespace-nowrap ${gasto.tipo === "ingreso" ? "text-green-600" : "text-red-500"}`}>
-                                      {gasto.tipo === "ingreso" ? "+" : "-"}{formatPesos(gasto.monto)}
-                                    </span>
-                                  </div>
-                                </div>
-                                {gasto.operacionId === null && (
-                                  confirmDeleteId === gasto.id ? (
-                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEliminarGasto(gasto.id)}
-                                        disabled={deletingId === gasto.id}
-                                        aria-label="Confirmar eliminación"
-                                        className="flex h-7 items-center rounded-lg bg-red-50 px-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
-                                      >
-                                        Sí
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setConfirmDeleteId(null)}
-                                        aria-label="Cancelar eliminación"
-                                        className="flex h-7 items-center rounded-lg bg-zinc-100 px-2 text-xs font-semibold text-zinc-500 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-1"
-                                      >
-                                        No
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => setConfirmDeleteId(gasto.id)}
-                                      disabled={deletingId === gasto.id}
-                                      aria-label="Eliminar gasto"
-                                      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
-                                    >
-                                      <span className="material-symbols-outlined text-base" aria-hidden="true">
-                                        {deletingId === gasto.id ? "hourglass_empty" : "delete"}
-                                      </span>
-                                    </button>
-                                  )
-                                )}
+                        {/* Operación */}
+                        <td className="px-3 py-3">
+                          {gasto.vehiculoFotoId ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={`/api/photos/${gasto.vehiculoFotoId}`}
+                                alt="Miniatura del vehículo"
+                                className="h-8 w-12 rounded-md object-cover border border-zinc-200 flex-shrink-0"
+                              />
+                              {gasto.operacionId != null && (
+                                <button
+                                  type="button"
+                                  onClick={() => router.push(`/operaciones/${gasto.operacionId}`)}
+                                  className="text-xs font-semibold text-blue-600 hover:underline focus:outline-none rounded"
+                                >
+                                  #OP-{gasto.operacionId}
+                                </button>
+                              )}
+                            </div>
+                          ) : gasto.operacionId != null ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-8 w-12 flex-shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-zinc-100">
+                                <span className="material-symbols-outlined text-sm text-zinc-300">directions_car</span>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/operaciones/${gasto.operacionId}`)}
+                                className="text-xs font-semibold text-blue-600 hover:underline focus:outline-none rounded"
+                              >
+                                #OP-{gasto.operacionId}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-zinc-300">—</span>
+                          )}
+                        </td>
+
+                        {/* Descripción */}
+                        <td className="px-3 py-3 text-sm font-medium text-zinc-800 max-w-0">
+                          <span className="block truncate">{gasto.descripcion}</span>
+                        </td>
+
+                        {/* Origen */}
+                        <td className="px-3 py-3">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${colorQuien.bg} ${colorQuien.text}`}>
+                            {gasto.quienPago}
+                          </span>
+                        </td>
+
+                        {/* Tipo */}
+                        <td className="px-3 py-3">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${gasto.tipo === "ingreso" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {gasto.tipo === "ingreso" ? "Ingreso" : "Gasto"}
+                          </span>
+                        </td>
+
+                        {/* Monto */}
+                        <td className={`px-3 py-3 text-right text-sm font-bold whitespace-nowrap ${gasto.tipo === "ingreso" ? "text-green-600" : "text-red-600"}`}>
+                          {gasto.tipo === "ingreso" ? "+" : "-"}{formatPesos(gasto.monto)}
+                        </td>
+
+                        {/* Eliminar (solo sin operación) */}
+                        <td className="px-3 py-3">
+                          {gasto.operacionId === null && (
+                            confirmDeleteId === gasto.id ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEliminarGasto(gasto.id)}
+                                  disabled={deletingId === gasto.id}
+                                  aria-label="Confirmar eliminación"
+                                  className="flex h-6 items-center rounded bg-red-50 px-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-40 focus:outline-none"
+                                >
+                                  Sí
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDeleteId(null)}
+                                  aria-label="Cancelar eliminación"
+                                  className="flex h-6 items-center rounded bg-zinc-100 px-1.5 text-xs font-semibold text-zinc-500 hover:bg-zinc-200 focus:outline-none"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(gasto.id)}
+                                disabled={deletingId === gasto.id}
+                                aria-label="Eliminar gasto"
+                                className="flex h-7 w-7 items-center justify-center rounded text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-500 disabled:opacity-40 focus:outline-none"
+                              >
+                                <span className="material-symbols-outlined text-base" aria-hidden="true">
+                                  {deletingId === gasto.id ? "hourglass_empty" : "delete"}
+                                </span>
+                              </button>
+                            )
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
 
@@ -436,15 +360,15 @@ export function GastosTabla({ desde, hasta }: GastosTablaProps) {
           {!loading && (
             <div className="flex flex-col items-center justify-between gap-3 border-t border-zinc-100 px-5 py-3 sm:flex-row">
               <p className="text-sm text-zinc-500">
-                {gruposFiltrados.length === 0
+                {gastosFiltrados.length === 0
                   ? "Sin registros"
                   : `Mostrando ${Math.min(
                       (pagina - 1) * PAGE_SIZE + 1,
-                      gruposFiltrados.length
+                      gastosFiltrados.length
                     )}–${Math.min(
                       pagina * PAGE_SIZE,
-                      gruposFiltrados.length
-                    )} de ${gruposFiltrados.length} operaciones`}
+                      gastosFiltrados.length
+                    )} de ${gastosFiltrados.length} movimientos`}
               </p>
               {totalPaginas > 1 && (
                 <div className="flex items-center gap-2">

@@ -129,9 +129,14 @@ export function MovimientoModal({
 
   const categoriesActivas = formTipo === "gasto" ? categoriesGasto : categoriesIngreso;
 
+  const cajaEmpresa = origins.find((o) => o.nombre === "Caja Empresa");
   const origenResultados = origins.filter(
-    (o) => !deletedOrigenIds.has(o.id) && o.nombre.toLowerCase().includes(origenQuery.toLowerCase())
+    (o) => !deletedOrigenIds.has(o.id) && o.nombre !== "Caja Empresa" && o.nombre.toLowerCase().includes(origenQuery.toLowerCase())
   );
+  const mostrarCajaEmpresa =
+    cajaEmpresa &&
+    !deletedOrigenIds.has(cajaEmpresa.id) &&
+    "caja empresa".includes(origenQuery.toLowerCase());
   const puedoCrearOrigen =
     origenQuery.trim().length > 0 &&
     !origenResultados.some((o) => o.nombre.toLowerCase() === origenQuery.trim().toLowerCase());
@@ -419,11 +424,22 @@ export function MovimientoModal({
                 disabled={saving}
                 className="h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 pl-10 pr-10 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
               />
-              {origenDropdown && (origenResultados.length > 0 || puedoCrearOrigen) && (
+              {origenDropdown && (mostrarCajaEmpresa || origenResultados.length > 0 || puedoCrearOrigen) && (
                 <div
                   ref={origenDropdownRef}
                   className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-zinc-200 bg-white shadow-lg"
                 >
+                  {/* Caja Empresa — siempre primera, no se puede eliminar */}
+                  {mostrarCajaEmpresa && cajaEmpresa && (
+                    <button
+                      type="button"
+                      onMouseDown={() => handleSelectOrigen(cajaEmpresa)}
+                      className="flex w-full items-center gap-2 rounded-t-lg border-b border-blue-100 bg-blue-50 px-3 py-2.5 text-left text-sm font-semibold text-blue-800 hover:bg-blue-100"
+                    >
+                      <span className="material-symbols-outlined text-base text-blue-600">lock</span>
+                      Caja Empresa
+                    </button>
+                  )}
                   {origenResultados.map((o) => (
                     <div
                       key={o.id}

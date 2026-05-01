@@ -6,19 +6,6 @@ import "material-symbols/outlined.css";
 import { GastosCharts } from "./GastosCharts";
 import { GastosTabla } from "./GastosTabla";
 
-interface DesgloseTotalVendido {
-  cerradas: number;
-  abiertas: number;
-  canceladas: number;
-  ingresosExtraordinarios: number;
-}
-
-interface DesgloseTotalGastado {
-  gastosDirectos: number;
-  precioToma0km: number;
-  precioTomaStock: number;
-}
-
 interface DetalleItem {
   id: string | number;
   monto: number;
@@ -26,29 +13,31 @@ interface DetalleItem {
   descripcion: string;
 }
 
-interface DetalleTotalVendido {
-  cerradas: DetalleItem[];
-  abiertas: DetalleItem[];
-  ingresosExtraordinarios: DetalleItem[];
+interface DetalleOpCerrada {
+  id: string;
+  descripcion: string;
+  precioVenta: number;
+  precioToma: number;
+  neto: number;
+  fecha: string | null;
 }
 
-interface DetalleTotalGastado {
-  gastosDirectos: DetalleItem[];
-  precioToma0km: DetalleItem[];
-  precioTomaStock: DetalleItem[];
+interface DesgloseCaja {
+  ingresosPorOps: number;
+  ingresosExtraordinarios: number;
+  egresos: number;
+}
+
+interface DetalleCaja {
+  operacionesCerradas: DetalleOpCerrada[];
+  ingresosExtraordinarios: DetalleItem[];
+  egresos: DetalleItem[];
 }
 
 interface Metricas {
-  totalVendidoBruto: number;
-  desgloseTotalVendido: DesgloseTotalVendido;
-  detalleTotalVendido: DetalleTotalVendido;
-  totalGastado: number;
-  totalGastos: number;
-  totalIngresos: number;
-  desgloseTotalGastado: DesgloseTotalGastado;
-  detalleTotalGastado: DetalleTotalGastado;
-  ganancia: number;
-  margenPorcentaje?: number;
+  cajaDinero: number;
+  desgloseCaja: DesgloseCaja;
+  detalleCaja: DetalleCaja;
   plataPorCobrar: number;
 }
 
@@ -124,7 +113,8 @@ export function GastosPage() {
       setHasta(range.hasta);
     }
   };
-  const [metricasGlobales, setMetricasGlobales] = useState<Pick<Metricas, "totalVendidoBruto" | "desgloseTotalVendido" | "detalleTotalVendido" | "totalGastado" | "desgloseTotalGastado" | "detalleTotalGastado" | "plataPorCobrar" | "ganancia" | "margenPorcentaje"> | null>(null);
+
+  const [metricasGlobales, setMetricasGlobales] = useState<Metricas | null>(null);
   const [kpis, setKpis] = useState<KpiData | null>(null);
   const [kpisGlobales, setKpisGlobales] = useState<Pick<KpiData, "capitalStock"> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,35 +182,15 @@ export function GastosPage() {
             Actualidad — refleja el estado al día de hoy
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <TotalVendidoCard
-            value={metricasGlobales?.totalVendidoBruto ?? null}
-            desglose={metricasGlobales?.desgloseTotalVendido ?? null}
-            detalle={metricasGlobales?.detalleTotalVendido ?? null}
-            loading={loadingGlobales}
-          />
-          <TotalGastadoCard
-            value={metricasGlobales?.totalGastado ?? null}
-            desglose={metricasGlobales?.desgloseTotalGastado ?? null}
-            detalle={metricasGlobales?.detalleTotalGastado ?? null}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <CajaFuerteCard
+            value={metricasGlobales?.cajaDinero ?? null}
+            desglose={metricasGlobales?.desgloseCaja ?? null}
+            detalle={metricasGlobales?.detalleCaja ?? null}
             loading={loadingGlobales}
           />
           <MetricCard
-            label="Ganancia Neta"
-            value={metricasGlobales?.ganancia ?? null}
-            loading={loadingGlobales}
-            icon="trending_up"
-            iconBg="bg-blue-100"
-            iconColor="text-blue-600"
-            highlight
-            badge={
-              metricasGlobales?.margenPorcentaje != null
-                ? `Margen ${metricasGlobales.margenPorcentaje}%`
-                : undefined
-            }
-          />
-          <MetricCard
-            label="Plata por cobrar (Open)"
+            label="Plata por cobrar (ops. abiertas)"
             value={metricasGlobales?.plataPorCobrar ?? null}
             loading={loadingGlobales}
             icon="pending_actions"
@@ -348,16 +318,16 @@ export function GastosPage() {
   );
 }
 
-// ─── TotalVendidoCard ─────────────────────────────────────────────────────────
+// ─── CajaFuerteCard ───────────────────────────────────────────────────────────
 
-interface TotalVendidoCardProps {
+interface CajaFuerteCardProps {
   value: number | null;
-  desglose: DesgloseTotalVendido | null;
-  detalle: DetalleTotalVendido | null;
+  desglose: DesgloseCaja | null;
+  detalle: DetalleCaja | null;
   loading: boolean;
 }
 
-function TotalVendidoCard({ value, desglose, detalle, loading }: TotalVendidoCardProps) {
+function CajaFuerteCard({ value, desglose, detalle, loading }: CajaFuerteCardProps) {
   const [open, setOpen] = useState(false);
   const [seccionAbierta, setSeccionAbierta] = useState<string | null>(null);
 
@@ -365,10 +335,10 @@ function TotalVendidoCard({ value, desglose, detalle, loading }: TotalVendidoCar
     setSeccionAbierta((prev) => (prev === key ? null : key));
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="flex flex-col gap-3 rounded-xl border border-l-4 border-blue-500 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-          <span className="material-symbols-outlined text-xl text-emerald-600">label</span>
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+          <span className="material-symbols-outlined text-xl text-blue-600">lock</span>
         </div>
         {!loading && desglose && (
           <button
@@ -385,41 +355,44 @@ function TotalVendidoCard({ value, desglose, detalle, loading }: TotalVendidoCar
         )}
       </div>
       <div>
-        <p className="text-sm text-zinc-500">Total vendido bruto</p>
+        <p className="text-sm text-zinc-500">Caja Empresa (dinero liquido)</p>
         {loading ? (
           <div className="mt-1.5 h-8 w-36 animate-pulse rounded-lg bg-zinc-200" aria-label="Cargando" />
         ) : (
-          <p className="text-2xl font-bold text-zinc-900">
+          <p className="text-2xl font-bold text-blue-600">
             {value != null ? formatPesos(value) : "$—"}
           </p>
         )}
       </div>
-      {open && desglose && (
+      {open && desglose && detalle && (
         <div className="flex flex-col gap-1.5 border-t border-zinc-100 pt-3">
-          <DesgloseSeccion
-            label="Ops. cerradas"
-            value={desglose.cerradas}
-            items={detalle?.cerradas}
-            abierta={seccionAbierta === "cerradas"}
-            onToggle={() => toggleSeccion("cerradas")}
+          {/* Ingresos por operaciones cerradas */}
+          <OpsCerradasSeccion
+            label="Ops. cerradas (neto)"
+            value={desglose.ingresosPorOps}
+            items={detalle.operacionesCerradas}
+            abierta={seccionAbierta === "ops"}
+            onToggle={() => toggleSeccion("ops")}
           />
-          <DesgloseSeccion
-            label="Ops. abiertas"
-            value={desglose.abiertas}
-            items={detalle?.abiertas}
-            abierta={seccionAbierta === "abiertas"}
-            onToggle={() => toggleSeccion("abiertas")}
-          />
-          {desglose.canceladas > 0 && (
-            <DesgloseRow label="Ops. canceladas" value={desglose.canceladas} />
-          )}
+          {/* Ingresos extraordinarios */}
           {desglose.ingresosExtraordinarios > 0 && (
             <DesgloseSeccion
               label="Ingresos extraordinarios"
               value={desglose.ingresosExtraordinarios}
-              items={detalle?.ingresosExtraordinarios}
+              items={detalle.ingresosExtraordinarios}
               abierta={seccionAbierta === "ingresos"}
               onToggle={() => toggleSeccion("ingresos")}
+            />
+          )}
+          {/* Egresos */}
+          {desglose.egresos > 0 && (
+            <DesgloseSeccion
+              label="Egresos"
+              value={-desglose.egresos}
+              items={detalle.egresos}
+              abierta={seccionAbierta === "egresos"}
+              onToggle={() => toggleSeccion("egresos")}
+              negativo
             />
           )}
         </div>
@@ -428,99 +401,72 @@ function TotalVendidoCard({ value, desglose, detalle, loading }: TotalVendidoCar
   );
 }
 
-// ─── TotalGastadoCard ─────────────────────────────────────────────────────────
+// ─── OpsCerradasSeccion ───────────────────────────────────────────────────────
 
-interface TotalGastadoCardProps {
-  value: number | null;
-  desglose: DesgloseTotalGastado | null;
-  detalle: DetalleTotalGastado | null;
-  loading: boolean;
+interface OpsCerradasSeccionProps {
+  label: string;
+  value: number;
+  items: DetalleOpCerrada[];
+  abierta: boolean;
+  onToggle: () => void;
 }
 
-function TotalGastadoCard({ value, desglose, detalle, loading }: TotalGastadoCardProps) {
-  const [open, setOpen] = useState(false);
-  const [seccionAbierta, setSeccionAbierta] = useState<string | null>(null);
-
-  const toggleSeccion = (key: string) =>
-    setSeccionAbierta((prev) => (prev === key ? null : key));
-
+function OpsCerradasSeccion({ label, value, items, abierta, onToggle }: OpsCerradasSeccionProps) {
+  const hasItems = items.length > 0;
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
-          <span className="material-symbols-outlined text-xl text-red-500">receipt</span>
-        </div>
-        {!loading && desglose && (
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-200"
-            aria-expanded={open}
-          >
-            <span className="material-symbols-outlined text-sm">
-              {open ? "expand_less" : "expand_more"}
+    <div className="flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={hasItems ? onToggle : undefined}
+        className={`flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left transition-colors ${hasItems ? "cursor-pointer hover:bg-zinc-50" : "cursor-default"}`}
+      >
+        <div className="flex items-center gap-1">
+          {hasItems && (
+            <span className="material-symbols-outlined text-[13px] text-zinc-400">
+              {abierta ? "expand_less" : "chevron_right"}
             </span>
-            Desglose
-          </button>
-        )}
-      </div>
-      <div>
-        <p className="text-sm text-zinc-500">Total gastado</p>
-        {loading ? (
-          <div className="mt-1.5 h-8 w-36 animate-pulse rounded-lg bg-zinc-200" aria-label="Cargando" />
-        ) : (
-          <p className="text-2xl font-bold text-zinc-900">
-            {value != null ? formatPesos(value) : "$—"}
-          </p>
-        )}
-      </div>
-      {open && desglose && (
-        <div className="flex flex-col gap-1.5 border-t border-zinc-100 pt-3">
-          <DesgloseSeccion
-            label="Gastos directos"
-            value={desglose.gastosDirectos}
-            items={detalle?.gastosDirectos}
-            abierta={seccionAbierta === "gastos"}
-            onToggle={() => toggleSeccion("gastos")}
-          />
-          <DesgloseSeccion
-            label="Precio de toma (0km)"
-            value={desglose.precioToma0km}
-            items={detalle?.precioToma0km}
-            abierta={seccionAbierta === "toma0km"}
-            onToggle={() => toggleSeccion("toma0km")}
-          />
-          <DesgloseSeccion
-            label="Precio de toma (stock)"
-            value={desglose.precioTomaStock}
-            items={detalle?.precioTomaStock}
-            abierta={seccionAbierta === "tomaStock"}
-            onToggle={() => toggleSeccion("tomaStock")}
-          />
+          )}
+          <span className="text-xs text-zinc-500">{label}</span>
+        </div>
+        <span className="text-xs font-semibold text-emerald-700">{formatPesos(value)}</span>
+      </button>
+      {abierta && hasItems && (
+        <div className="ml-4 flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-lg border border-zinc-100 bg-zinc-50 p-2">
+          {items.map((op) => (
+            <div key={op.id} className="flex items-start justify-between gap-2 py-0.5">
+              <div className="flex flex-col">
+                <span className="text-[11px] text-zinc-600 leading-tight">{op.descripcion}</span>
+                <span className="text-[10px] text-zinc-400">
+                  Venta {formatPesos(op.precioVenta)}
+                  {op.precioToma > 0 ? ` — Toma ${formatPesos(op.precioToma)}` : ""}
+                </span>
+                {op.fecha && (
+                  <span className="text-[10px] text-zinc-400">
+                    {new Date(op.fecha).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  </span>
+                )}
+              </div>
+              <span className="shrink-0 text-[11px] font-semibold text-emerald-700">{formatPesos(op.neto)}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function DesgloseRow({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-zinc-500">{label}</span>
-      <span className="text-xs font-semibold text-zinc-700">{formatPesos(value)}</span>
-    </div>
-  );
-}
+// ─── DesgloseSeccion ──────────────────────────────────────────────────────────
 
 interface DesgloseSeccionProps {
   label: string;
   value: number;
-  items: DetalleItem[] | undefined;
+  items: DetalleItem[];
   abierta: boolean;
   onToggle: () => void;
+  negativo?: boolean;
 }
 
-function DesgloseSeccion({ label, value, items, abierta, onToggle }: DesgloseSeccionProps) {
+function DesgloseSeccion({ label, value, items, abierta, onToggle, negativo }: DesgloseSeccionProps) {
   const hasItems = items && items.length > 0;
   return (
     <div className="flex flex-col gap-1">
@@ -537,7 +483,9 @@ function DesgloseSeccion({ label, value, items, abierta, onToggle }: DesgloseSec
           )}
           <span className="text-xs text-zinc-500">{label}</span>
         </div>
-        <span className="text-xs font-semibold text-zinc-700">{formatPesos(value)}</span>
+        <span className={`text-xs font-semibold ${negativo ? "text-red-600" : "text-zinc-700"}`}>
+          {formatPesos(value)}
+        </span>
       </button>
       {abierta && hasItems && (
         <div className="ml-4 flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-lg border border-zinc-100 bg-zinc-50 p-2">
@@ -551,7 +499,9 @@ function DesgloseSeccion({ label, value, items, abierta, onToggle }: DesgloseSec
                   </span>
                 )}
               </div>
-              <span className="shrink-0 text-[11px] font-semibold text-zinc-700">{formatPesos(item.monto)}</span>
+              <span className={`shrink-0 text-[11px] font-semibold ${negativo ? "text-red-600" : "text-zinc-700"}`}>
+                {formatPesos(item.monto)}
+              </span>
             </div>
           ))}
         </div>
