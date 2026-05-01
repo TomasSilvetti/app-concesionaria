@@ -414,7 +414,7 @@ export default function StockPage() {
           const showStrike =
             hasOffer &&
             vehicle.precioRevista !== null &&
-            vehicle.precioOferta < vehicle.precioRevista;
+            vehicle.precioOferta! < vehicle.precioRevista;
 
           if (showStrike) {
             // Precio revista tachado en rojo
